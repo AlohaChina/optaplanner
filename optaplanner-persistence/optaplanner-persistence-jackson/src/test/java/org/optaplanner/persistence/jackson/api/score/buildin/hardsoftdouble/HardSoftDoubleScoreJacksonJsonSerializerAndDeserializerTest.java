@@ -21,22 +21,21 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.junit.Test;
 import org.optaplanner.core.api.score.buildin.hardsoftdouble.HardSoftDoubleScore;
 import org.optaplanner.persistence.jackson.api.score.AbstractScoreJacksonJsonSerializerAndDeserializerTest;
-import org.optaplanner.persistence.jackson.api.score.ScoreJacksonJsonSerializer;
 
 public class HardSoftDoubleScoreJacksonJsonSerializerAndDeserializerTest extends AbstractScoreJacksonJsonSerializerAndDeserializerTest {
 
     @Test
     public void serializeAndDeserialize() {
         assertSerializeAndDeserialize(null, new TestHardSoftDoubleScoreWrapper(null));
-        HardSoftDoubleScore score = HardSoftDoubleScore.valueOf(1200.0021, 34.4300);
+        HardSoftDoubleScore score = HardSoftDoubleScore.of(1200.0021, 34.4300);
         assertSerializeAndDeserialize(score, new TestHardSoftDoubleScoreWrapper(score));
-        score = HardSoftDoubleScore.valueOfUninitialized(-7, 1200.0021, 34.4300);
+        score = HardSoftDoubleScore.ofUninitialized(-7, 1200.0021, 34.4300);
         assertSerializeAndDeserialize(score, new TestHardSoftDoubleScoreWrapper(score));
     }
 
     public static class TestHardSoftDoubleScoreWrapper extends TestScoreWrapper<HardSoftDoubleScore> {
 
-        @JsonSerialize(using = ScoreJacksonJsonSerializer.class)
+        @JsonSerialize(using = HardSoftDoubleScoreJacksonJsonSerializer.class)
         @JsonDeserialize(using = HardSoftDoubleScoreJacksonJsonDeserializer.class)
         private HardSoftDoubleScore score;
 

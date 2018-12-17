@@ -21,22 +21,21 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.junit.Test;
 import org.optaplanner.core.api.score.buildin.bendablelong.BendableLongScore;
 import org.optaplanner.persistence.jackson.api.score.AbstractScoreJacksonJsonSerializerAndDeserializerTest;
-import org.optaplanner.persistence.jackson.api.score.ScoreJacksonJsonSerializer;
 
 public class BendableLongScoreJacksonJsonSerializerAndDeserializerTest extends AbstractScoreJacksonJsonSerializerAndDeserializerTest {
 
     @Test
     public void serializeAndDeserialize() {
         assertSerializeAndDeserialize(null, new TestBendableLongScoreWrapper(null));
-        BendableLongScore score = BendableLongScore.valueOf(new long[]{1000L, 200L}, new long[]{34L});
+        BendableLongScore score = BendableLongScore.of(new long[]{1000L, 200L}, new long[]{34L});
         assertSerializeAndDeserialize(score, new TestBendableLongScoreWrapper(score));
-        score = BendableLongScore.valueOfUninitialized(-7, new long[]{1000L, 200L}, new long[]{34L});
+        score = BendableLongScore.ofUninitialized(-7, new long[]{1000L, 200L}, new long[]{34L});
         assertSerializeAndDeserialize(score, new TestBendableLongScoreWrapper(score));
     }
 
     public static class TestBendableLongScoreWrapper extends TestScoreWrapper<BendableLongScore> {
 
-        @JsonSerialize(using = ScoreJacksonJsonSerializer.class)
+        @JsonSerialize(using = BendableLongScoreJacksonJsonSerializer.class)
         @JsonDeserialize(using = BendableLongScoreJacksonJsonDeserializer.class)
         private BendableLongScore score;
 

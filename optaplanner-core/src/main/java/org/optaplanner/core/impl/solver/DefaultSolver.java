@@ -26,6 +26,7 @@ import org.optaplanner.core.api.solver.Solver;
 import org.optaplanner.core.config.solver.EnvironmentMode;
 import org.optaplanner.core.impl.phase.Phase;
 import org.optaplanner.core.impl.score.director.InnerScoreDirectorFactory;
+import org.optaplanner.core.impl.score.director.ScoreDirector;
 import org.optaplanner.core.impl.solver.random.RandomFactory;
 import org.optaplanner.core.impl.solver.recaller.BestSolutionRecaller;
 import org.optaplanner.core.impl.solver.scope.DefaultSolverScope;
@@ -58,10 +59,10 @@ public class DefaultSolver<Solution_> extends AbstractSolver<Solution_> {
     // ************************************************************************
 
     public DefaultSolver(EnvironmentMode environmentMode, RandomFactory randomFactory,
-            BasicPlumbingTermination basicPlumbingTermination, Termination termination,
-            BestSolutionRecaller<Solution_> bestSolutionRecaller, List<Phase<Solution_>> phaseList,
+            BestSolutionRecaller<Solution_> bestSolutionRecaller, BasicPlumbingTermination basicPlumbingTermination, Termination termination,
+            List<Phase<Solution_>> phaseList,
             DefaultSolverScope<Solution_> solverScope) {
-        super(termination, bestSolutionRecaller, phaseList);
+        super(bestSolutionRecaller, termination, phaseList);
         this.environmentMode = environmentMode;
         this.randomFactory = randomFactory;
         this.basicPlumbingTermination = basicPlumbingTermination;
@@ -108,12 +109,35 @@ public class DefaultSolver<Solution_> extends AbstractSolver<Solution_> {
     }
 
     @Override
+    public String explainBestScore() {
+        Solution_ bestSolution = getBestSolution();
+        if (bestSolution == null) {
+            return null;
+        }
+        // Do not simply call getBestScore() because this method is thread-safe
+        // That would create a race condition with the getBestSolution() call earlier.
+        if (solverScope.getSolutionDescriptor().getScore(bestSolution) == null) {
+            return null;
+        }
+        try (ScoreDirector<Solution_> scoreDirector = getScoreDirectorFactory().buildScoreDirector()) {
+            scoreDirector.setWorkingSolution(bestSolution);
+            return scoreDirector.explainScore();
+        }
+    }
+
+    @Override
     public long getTimeMillisSpent() {
+        Long startingSystemTimeMillis = solverScope.getStartingSystemTimeMillis();
+        if (startingSystemTimeMillis == null) {
+            // The solver hasn't started yet
+            return 0L;
+        }
         Long endingSystemTimeMillis = solverScope.getEndingSystemTimeMillis();
         if (endingSystemTimeMillis == null) {
+            // The solver hasn't ended yet
             endingSystemTimeMillis = System.currentTimeMillis();
         }
-        return endingSystemTimeMillis - solverScope.getStartingSystemTimeMillis();
+        return endingSystemTimeMillis - startingSystemTimeMillis;
     }
 
     @Override

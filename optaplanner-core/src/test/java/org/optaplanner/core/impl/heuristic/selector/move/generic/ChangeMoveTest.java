@@ -25,15 +25,17 @@ import org.optaplanner.core.impl.score.director.ScoreDirector;
 import org.optaplanner.core.impl.testdata.domain.TestdataEntity;
 import org.optaplanner.core.impl.testdata.domain.TestdataSolution;
 import org.optaplanner.core.impl.testdata.domain.TestdataValue;
-import org.optaplanner.core.impl.testdata.domain.entityproviding.TestdataEntityProvidingEntity;
-import org.optaplanner.core.impl.testdata.domain.entityproviding.TestdataEntityProvidingSolution;
 import org.optaplanner.core.impl.testdata.domain.multivar.TestdataMultiVarEntity;
 import org.optaplanner.core.impl.testdata.domain.multivar.TestdataMultiVarSolution;
 import org.optaplanner.core.impl.testdata.domain.multivar.TestdataOtherValue;
+import org.optaplanner.core.impl.testdata.domain.valuerange.entityproviding.TestdataEntityProvidingEntity;
+import org.optaplanner.core.impl.testdata.domain.valuerange.entityproviding.TestdataEntityProvidingSolution;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.*;
 import static org.optaplanner.core.impl.testdata.util.PlannerAssert.*;
+import static org.optaplanner.core.impl.testdata.util.PlannerAssert.assertSame;
+import static org.optaplanner.core.impl.testdata.util.PlannerTestUtils.*;
 
 public class ChangeMoveTest {
 
@@ -82,6 +84,46 @@ public class ChangeMoveTest {
         a.setValue(v3);
         aMove.doMove(scoreDirector);
         assertEquals(v2, a.getValue());
+    }
+
+    @Test
+    public void rebase() {
+        GenuineVariableDescriptor<TestdataSolution> variableDescriptor = TestdataEntity.buildVariableDescriptorForValue();
+
+        TestdataValue v1 = new TestdataValue("v1");
+        TestdataValue v2 = new TestdataValue("v2");
+        TestdataEntity e1 = new TestdataEntity("e1", v1);
+        TestdataEntity e2 = new TestdataEntity("e2", null);
+        TestdataEntity e3 = new TestdataEntity("e3", v1);
+
+        TestdataValue destinationV1 = new TestdataValue("v1");
+        TestdataValue destinationV2 = new TestdataValue("v2");
+        TestdataEntity destinationE1 = new TestdataEntity("e1", destinationV1);
+        TestdataEntity destinationE2 = new TestdataEntity("e2", null);
+        TestdataEntity destinationE3 = new TestdataEntity("e3", destinationV1);
+
+        ScoreDirector<TestdataSolution> destinationScoreDirector = mockRebasingScoreDirector(
+                variableDescriptor.getEntityDescriptor().getSolutionDescriptor(), new Object[][]{
+                        {v1, destinationV1},
+                        {v2, destinationV2},
+                        {e1, destinationE1},
+                        {e2, destinationE2},
+                        {e3, destinationE3},
+                });
+
+        assertSameProperties(destinationE1, null,
+                new ChangeMove<>(e1, variableDescriptor, null).rebase(destinationScoreDirector));
+        assertSameProperties(destinationE1, destinationV1,
+                new ChangeMove<>(e1, variableDescriptor, v1).rebase(destinationScoreDirector));
+        assertSameProperties(destinationE2, null,
+                new ChangeMove<>(e2, variableDescriptor, null).rebase(destinationScoreDirector));
+        assertSameProperties(destinationE3, destinationV2,
+                new ChangeMove<>(e3, variableDescriptor, v2).rebase(destinationScoreDirector));
+    }
+
+    public void assertSameProperties(Object entity, Object toPlanningVariable, ChangeMove<?> move) {
+        assertSame(entity, move.getEntity());
+        assertSame(toPlanningVariable, move.getToPlanningValue());
     }
 
     @Test

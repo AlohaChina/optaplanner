@@ -92,7 +92,7 @@ public class CheapTimeIncrementalScoreCalculator extends AbstractIncrementalScor
         }
         for (TaskAssignment taskAssignment : solution.getTaskAssignmentList()) {
             // Do not do modifyMachine(taskAssignment, null, taskAssignment.getMachine());
-            // because modifyStartPeriod does all it's effects too
+            // because modifyStartPeriod does all its effects too
             modifyStartPeriod(taskAssignment, null, taskAssignment.getStartPeriod());
         }
     }
@@ -106,7 +106,7 @@ public class CheapTimeIncrementalScoreCalculator extends AbstractIncrementalScor
     public void afterEntityAdded(Object entity) {
         TaskAssignment taskAssignment = (TaskAssignment) entity;
         // Do not do modifyMachine(taskAssignment, null, taskAssignment.getMachine());
-        // because modifyStartPeriod does all it's effects too
+        // because modifyStartPeriod does all its effects too
         modifyStartPeriod(taskAssignment, null, taskAssignment.getStartPeriod());
     }
 
@@ -151,7 +151,7 @@ public class CheapTimeIncrementalScoreCalculator extends AbstractIncrementalScor
     public void afterEntityRemoved(Object entity) {
         TaskAssignment taskAssignment = (TaskAssignment) entity;
         // Do not do modifyMachine(taskAssignment, oldMachine, null);
-        // because modifyStartPeriod does all it's effects too
+        // because modifyStartPeriod does all its effects too
         modifyStartPeriod(taskAssignment, oldStartPeriod, null);
     }
 
@@ -407,7 +407,7 @@ public class CheapTimeIncrementalScoreCalculator extends AbstractIncrementalScor
 
     @Override
     public HardMediumSoftLongScore calculateScore() {
-        return HardMediumSoftLongScore.valueOf(hardScore, mediumScore, softScore);
+        return HardMediumSoftLongScore.of(hardScore, mediumScore, softScore);
     }
 
     private class MachinePeriodPart {
@@ -566,19 +566,19 @@ public class CheapTimeIncrementalScoreCalculator extends AbstractIncrementalScor
                     if (resourceAvailable < 0) {
                         resourceCapacityMatchTotal.addConstraintMatch(
                                 Arrays.asList(machine, period, resourceList.get(i)),
-                                HardMediumSoftLongScore.valueOf(resourceAvailable, 0, 0));
+                                HardMediumSoftLongScore.of(resourceAvailable, 0, 0));
                     }
                 }
                 if (machinePeriod.status == MachinePeriodStatus.SPIN_UP_AND_ACTIVE) {
                     spinUpDownMatchTotal.addConstraintMatch(
                             Arrays.asList(machine, period),
-                            HardMediumSoftLongScore.valueOf(0, - machine.getSpinUpDownCostMicros(), 0));
+                            HardMediumSoftLongScore.of(0, - machine.getSpinUpDownCostMicros(), 0));
                     taskConsumptionWeight += machine.getSpinUpDownCostMicros();
                 }
                 if (machinePeriod.status != MachinePeriodStatus.OFF) {
                     machineConsumptionMatchTotal.addConstraintMatch(
                             Arrays.asList(machine, period),
-                            HardMediumSoftLongScore.valueOf(0, - machinePeriod.machineCostMicros, 0));
+                            HardMediumSoftLongScore.of(0, - machinePeriod.machineCostMicros, 0));
                     taskConsumptionWeight += machinePeriod.machineCostMicros;
                 }
             }
@@ -586,7 +586,7 @@ public class CheapTimeIncrementalScoreCalculator extends AbstractIncrementalScor
         // Individual taskConsumption isn't tracked for performance
         taskConsumptionMatchTotal.addConstraintMatch(
                 Arrays.asList(),
-                HardMediumSoftLongScore.valueOf(0, taskConsumptionWeight, 0));
+                HardMediumSoftLongScore.of(0, taskConsumptionWeight, 0));
         // Individual taskStartPeriod isn't tracked for performance
         // but we mimic it
         for (TaskAssignment taskAssignment : cheapTimeSolution.getTaskAssignmentList()) {
@@ -594,7 +594,7 @@ public class CheapTimeIncrementalScoreCalculator extends AbstractIncrementalScor
             if (startPeriod != null) {
                 minimizeTaskStartPeriodMatchTotal.addConstraintMatch(
                         Arrays.asList(taskAssignment),
-                        HardMediumSoftLongScore.valueOf(0, 0, - startPeriod));
+                        HardMediumSoftLongScore.of(0, 0, - startPeriod));
             }
 
         }

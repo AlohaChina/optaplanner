@@ -16,6 +16,7 @@
 
 package org.optaplanner.core.impl.domain.variable.descriptor;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,11 +24,12 @@ import org.optaplanner.core.api.domain.solution.PlanningSolution;
 import org.optaplanner.core.api.domain.variable.PlanningVariable;
 import org.optaplanner.core.impl.domain.common.accessor.MemberAccessor;
 import org.optaplanner.core.impl.domain.entity.descriptor.EntityDescriptor;
+import org.optaplanner.core.impl.domain.policy.DescriptorPolicy;
 
 /**
  * @param <Solution_> the solution type, the class with the {@link PlanningSolution} annotation
  */
-public abstract class VariableDescriptor<Solution_> {
+public abstract class VariableDescriptor<Solution_> implements Serializable {
 
     protected final EntityDescriptor<Solution_> entityDescriptor;
 
@@ -56,10 +58,6 @@ public abstract class VariableDescriptor<Solution_> {
         }
     }
 
-    // ************************************************************************
-    // Worker methods
-    // ************************************************************************
-
     public EntityDescriptor<Solution_> getEntityDescriptor() {
         return entityDescriptor;
     }
@@ -68,6 +66,10 @@ public abstract class VariableDescriptor<Solution_> {
         return variableName;
     }
 
+    // ************************************************************************
+    // Worker methods
+    // ************************************************************************
+
     public String getSimpleEntityAndVariableName() {
         return entityDescriptor.getEntityClass().getSimpleName() + "." + variableName;
     }
@@ -75,6 +77,8 @@ public abstract class VariableDescriptor<Solution_> {
     public Class<?> getVariablePropertyType() {
         return variableMemberAccessor.getType();
     }
+
+    public abstract void linkVariableDescriptors(DescriptorPolicy descriptorPolicy);
 
     // ************************************************************************
     // Shadows
@@ -110,6 +114,10 @@ public abstract class VariableDescriptor<Solution_> {
 
     public void setValue(Object entity, Object value) {
         variableMemberAccessor.executeSetter(entity, value);
+    }
+
+    public String getMemberAccessorSpeedNote() {
+        return variableMemberAccessor.getSpeedNote();
     }
 
     public abstract boolean isGenuineAndUninitialized(Object entity);

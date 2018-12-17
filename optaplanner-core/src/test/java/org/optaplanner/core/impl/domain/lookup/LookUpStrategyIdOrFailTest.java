@@ -23,6 +23,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.optaplanner.core.api.domain.lookup.LookUpStrategyType;
 import org.optaplanner.core.api.domain.lookup.PlanningId;
+import org.optaplanner.core.impl.testdata.domain.lookup.TestdataObjectEnum;
 import org.optaplanner.core.impl.testdata.domain.lookup.TestdataObjectId;
 import org.optaplanner.core.impl.testdata.domain.lookup.TestdataObjectMultipleIds;
 import org.optaplanner.core.impl.testdata.domain.lookup.TestdataObjectNoId;
@@ -47,8 +48,15 @@ public class LookUpStrategyIdOrFailTest {
         TestdataObjectId object = new TestdataObjectId(0);
         lookUpManager.addWorkingObject(object);
         lookUpManager.removeWorkingObject(object);
-        // the removed object cannot be located
+        // The removed object cannot be looked up
         assertNull(lookUpManager.lookUpWorkingObject(object));
+    }
+
+    @Test
+    public void addRemoveEnum() {
+        TestdataObjectEnum object = TestdataObjectEnum.THIRD_VALUE;
+        lookUpManager.addWorkingObject(object);
+        lookUpManager.removeWorkingObject(object);
     }
 
     @Test
@@ -98,14 +106,14 @@ public class LookUpStrategyIdOrFailTest {
     }
 
     @Test
-    public void locateWithId() {
+    public void lookUpWithId() {
         TestdataObjectId object = new TestdataObjectId(1);
         lookUpManager.addWorkingObject(object);
         assertSame(object, lookUpManager.lookUpWorkingObject(new TestdataObjectId(1)));
     }
 
     @Test
-    public void locateWithoutId() {
+    public void lookUpWithoutId() {
         TestdataObjectNoId object = new TestdataObjectNoId();
         expectedException.expect(IllegalArgumentException.class);
         expectedException.expectMessage("does not have a " + PlanningId.class.getSimpleName());
@@ -113,7 +121,7 @@ public class LookUpStrategyIdOrFailTest {
     }
 
     @Test
-    public void locateWithoutAdding() {
+    public void lookUpWithoutAdding() {
         TestdataObjectId object = new TestdataObjectId(0);
         assertNull(lookUpManager.lookUpWorkingObject(object));
     }

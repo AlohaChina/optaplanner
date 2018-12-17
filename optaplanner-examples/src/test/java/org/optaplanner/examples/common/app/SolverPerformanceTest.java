@@ -17,42 +17,74 @@
 package org.optaplanner.examples.common.app;
 
 import java.io.File;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.optaplanner.core.api.domain.solution.PlanningSolution;
 import org.optaplanner.core.api.score.Score;
+import org.optaplanner.core.api.score.constraint.ConstraintMatchTotal;
 import org.optaplanner.core.api.solver.Solver;
 import org.optaplanner.core.api.solver.SolverFactory;
 import org.optaplanner.core.config.solver.EnvironmentMode;
+import org.optaplanner.core.config.solver.SolverConfig;
 import org.optaplanner.core.config.solver.termination.TerminationConfig;
+import org.optaplanner.core.impl.score.definition.ScoreDefinition;
 import org.optaplanner.core.impl.score.director.InnerScoreDirectorFactory;
-import org.optaplanner.examples.common.persistence.SolutionDao;
+import org.optaplanner.core.impl.score.director.ScoreDirector;
+import org.optaplanner.examples.common.TestSystemProperties;
+import org.optaplanner.persistence.common.api.domain.solution.SolutionFileIO;
 
 import static org.junit.Assert.*;
 
 /**
  * Runs an example {@link Solver}.
  * <p>
- * Always use a {@link Test#timeout()} value on {@link Test}.
- * The timeout should be the triple of the timeout on a normal 3 year old desktop computer,
- * because some of the Jenkins machines are old.
- * For example, on a normal 3 year old desktop computer it always finishes in less than 1 minute,
- * then specify a timeout of 3 minutes.
+ * A test should run in less than 10 seconds on a 3 year old desktop computer, choose the bestScoreLimit accordingly.
+ * Always use a {@link Test#timeout()} on {@link Test}, preferably 10 minutes because some of the Jenkins machines are old.
  * @param <Solution_> the solution type, the class with the {@link PlanningSolution} annotation
  */
+@RunWith(Parameterized.class)
 public abstract class SolverPerformanceTest<Solution_> extends LoggingTest {
 
-    protected SolutionDao<Solution_> solutionDao;
+    private static final String MOVE_THREAD_COUNTS_STRING = System.getProperty(TestSystemProperties.MOVE_THREAD_COUNTS);
+
+    private final String moveThreadCount;
+
+    protected SolutionFileIO<Solution_> solutionFileIO;
+    protected String solverConfig;
+
+    @Parameterized.Parameters(name = "{index}: {0}")
+    public static Collection<Object[]> getSolutionFilesAsParameters() {
+        List<Object[]> parameterList;
+        if (MOVE_THREAD_COUNTS_STRING != null) {
+            parameterList = Arrays.stream(MOVE_THREAD_COUNTS_STRING.split(","))
+                    .map(moveThreadCount -> new Object[]{moveThreadCount})
+                    .collect(Collectors.toList());
+        } else {
+            parameterList = Collections.singletonList(new Object[]{SolverConfig.MOVE_THREAD_COUNT_NONE});
+        }
+        return parameterList;
+    }
+
+    public SolverPerformanceTest(String moveThreadCount) {
+        this.moveThreadCount = moveThreadCount;
+    }
 
     @Before
     public void setUp() {
-        solutionDao = createSolutionDao();
+        CommonApp<Solution_> commonApp = createCommonApp();
+        solutionFileIO = commonApp.createSolutionFileIO();
+        solverConfig = commonApp.getSolverConfig();
     }
 
-    protected abstract String createSolverConfigResource();
-
-    protected abstract SolutionDao<Solution_> createSolutionDao();
+    protected abstract CommonApp<Solution_> createCommonApp();
 
     protected void runSpeedTest(File unsolvedDataFile, String bestScoreLimitString) {
         runSpeedTest(unsolvedDataFile, bestScoreLimitString, EnvironmentMode.REPRODUCIBLE);
@@ -60,28 +92,46 @@ public abstract class SolverPerformanceTest<Solution_> extends LoggingTest {
 
     protected void runSpeedTest(File unsolvedDataFile, String bestScoreLimitString, EnvironmentMode environmentMode) {
         SolverFactory<Solution_> solverFactory = buildSolverFactory(bestScoreLimitString, environmentMode);
-        Solution_ problem = solutionDao.readSolution(unsolvedDataFile);
+        Solution_ problem = solutionFileIO.read(unsolvedDataFile);
+        logger.info("Opened: {}", unsolvedDataFile);
         Solver<Solution_> solver = solverFactory.buildSolver();
         Solution_ bestSolution = solver.solve(problem);
-        assertBestSolution(solver, bestSolution, bestScoreLimitString);
+        assertScoreAndConstraintMatches(solver, bestSolution, bestScoreLimitString);
     }
 
     protected SolverFactory<Solution_> buildSolverFactory(String bestScoreLimitString, EnvironmentMode environmentMode) {
-        SolverFactory<Solution_> solverFactory = SolverFactory.createFromXmlResource(createSolverConfigResource());
+        SolverFactory<Solution_> solverFactory = SolverFactory.createFromXmlResource(solverConfig);
         solverFactory.getSolverConfig().setEnvironmentMode(environmentMode);
         solverFactory.getSolverConfig().setTerminationConfig(
                 new TerminationConfig().withBestScoreLimit(bestScoreLimitString));
+        solverFactory.getSolverConfig().setMoveThreadCount(moveThreadCount);
+
         return solverFactory;
     }
 
-    private void assertBestSolution(Solver<Solution_> solver, Solution_ bestSolution, String bestScoreLimitString) {
+    private void assertScoreAndConstraintMatches(Solver<Solution_> solver, Solution_ bestSolution, String bestScoreLimitString) {
         assertNotNull(bestSolution);
         InnerScoreDirectorFactory<Solution_> scoreDirectorFactory
                 = (InnerScoreDirectorFactory<Solution_>) solver.getScoreDirectorFactory();
         Score bestScore = scoreDirectorFactory.getSolutionDescriptor().getScore(bestSolution);
-        Score bestScoreLimit = scoreDirectorFactory.getScoreDefinition().parseScore(bestScoreLimitString);
+        ScoreDefinition scoreDefinition = scoreDirectorFactory.getScoreDefinition();
+        Score bestScoreLimit = scoreDefinition.parseScore(bestScoreLimitString);
         assertTrue("The bestScore (" + bestScore + ") must be at least the bestScoreLimit (" + bestScoreLimit + ").",
                 bestScore.compareTo(bestScoreLimit) >= 0);
+
+        try (ScoreDirector<Solution_> scoreDirector = scoreDirectorFactory.buildScoreDirector()) {
+            scoreDirector.setWorkingSolution(bestSolution);
+            Score score = scoreDirector.calculateScore();
+            assertEquals(score, bestScore);
+            if (scoreDirector.isConstraintMatchEnabled()) {
+                Collection<ConstraintMatchTotal> constraintMatchTotals = scoreDirector.getConstraintMatchTotals();
+                assertNotNull(constraintMatchTotals);
+                assertEquals(score, constraintMatchTotals.stream()
+                        .map(ConstraintMatchTotal::getScore)
+                        .reduce(Score::add).orElse(scoreDefinition.getZeroScore()));
+                assertNotNull(scoreDirector.getIndictmentMap());
+            }
+        }
     }
 
 }

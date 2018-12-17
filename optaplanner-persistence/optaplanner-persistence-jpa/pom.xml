@@ -6,7 +6,7 @@
   <parent>
     <groupId>org.optaplanner</groupId>
     <artifactId>optaplanner-persistence</artifactId>
-    <version>8.0.0-SNAPSHOT</version>
+    <version>7.16.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>optaplanner-persistence-jpa</artifactId>
@@ -31,6 +31,7 @@
     <dependency>
       <groupId>org.kie</groupId>
       <artifactId>kie-test-util</artifactId>
+      <scope>test</scope>
     </dependency>
     <!-- External dependencies -->
     <!-- Logging -->
@@ -58,6 +59,10 @@
       <scope>runtime</scope>
       <optional>true</optional>
     </dependency>
+    <dependency>
+      <groupId>org.jboss.spec.javax.xml.bind</groupId>
+      <artifactId>jboss-jaxb-api_2.2_spec</artifactId>
+    </dependency>
 
     <!-- Test -->
     <dependency>
@@ -78,7 +83,7 @@
   </dependencies>
 
   <properties>
-    <osgi.Bundle-SymbolicName>org.optaplanner.persistence.jpa</osgi.Bundle-SymbolicName>
+    <java.module.name>org.optaplanner.persistence.jpa</java.module.name>
 
     <maven.hibernate.dialect>org.hibernate.dialect.H2Dialect</maven.hibernate.dialect>
     <maven.datasource.classname>org.h2.jdbcx.JdbcDataSource</maven.datasource.classname>

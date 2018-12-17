@@ -39,9 +39,9 @@ public class PartitionSolver<Solution_> extends AbstractSolver<Solution_> {
     // Constructors and simple getters/setters
     // ************************************************************************
 
-    public PartitionSolver(Termination termination, BestSolutionRecaller<Solution_> bestSolutionRecaller,
+    public PartitionSolver(BestSolutionRecaller<Solution_> bestSolutionRecaller, Termination termination,
             List<Phase<Solution_>> phaseList, DefaultSolverScope<Solution_> solverScope) {
-        super(termination, bestSolutionRecaller, phaseList);
+        super(bestSolutionRecaller, termination, phaseList);
         this.solverScope = solverScope;
     }
 
@@ -62,6 +62,11 @@ public class PartitionSolver<Solution_> extends AbstractSolver<Solution_> {
     @Override
     public Score getBestScore() {
         return solverScope.getBestScore();
+    }
+
+    @Override
+    public String explainBestScore() {
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -133,6 +138,10 @@ public class PartitionSolver<Solution_> extends AbstractSolver<Solution_> {
         solverScope.endingNow();
         solverScope.getScoreDirector().close();
         // TODO log?
+    }
+
+    public long getScoreCalculationCount() {
+        return solverScope.getScoreCalculationCount();
     }
 
 }

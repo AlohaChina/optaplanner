@@ -21,19 +21,17 @@ import java.io.File;
 import org.junit.Test;
 import org.optaplanner.core.config.solver.EnvironmentMode;
 import org.optaplanner.examples.common.app.SolverPerformanceTest;
-import org.optaplanner.examples.common.persistence.SolutionDao;
-import org.optaplanner.examples.travelingtournament.persistence.TravelingTournamentDao;
+import org.optaplanner.examples.travelingtournament.domain.TravelingTournament;
 
-public class TravelingTournamentPerformanceTest extends SolverPerformanceTest {
+public class TravelingTournamentPerformanceTest extends SolverPerformanceTest<TravelingTournament> {
 
-    @Override
-    protected String createSolverConfigResource() {
-        return TravelingTournamentApp.SOLVER_CONFIG;
+    public TravelingTournamentPerformanceTest(String moveThreadCount) {
+        super(moveThreadCount);
     }
 
     @Override
-    protected SolutionDao createSolutionDao() {
-        return new TravelingTournamentDao();
+    protected TravelingTournamentApp createCommonApp() {
+        return new TravelingTournamentApp();
     }
 
     // ************************************************************************

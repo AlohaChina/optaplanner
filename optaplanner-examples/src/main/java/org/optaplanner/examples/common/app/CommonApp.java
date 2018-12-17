@@ -17,6 +17,8 @@
 package org.optaplanner.examples.common.app;
 
 import java.awt.Component;
+import java.io.File;
+import java.util.function.BiConsumer;
 import javax.swing.WindowConstants;
 
 import org.optaplanner.core.api.domain.solution.PlanningSolution;
@@ -25,20 +27,39 @@ import org.optaplanner.core.api.solver.SolverFactory;
 import org.optaplanner.examples.common.business.SolutionBusiness;
 import org.optaplanner.examples.common.persistence.AbstractSolutionExporter;
 import org.optaplanner.examples.common.persistence.AbstractSolutionImporter;
-import org.optaplanner.examples.common.persistence.SolutionDao;
 import org.optaplanner.examples.common.swingui.SolutionPanel;
 import org.optaplanner.examples.common.swingui.SolverAndPersistenceFrame;
+import org.optaplanner.persistence.common.api.domain.solution.SolutionFileIO;
 import org.optaplanner.swing.impl.SwingUncaughtExceptionHandler;
 import org.optaplanner.swing.impl.SwingUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @param <Solution_> the solution type, the class with the {@link PlanningSolution} annotation
  */
 public abstract class CommonApp<Solution_> extends LoggingMain {
 
-    protected static final Logger logger = LoggerFactory.getLogger(CommonApp.class);
+    /**
+     * The path to the data directory, preferably with unix slashes for portability.
+     * For example: -D{@value #DATA_DIR_SYSTEM_PROPERTY}=sources/data/
+     */
+    public static final String DATA_DIR_SYSTEM_PROPERTY = "org.optaplanner.examples.dataDir";
+
+    public static File determineDataDir(String dataDirName) {
+        String dataDirPath = System.getProperty(DATA_DIR_SYSTEM_PROPERTY, "data/");
+        File dataDir = new File(dataDirPath, dataDirName);
+        if (!dataDir.exists()) {
+            throw new IllegalStateException("The directory dataDir (" + dataDir.getAbsolutePath()
+                    + ") does not exist.\n" +
+                    " Either the working directory should be set to the directory that contains the data directory" +
+                    " (which is not the data directory itself), or the system property "
+                    + DATA_DIR_SYSTEM_PROPERTY + " should be set properly.\n" +
+                    " The data directory is different in a git clone (optaplanner/optaplanner-examples/data)" +
+                    " and in a release zip (examples/sources/data).\n" +
+                    " In an IDE (IntelliJ, Eclipse, NetBeans), open the \"Run configuration\""
+                    + " to change \"Working directory\" (or add the system property in \"VM options\").");
+        }
+        return dataDir;
+    }
 
     /**
      * Some examples are not compatible with every native LookAndFeel.
@@ -52,15 +73,17 @@ public abstract class CommonApp<Solution_> extends LoggingMain {
     protected final String name;
     protected final String description;
     protected final String solverConfig;
+    protected final String dataDirName;
     protected final String iconResource;
 
     protected SolverAndPersistenceFrame<Solution_> solverAndPersistenceFrame;
     protected SolutionBusiness<Solution_> solutionBusiness;
 
-    protected CommonApp(String name, String description, String solverConfig, String iconResource) {
+    protected CommonApp(String name, String description, String solverConfig, String dataDirName, String iconResource) {
         this.name = name;
         this.description = description;
         this.solverConfig = solverConfig;
+        this.dataDirName = dataDirName;
         this.iconResource = iconResource;
     }
 
@@ -70,6 +93,14 @@ public abstract class CommonApp<Solution_> extends LoggingMain {
 
     public String getDescription() {
         return description;
+    }
+
+    public String getSolverConfig() {
+        return solverConfig;
+    }
+
+    public String getDataDirName() {
+        return dataDirName;
     }
 
     public String getIconResource() {
@@ -82,7 +113,7 @@ public abstract class CommonApp<Solution_> extends LoggingMain {
 
     public void init(Component centerForComponent, boolean exitOnClose) {
         solutionBusiness = createSolutionBusiness();
-        solverAndPersistenceFrame = new SolverAndPersistenceFrame<>(solutionBusiness, createSolutionPanel());
+        solverAndPersistenceFrame = new SolverAndPersistenceFrame<>(solutionBusiness, createSolutionPanel(), createExtraActions());
         solverAndPersistenceFrame.setDefaultCloseOperation(exitOnClose ? WindowConstants.EXIT_ON_CLOSE : WindowConstants.DISPOSE_ON_CLOSE);
         solverAndPersistenceFrame.init(centerForComponent);
         solverAndPersistenceFrame.setVisible(true);
@@ -90,11 +121,12 @@ public abstract class CommonApp<Solution_> extends LoggingMain {
 
     public SolutionBusiness<Solution_> createSolutionBusiness() {
         SolutionBusiness<Solution_> solutionBusiness = new SolutionBusiness<>(this);
-        solutionBusiness.setSolutionDao(createSolutionDao());
+        solutionBusiness.setSolver(createSolver());
+        solutionBusiness.setDataDir(determineDataDir(dataDirName));
+        solutionBusiness.setSolutionFileIO(createSolutionFileIO());
         solutionBusiness.setImporters(createSolutionImporters());
         solutionBusiness.setExporter(createSolutionExporter());
         solutionBusiness.updateDataDirs();
-        solutionBusiness.setSolver(createSolver());
         return solutionBusiness;
     }
 
@@ -105,14 +137,31 @@ public abstract class CommonApp<Solution_> extends LoggingMain {
 
     protected abstract SolutionPanel<Solution_> createSolutionPanel();
 
-    protected abstract SolutionDao createSolutionDao();
+    protected ExtraAction<Solution_>[] createExtraActions() {
+        return new ExtraAction[0];
+    }
+
+    /**
+     * Used for the unsolved and solved directories,
+     * not for the import and output directories, in the data directory.
+     * @return never null
+     */
+    public abstract SolutionFileIO<Solution_> createSolutionFileIO();
 
     protected AbstractSolutionImporter[] createSolutionImporters() {
-        return new AbstractSolutionImporter[]{};
+        return new AbstractSolutionImporter[0];
     }
 
     protected AbstractSolutionExporter createSolutionExporter() {
         return null;
+    }
+
+    public interface ExtraAction<Solution_> {
+
+        String getName();
+
+        BiConsumer<SolutionBusiness<Solution_>, SolutionPanel<Solution_>> getConsumer();
+
     }
 
 }

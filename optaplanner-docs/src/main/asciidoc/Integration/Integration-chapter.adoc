@@ -28,7 +28,7 @@ image::Integration/integrationOverview.png[align="center"]
 [[integrationWithJpaAndHibernate]]
 === Database: JPA and Hibernate
 
-Enrich the domain POJO's (solution, entities and problem facts) with JPA annotations
+Enrich domain POJO's (solution, entities and problem facts) with JPA annotations
 to store them in a database by calling `EntityManager.persist()`.
 
 [NOTE]
@@ -189,7 +189,7 @@ Neglecting to do this can lead to persisting duplicate solutions, JPA exceptions
 [[integrationWithXStream]]
 === XML or JSON: XStream
 
-Enrich the domain POJO's (solution, entities and problem facts) with XStream annotations to serialize them to/from XML or JSON.
+Enrich domain POJO's (solution, entities and problem facts) with XStream annotations to serialize them to/from XML or JSON.
 
 Add a dependency to the `optaplanner-persistence-xstream` jar to take advantage of these extra integration features:
 
@@ -250,13 +250,14 @@ For example, this will generate:
 </Schedule>
 ----
 
-The `hardLevelsSize` and `softLevelsSize` implied, when reading a bendable score from an XML element, must always be in sync with those in the solver.
+When reading a bendable score from an XML element, the implied `hardLevelsSize` and `softLevelsSize`
+must always be in sync with those in the solver.
 
 
 [[integrationWithJaxb]]
 === XML or JSON: JAXB
 
-Enrich the domain POJO's (solution, entities and problem facts) with JAXB annotations to serialize them to/from XML or JSON.
+Enrich domain POJO's (solution, entities and problem facts) with JAXB annotations to serialize them to/from XML or JSON.
 
 Add a dependency to the `optaplanner-persistence-jaxb` jar to take advantage of these extra integration features:
 
@@ -323,16 +324,23 @@ The `hardLevelsSize` and `softLevelsSize` implied, when reading a bendable score
 [[integrationWithJackson]]
 === JSON: Jackson
 
-Enrich the domain POJO's (solution, entities and problem facts) with Jackson annotations to serialize them to/from JSON.
+Enrich domain POJO's (solution, entities and problem facts) with Jackson annotations to serialize them to/from JSON.
 
-Add a dependency to the `optaplanner-persistence-jackson` jar to take advantage of these extra integration features:
+Add a dependency to the `optaplanner-persistence-jackson` jar and register `OptaPlannerJacksonModule`:
+
+[source,java,options="nowrap"]
+----
+ObjectMapper objectMapper = new ObjectMapper();
+objectMapper.registerModule(OptaPlannerJacksonModule.createModule());
+----
 
 
 [[jacksonMarshallingAScore]]
-==== JAXB: Marshalling a `Score`
+==== Jackson: Marshalling a `Score`
 
-When a `Score` is marshalled to JSON by the default Jackson configuration, it fails.
-To fix that, configure a `ScoreJacksonJsonSerializer` and the appropriate ``ScoreJacksonJsonDeserializer``:
+When a `Score` is marshalled to/from JSON by the default Jackson configuration, it fails.
+The `OptaPlannerJacksonModule` fixes that, by using `HardSoftScoreJacksonJsonSerializer`,
+HardSoftScoreJacksonJsonDeserializer`, etc.
 
 [source,java,options="nowrap"]
 ----
@@ -340,52 +348,76 @@ To fix that, configure a `ScoreJacksonJsonSerializer` and the appropriate ``Scor
 public class CloudBalance {
 
     @PlanningScore
-    @JsonSerialize(using = ScoreJacksonJsonSerializer.class)
-    @JsonDeserialize(using = HardSoftScoreJacksonJsonDeserializer.class)
     private HardSoftScore score;
 
     ...
 }
 ----
 
-For example, this will generate pretty JSON:
+For example, this will generate this JSON:
 
 [source,json]
 ----
 {
-   ...
    "score":"0hard/-200soft"
+   ...
 }
 ----
 
-The same applies for a bendable score:
+[NOTE]
+====
+When reading a `BendableScore`, the `hardLevelsSize` and `softLevelsSize` implied in the JSON element,
+must always be in sync with those defined in the `@PlanningScore` annotation in the solution class. For example:
+
+[source,json]
+----
+{
+   "score":"[0/0]hard/[-100/-20/-3]soft"
+   ...
+}
+----
+
+This JSON implies the `hardLevelsSize` is 2 and thet `softLevelsSize` is 3,
+which must be in sync with the `@PlanningScore` annotation:
 
 [source,java,options="nowrap"]
 ----
 @PlanningSolution
 public class Schedule {
 
-    @PlanningScore
-    @JsonSerialize(using = ScoreJacksonJsonSerializer.class)
-    @JsonDeserialize(using = BendableScoreJacksonXmlAdapter.class)
+    @PlanningScore(bendableHardLevelsSize = 2, bendableSoftLevelsSize = 3)
     private BendableScore score;
 
     ...
 }
 ----
+====
 
-For example, with a `hardLevelsSize` of `2` and a `softLevelsSize` of ``3``, that will generate:
+When a field is the `Score` supertype (instead of a specific type such as `HardSoftScore`),
+it uses `PolymorphicScoreJacksonJsonSerializer` and `PolymorphicScoreJacksonJsonDeserializer`
+to record the score type in JSON too, otherwise it would be impossible to deserialize it:
+
+[source,java,options="nowrap"]
+----
+@PlanningSolution
+public class CloudBalance {
+
+    @PlanningScore
+    private Score score;
+
+    ...
+}
+----
+
+For example, this will generate this JSON:
 
 [source,json]
 ----
 {
+   "score":{"HardSoftScore":"0hard/-200soft"}
    ...
-   "score":"[0/0]hard/[-100/-20/-3]soft"
 }
 ----
-
-The `hardLevelsSize` and `softLevelsSize` implied, when reading a bendable score from a JSON element, must always be in sync with those in the solver.
-
 
 [[integrationWithSoaAndEsb]]
 == SOA and ESB
@@ -409,6 +441,9 @@ That component works in Karaf too.
 
 Because of JBoss Modules' `ClassLoader` magic, provide the `ClassLoader` of your classes <<solverConfigurationByXML,during the SolverFactory creation>>,
 so it can find the classpath resources (such as the solver config, score DRL's and domain classes) in your jars.
+
+It's also recommended <<customThreadFactory,to plug in WildFly's thread factory>>,
+especially with <<multithreadedSolving,multithreaded solving>>.
 
 
 [[loggingOnWildFlyAndJBossEAP]]
@@ -500,6 +535,28 @@ If it has trouble finding classpath resources (such as the solver config, score 
 provide the `ClassLoader` of your classes <<solverConfigurationByXML,during the SolverFactory creation>>.
 
 
+[[integrationWithJPMS]]
+=== Java Platform Module System (Jigsaw)
+
+When using Planner from code on the modulepath (Java 9 and higher),
+_open_ your packages that contain your domain objects, DRL files and solver configuration
+in your `module-info.java` file:
+
+[source,java,options="nowrap"]
+----
+module org.optaplanner.cloudbalancing {
+    requires org.optaplanner.core;
+    ...
+
+    opens org.optaplanner.examples.cloudbalancing.domain; // Domain classes
+    opens org.optaplanner.examples.cloudbalancing.solver; // DRL file and solver configuration
+    ...
+}
+----
+
+Otherwise Planner can't reach those classes or files, even if they are exported.
+
+
 [[integrationWithOSGi]]
 === OSGi
 
@@ -547,16 +604,21 @@ Many human planners fail to accept this, often because they feel threatened by a
 
 But despite that, both can benefit if the human planner becomes the supervisor of Planner:
 
-* *The human planner defines and validates the score function.*
-** Some examples expose a `\*Parametrization` object, which defines the weight for each score constraint. The human planner can then tweak those weights at runtime.
-** When the business changes, the score function often needs to change too. The human planner can notify the developers to add, change or remove score constraints.
+* *The human planner defines, validates and tweaks the score function.*
+** The human planner tweaks the constraint weights of the <<constraintConfiguration, constraint configuration>> in a UI,
+as the business priorities change over time.
+** When the business changes, the score function often needs to change too.
+The human planner can notify the developers to add, change or remove score constraints.
 * *The human planner is always in control of Planner.*
-** As shown in the course scheduling example, the human planner can lock one or more planning variables to a specific planning value and make those immovable. Because they are <<immovablePlanningEntities,immovable>>, Planner does not change them: it optimizes the planning around the enforcements made by the human. If the human planner locks all planning variables, he/she sidelines Planner completely.
-** In a prototype implementation, the human planner might use this occasionally. But as the implementation matures, it must become obsolete. But do keep the feature alive: as a reassurance for the humans. Or in case that one day the business changes dramatically before the score constraints can be adjusted.
+** As shown in the course scheduling example, the human planner can pin down one or more planning variables to a specific planning value.
+Because they are <<immovablePlanningEntities,immovable>>, Planner does not change them: it optimizes the planning around the enforcements made by the human.
+If the human planner pins down all planning variables, he/she sidelines Planner completely.
+** In a prototype implementation, the human planner occasionally uses pinning to intervene,
+but as the implementation matures, this should become obsolete.
+The feature should be kept available as a reassurance for the humans,
+and in the event that the business changes dramatically before the score constraints are adjusted accordingly.
 
-Therefore, it's often a good idea to involve the human planner in your project.
-
-image::Integration/parameterizeTheScoreWeights.png[align="center"]
+For this reason, it is recommended the human planner is actively involved in your project.
 
 image::Integration/keepTheUserInControl.png[align="center"]
 
@@ -593,7 +655,7 @@ Understand these guidelines to decide the hardware for a Planner service:
 ** So in a multitenant application, which has one Solver per tenant, this means one CPU core per tenant, unless the number of solver threads is limited, as that limits the number of tenants being solved in parallel.
 ** With Partitioned Search, presume one CPU core per partition (per active tenant), unless the number of partition threads is limited.
 *** To reduce the number of used cores, it can be better to reduce the partition threads (so solve some partitions sequentially) than to reduce the number of partitions.
-** In use cases with many tenants (such as scheduling Software as a Service) or many partitions, it might not be affordable to provision that many CPU's.
+** In use cases with many tenants (such as scheduling Software as a Service) or many partitions, it might not be affordable to provision that many CPUs.
 *** Reduce the number of active Solvers at a time. For example: give each tenant only one minute of machine time and use a `ExecutorService` with a fixed thread pool to queue requests.
 *** Distribute the Solver runs across the day (or night). This is especially an opportunity in SaaS that's used across the globe, due to timezones: UK and India can use the same CPU core when scheduling at night.
 ** The SolverManager will take care of the orchestration, especially in those underfunded environments in which solvers (and partitions) are forced to share CPU cores or wait in line.

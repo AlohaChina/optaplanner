@@ -20,19 +20,18 @@ import java.io.Serializable;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-import org.apache.commons.lang3.builder.CompareToBuilder;
 import org.optaplanner.core.api.score.Score;
 import org.optaplanner.core.impl.score.director.ScoreDirector;
 
 /**
  * Retrievable from {@link ScoreDirector#getIndictmentMap()}.
  */
-public class Indictment implements Serializable, Comparable<Indictment> {
+public final class Indictment implements Serializable, Comparable<Indictment> {
 
-    protected final Object justification;
+    private final Object justification;
 
-    protected final Set<ConstraintMatch> constraintMatchSet;
-    protected Score scoreTotal;
+    private final Set<ConstraintMatch> constraintMatchSet;
+    private Score score;
 
     /**
      * @param justification never null
@@ -41,7 +40,7 @@ public class Indictment implements Serializable, Comparable<Indictment> {
     public Indictment(Object justification, Score zeroScore) {
         this.justification = justification;
         constraintMatchSet = new LinkedHashSet<>();
-        scoreTotal = zeroScore;
+        score = zeroScore;
     }
 
     /**
@@ -66,25 +65,38 @@ public class Indictment implements Serializable, Comparable<Indictment> {
     }
 
     /**
+     * Sum of the {@link #getConstraintMatchSet()}'s {@link ConstraintMatch#getScore()}.
      * @return never null
      */
+    public Score getScore() {
+        return score;
+    }
+
+    /**
+     * @return never null
+     * @deprecated in favor of {@link #getScore()}
+     */
+    @Deprecated
     public Score getScoreTotal() {
-        return scoreTotal;
+        return getScore();
     }
 
     // ************************************************************************
     // Worker methods
     // ************************************************************************
 
-    public boolean addConstraintMatch(ConstraintMatch constraintMatch) {
+    public void addConstraintMatch(ConstraintMatch constraintMatch) {
+        score = score.add(constraintMatch.getScore());
         boolean added = constraintMatchSet.add(constraintMatch);
-        if (added) {
-            scoreTotal = scoreTotal.add(constraintMatch.getScore());
+        if (!added) {
+            throw new IllegalStateException("The indictment (" + this
+                    + ") could not add constraintMatch (" + constraintMatch
+                    + ") to its constraintMatchSet (" + constraintMatchSet + ").");
         }
-        return added;
     }
 
     public void removeConstraintMatch(ConstraintMatch constraintMatch) {
+        score = score.subtract(constraintMatch.getScore());
         boolean removed = constraintMatchSet.remove(constraintMatch);
         if (!removed) {
             throw new IllegalStateException("The indictment (" + this
@@ -99,16 +111,34 @@ public class Indictment implements Serializable, Comparable<Indictment> {
 
     @Override
     public int compareTo(Indictment other) {
-        return new CompareToBuilder()
-                .append(getScoreTotal(), other.getScoreTotal())
-                // The justification might not implement Comparable - so we leave it in original order
-                //.append(getJustification(), other.getJustification())
-                .toComparison();
+        if (!(justification instanceof Comparable)) {
+            throw new IllegalStateException("The justification (" + justification + ") does not implement "
+                    + Comparable.class.getSimpleName() + ", so it cannot be compared with otherJustification ("
+                    + other.justification + ").");
+        }
+        return ((Comparable) justification).compareTo(other.justification);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        } else if (o instanceof Indictment) {
+            Indictment other = (Indictment) o;
+            return justification.equals(other.justification);
+        } else {
+            return false;
+        }
+    }
+
+    @Override
+    public int hashCode() {
+        return justification.hashCode();
     }
 
     @Override
     public String toString() {
-        return justification + "=" + getScoreTotal();
+        return justification + "=" + score;
     }
 
 }

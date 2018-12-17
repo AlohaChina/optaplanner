@@ -17,12 +17,12 @@
 package org.optaplanner.core.api.score.holder;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import org.drools.core.common.AgendaItem;
 import org.kie.api.definition.rule.Rule;
@@ -34,8 +34,9 @@ import org.optaplanner.core.api.score.constraint.Indictment;
 
 /**
  * Abstract superclass for {@link ScoreHolder}.
+ * @param <Score_> the {@link Score} type
  */
-public abstract class AbstractScoreHolder implements ScoreHolder, Serializable {
+public abstract class AbstractScoreHolder<Score_ extends Score> implements ScoreHolder<Score_>, Serializable {
 
     protected final boolean constraintMatchEnabled;
     protected final Map<String, ConstraintMatchTotal> constraintMatchTotalMap;
@@ -78,6 +79,20 @@ public abstract class AbstractScoreHolder implements ScoreHolder, Serializable {
     // Worker methods
     // ************************************************************************
 
+    @Override
+    public void configureConstraintWeight(Rule rule, Score_ constraintWeight) {
+        if (constraintWeight.getInitScore() != 0) {
+            throw new IllegalStateException("The initScore (" + constraintWeight.getInitScore() + ") must be 0.");
+        }
+        if (constraintMatchEnabled) {
+            String constraintPackage = rule.getPackageName();
+            String constraintName = rule.getName();
+            String constraintId = constraintPackage + "/" + constraintName;
+            constraintMatchTotalMap.put(constraintId,
+                    new ConstraintMatchTotal(constraintPackage, constraintName, constraintWeight, zeroScore));
+        }
+    }
+
     protected void registerConstraintMatch(RuleContext kcontext,
             final Runnable constraintUndoListener, Supplier<Score> scoreSupplier) {
         AgendaItem<?> agendaItem = (AgendaItem) kcontext.getMatch();
@@ -90,15 +105,14 @@ public abstract class AbstractScoreHolder implements ScoreHolder, Serializable {
             constraintActivationUnMatchListener.constraintMatchTotal = findConstraintMatchTotal(kcontext);
             ConstraintMatch constraintMatch = constraintActivationUnMatchListener.constraintMatchTotal
                     .addConstraintMatch(justificationList, scoreSupplier.get());
-            List<Indictment> indictmentList = new ArrayList<>(justificationList.size());
-            for (Object justification : justificationList) {
-                Indictment indictment = indictmentMap.computeIfAbsent(justification,
-                        k -> new Indictment(justification, zeroScore));
-                boolean added = indictment.addConstraintMatch(constraintMatch);
-                if (added) {
-                    indictmentList.add(indictment);
-                }
-            }
+            List<Indictment> indictmentList = justificationList.stream()
+                    .distinct() // One match might have the same justification twice
+                    .map(justification -> {
+                        Indictment indictment = indictmentMap.computeIfAbsent(justification,
+                                k -> new Indictment(justification, zeroScore));
+                        indictment.addConstraintMatch(constraintMatch);
+                        return indictment;
+                    }).collect(Collectors.toList());
             constraintActivationUnMatchListener.constraintMatch = constraintMatch;
             constraintActivationUnMatchListener.indictmentList = indictmentList;
         }
@@ -110,7 +124,7 @@ public abstract class AbstractScoreHolder implements ScoreHolder, Serializable {
         String constraintName = rule.getName();
         String constraintId = constraintPackage + "/" + constraintName;
         return constraintMatchTotalMap.computeIfAbsent(constraintId,
-                k -> new ConstraintMatchTotal(constraintPackage, constraintName, zeroScore));
+                k -> new ConstraintMatchTotal(constraintPackage, constraintName, null, zeroScore));
     }
 
     protected List<Object> extractJustificationList(RuleContext kcontext) {
@@ -130,6 +144,7 @@ public abstract class AbstractScoreHolder implements ScoreHolder, Serializable {
             this.constraintUndoListener = constraintUndoListener;
         }
 
+        @Override
         public final void run() {
             constraintUndoListener.run();
             if (constraintMatchEnabled) {

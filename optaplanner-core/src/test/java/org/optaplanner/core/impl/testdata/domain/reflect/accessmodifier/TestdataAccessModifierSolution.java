@@ -55,6 +55,13 @@ public class TestdataAccessModifierSolution extends TestdataObject {
     private final String finalField;
     private String readWriteOnlyField;
 
+    private String privateField;
+    public String publicField;
+    private String privatePropertyField;
+    private String friendlyPropertyField;
+    private String protectedPropertyField;
+    private String publicPropertyField;
+
     private List<TestdataValue> valueList;
     private List<TestdataEntity> entityList;
 
@@ -83,6 +90,38 @@ public class TestdataAccessModifierSolution extends TestdataObject {
             throw new IllegalArgumentException("The writeOnlyField (" + writeOnlyField + ") should start with write.");
         }
         readWriteOnlyField = writeOnlyField.substring("write".length());
+    }
+
+    private String getPrivateProperty() {
+        return privatePropertyField;
+    }
+
+    private void setPrivateProperty(String privateProperty) {
+        this.privatePropertyField = privateProperty;
+    }
+
+    String getFriendlyProperty() {
+        return friendlyPropertyField;
+    }
+
+    void setFriendlyProperty(String friendlyProperty) {
+        this.friendlyPropertyField = friendlyProperty;
+    }
+
+    protected String getProtectedProperty() {
+        return protectedPropertyField;
+    }
+
+    protected void setProtectedProperty(String protectedProperty) {
+        this.protectedPropertyField = protectedProperty;
+    }
+
+    public String getPublicProperty() {
+        return publicPropertyField;
+    }
+
+    public void setPublicProperty(String publicProperty) {
+        this.publicPropertyField = publicProperty;
     }
 
     @ValueRangeProvider(id = "valueRange")

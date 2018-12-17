@@ -56,6 +56,17 @@ public class CloudComputerChangeMove extends AbstractMove<CloudBalance> {
     }
 
     @Override
+    public CloudComputerChangeMove rebase(ScoreDirector<CloudBalance> destinationScoreDirector) {
+        return new CloudComputerChangeMove(destinationScoreDirector.lookUpWorkingObject(cloudProcess),
+                destinationScoreDirector.lookUpWorkingObject(toCloudComputer));
+    }
+
+    @Override
+    public String getSimpleMoveTypeDescription() {
+        return getClass().getSimpleName() + "(" + CloudProcess.class.getSimpleName() + ".computer)";
+    }
+
+    @Override
     public Collection<? extends Object> getPlanningEntities() {
         return Collections.singletonList(cloudProcess);
     }

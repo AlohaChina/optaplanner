@@ -72,6 +72,10 @@ public class IncrementalScoreDirector<Solution_>
     public Score calculateScore() {
         variableListenerSupport.assertNotificationQueuesAreEmpty();
         Score score = incrementalScoreCalculator.calculateScore();
+        if (score == null) {
+            throw new IllegalStateException("The incrementalScoreCalculator (" + incrementalScoreCalculator.getClass()
+                    + ") must return a non-null score (" + score + ") in the method calculateScore().");
+        }
         if (workingInitScore != 0) {
             score = score.withInitScore(workingInitScore);
         }
@@ -91,6 +95,7 @@ public class IncrementalScoreDirector<Solution_>
             throw new IllegalStateException("When constraintMatchEnabled (" + isConstraintMatchEnabled()
                     + ") is disabled in the constructor, this method should not be called.");
         }
+        // Notice that we don't trigger the variable listeners
         return ((ConstraintMatchAwareIncrementalScoreCalculator<Solution_>) incrementalScoreCalculator)
                 .getConstraintMatchTotals();
     }
@@ -101,20 +106,23 @@ public class IncrementalScoreDirector<Solution_>
             throw new IllegalStateException("When constraintMatchEnabled (" + isConstraintMatchEnabled()
                     + ") is disabled in the constructor, this method should not be called.");
         }
-        Map<Object, Indictment> indictmentMap
+        Map<Object, Indictment> incrementalIndictmentMap
                 = ((ConstraintMatchAwareIncrementalScoreCalculator<Solution_>) incrementalScoreCalculator)
                 .getIndictmentMap();
-        if (indictmentMap == null) {
-            Score zeroScore = getScoreDefinition().getZeroScore();
-            indictmentMap = new LinkedHashMap<>(); // TODO use entitySize
-            for (ConstraintMatchTotal constraintMatchTotal : getConstraintMatchTotals()) {
-                for (ConstraintMatch constraintMatch : constraintMatchTotal.getConstraintMatchSet()) {
-                    for (Object justification : constraintMatch.getJustificationList()) {
-                        Indictment indictment = indictmentMap.computeIfAbsent(justification,
-                                k -> new Indictment(justification, zeroScore));
-                        indictment.addConstraintMatch(constraintMatch);
-                    }
-                }
+        if (incrementalIndictmentMap != null) {
+            return incrementalIndictmentMap;
+        }
+        Map<Object, Indictment> indictmentMap = new LinkedHashMap<>(); // TODO use entitySize
+        Score zeroScore = getScoreDefinition().getZeroScore();
+        for (ConstraintMatchTotal constraintMatchTotal : getConstraintMatchTotals()) {
+            for (ConstraintMatch constraintMatch : constraintMatchTotal.getConstraintMatchSet()) {
+                constraintMatch.getJustificationList().stream()
+                        .distinct() // One match might have the same justification twice
+                        .forEach(justification -> {
+                            Indictment indictment = indictmentMap.computeIfAbsent(justification,
+                                    k -> new Indictment(justification, zeroScore));
+                            indictment.addConstraintMatch(constraintMatch);
+                        });
             }
         }
         return indictmentMap;

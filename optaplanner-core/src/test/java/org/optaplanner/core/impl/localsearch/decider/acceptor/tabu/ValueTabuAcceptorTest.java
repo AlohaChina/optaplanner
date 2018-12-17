@@ -48,7 +48,7 @@ public class ValueTabuAcceptorTest {
         TestdataValue v4 = new TestdataValue("v4");
 
         DefaultSolverScope<TestdataSolution> solverScope = new DefaultSolverScope<>();
-        solverScope.setBestScore(SimpleScore.valueOf(0));
+        solverScope.setBestScore(SimpleScore.of(0));
         LocalSearchPhaseScope<TestdataSolution> phaseScope = new LocalSearchPhaseScope<>(solverScope);
         acceptor.phaseStarted(phaseScope);
 
@@ -128,7 +128,7 @@ public class ValueTabuAcceptorTest {
         TestdataValue v4 = new TestdataValue("v4");
 
         DefaultSolverScope<TestdataSolution> solverScope = new DefaultSolverScope<>();
-        solverScope.setBestScore(SimpleScore.valueOf(0));
+        solverScope.setBestScore(SimpleScore.of(0));
         LocalSearchPhaseScope<TestdataSolution> phaseScope = new LocalSearchPhaseScope<>(solverScope);
         acceptor.phaseStarted(phaseScope);
 
@@ -225,7 +225,7 @@ public class ValueTabuAcceptorTest {
         TestdataValue v1 = new TestdataValue("v1");
 
         DefaultSolverScope<TestdataSolution> solverScope = new DefaultSolverScope<>();
-        solverScope.setBestScore(SimpleScore.valueOf(-100));
+        solverScope.setBestScore(SimpleScore.of(-100));
         LocalSearchPhaseScope<TestdataSolution> phaseScope = new LocalSearchPhaseScope<>(solverScope);
         acceptor.phaseStarted(phaseScope);
 
@@ -255,11 +255,10 @@ public class ValueTabuAcceptorTest {
 
     private <Solution_> LocalSearchMoveScope<Solution_> buildMoveScope(
             LocalSearchStepScope<Solution_> stepScope, int score, TestdataValue... values) {
-        LocalSearchMoveScope<Solution_> moveScope = new LocalSearchMoveScope<>(stepScope);
         Move move = mock(Move.class);
         when(move.getPlanningValues()).thenReturn((Collection) Arrays.asList(values));
-        moveScope.setMove(move);
-        moveScope.setScore(SimpleScore.valueOf(score));
+        LocalSearchMoveScope<Solution_> moveScope = new LocalSearchMoveScope<>(stepScope, 0, move);
+        moveScope.setScore(SimpleScore.of(score));
         return moveScope;
     }
 

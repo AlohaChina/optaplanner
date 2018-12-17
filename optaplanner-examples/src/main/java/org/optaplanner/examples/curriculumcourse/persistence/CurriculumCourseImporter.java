@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.optaplanner.examples.common.persistence.AbstractTxtSolutionImporter;
+import org.optaplanner.examples.common.persistence.SolutionConverter;
+import org.optaplanner.examples.curriculumcourse.app.CurriculumCourseApp;
 import org.optaplanner.examples.curriculumcourse.domain.Course;
 import org.optaplanner.examples.curriculumcourse.domain.CourseSchedule;
 import org.optaplanner.examples.curriculumcourse.domain.Curriculum;
@@ -39,14 +41,11 @@ import org.optaplanner.examples.curriculumcourse.domain.UnavailablePeriodPenalty
 public class CurriculumCourseImporter extends AbstractTxtSolutionImporter<CourseSchedule> {
 
     private static final String INPUT_FILE_SUFFIX = "ctt";
-    private static final String SPLIT_REGEX = "[\\ \\t]+";
 
     public static void main(String[] args) {
-        new CurriculumCourseImporter().convertAll();
-    }
-
-    public CurriculumCourseImporter() {
-        super(new CurriculumCourseDao());
+        SolutionConverter<CourseSchedule> converter = SolutionConverter.createImportConverter(
+                CurriculumCourseApp.DATA_DIR_NAME, new CurriculumCourseImporter(), CourseSchedule.class);
+        converter.convertAll();
     }
 
     @Override
@@ -279,7 +278,7 @@ public class CurriculumCourseImporter extends AbstractTxtSolutionImporter<Course
                     id++;
                     lecture.setCourse(course);
                     lecture.setLectureIndexInCourse(i);
-                    lecture.setLocked(false);
+                    lecture.setPinned(false);
                     // Notice that we leave the PlanningVariable properties on null
                     lectureList.add(lecture);
                 }

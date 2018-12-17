@@ -22,20 +22,23 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+import org.optaplanner.examples.common.app.CommonApp;
 import org.optaplanner.examples.common.app.LoggingMain;
 import org.optaplanner.examples.common.persistence.AbstractSolutionImporter;
-import org.optaplanner.examples.common.persistence.SolutionDao;
-import org.optaplanner.examples.common.persistence.StringDataGenerator;
+import org.optaplanner.examples.common.persistence.generator.StringDataGenerator;
+import org.optaplanner.examples.meetingscheduling.app.MeetingSchedulingApp;
 import org.optaplanner.examples.meetingscheduling.domain.Attendance;
 import org.optaplanner.examples.meetingscheduling.domain.Day;
 import org.optaplanner.examples.meetingscheduling.domain.Meeting;
 import org.optaplanner.examples.meetingscheduling.domain.MeetingAssignment;
+import org.optaplanner.examples.meetingscheduling.domain.MeetingConstraintConfiguration;
 import org.optaplanner.examples.meetingscheduling.domain.MeetingSchedule;
 import org.optaplanner.examples.meetingscheduling.domain.Person;
 import org.optaplanner.examples.meetingscheduling.domain.PreferredAttendance;
 import org.optaplanner.examples.meetingscheduling.domain.RequiredAttendance;
 import org.optaplanner.examples.meetingscheduling.domain.Room;
 import org.optaplanner.examples.meetingscheduling.domain.TimeGrain;
+import org.optaplanner.persistence.common.api.domain.solution.SolutionFileIO;
 
 public class MeetingSchedulingGenerator extends LoggingMain {
 
@@ -43,9 +46,9 @@ public class MeetingSchedulingGenerator extends LoggingMain {
         MeetingSchedulingGenerator generator = new MeetingSchedulingGenerator();
         generator.writeMeetingSchedule(50, 5);
         generator.writeMeetingSchedule(100, 5);
-//        generator.writeMeetingSchedule(200, 5);
-//        generator.writeMeetingSchedule(400, 5);
-//        generator.writeMeetingSchedule(800, 5);
+        generator.writeMeetingSchedule(200, 5);
+        generator.writeMeetingSchedule(400, 5);
+        generator.writeMeetingSchedule(800, 5);
     }
 
     private final StringDataGenerator topicGenerator = new StringDataGenerator()
@@ -160,21 +163,23 @@ public class MeetingSchedulingGenerator extends LoggingMain {
 
     private final StringDataGenerator fullNameGenerator = StringDataGenerator.buildFullNames();
 
-    protected final SolutionDao solutionDao;
+    protected final SolutionFileIO<MeetingSchedule> solutionFileIO;
     protected final File outputDir;
+
     protected Random random;
 
     public MeetingSchedulingGenerator() {
-        solutionDao = new MeetingSchedulingDao();
-        outputDir = new File(solutionDao.getDataDir(), "unsolved");
+        solutionFileIO = new MeetingSchedulingXlsxFileIO();
+        outputDir = new File(CommonApp.determineDataDir(MeetingSchedulingApp.DATA_DIR_NAME), "unsolved");
     }
 
     private void writeMeetingSchedule(int meetingListSize, int roomListSize) {
         int timeGrainListSize = meetingListSize * durationInGrainsOptions[durationInGrainsOptions.length - 1] / roomListSize;
         String fileName = determineFileName(meetingListSize, timeGrainListSize, roomListSize);
-        File outputFile = new File(outputDir, fileName + ".xml");
+        File outputFile = new File(outputDir, fileName + "." + solutionFileIO.getOutputFileExtension());
         MeetingSchedule meetingSchedule = createMeetingSchedule(fileName, meetingListSize, timeGrainListSize, roomListSize);
-        solutionDao.writeSolution(meetingSchedule, outputFile);
+        solutionFileIO.write(meetingSchedule, outputFile);
+        logger.info("Saved: {}", outputFile);
     }
 
     private String determineFileName(int meetingListSize, int timeGrainListSize, int roomListSize) {
@@ -185,6 +190,9 @@ public class MeetingSchedulingGenerator extends LoggingMain {
         random = new Random(37);
         MeetingSchedule meetingSchedule = new MeetingSchedule();
         meetingSchedule.setId(0L);
+        MeetingConstraintConfiguration constraintConfiguration = new MeetingConstraintConfiguration();
+        constraintConfiguration.setId(0L);
+        meetingSchedule.setConstraintConfiguration(constraintConfiguration);
 
         createMeetingListAndAttendanceList(meetingSchedule, meetingListSize);
         createTimeGrainList(meetingSchedule, timeGrainListSize);
@@ -283,11 +291,11 @@ public class MeetingSchedulingGenerator extends LoggingMain {
     }
 
     private void createRoomList(MeetingSchedule meetingSchedule, int roomListSize) {
+        final int roomsPerFloor = 20;
         List<Room> roomList = new ArrayList<>(roomListSize);
         for (int i = 0; i < roomListSize; i++) {
             Room room = new Room();
             room.setId((long) i);
-            int roomsPerFloor = 20;
             String name = "R " + ((i / roomsPerFloor * 100) + (i % roomsPerFloor) + 1);
             room.setName(name);
             int capacityOptionsSubsetSize = personsPerMeetingOptions.length * 3 / 4;

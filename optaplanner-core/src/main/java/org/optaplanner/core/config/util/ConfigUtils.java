@@ -25,6 +25,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -43,14 +44,14 @@ import org.optaplanner.core.api.domain.lookup.PlanningId;
 import org.optaplanner.core.config.AbstractConfig;
 import org.optaplanner.core.impl.domain.common.AlphabeticMemberComparator;
 import org.optaplanner.core.impl.domain.common.ReflectionHelper;
-import org.optaplanner.core.impl.domain.common.accessor.BeanPropertyMemberAccessor;
-import org.optaplanner.core.impl.domain.common.accessor.FieldMemberAccessor;
 import org.optaplanner.core.impl.domain.common.accessor.MemberAccessor;
-import org.optaplanner.core.impl.domain.common.accessor.MethodMemberAccessor;
+import org.optaplanner.core.impl.domain.common.accessor.MemberAccessorFactory;
 
-import static org.optaplanner.core.config.util.ConfigUtils.MemberAccessorType.*;
+import static org.optaplanner.core.impl.domain.common.accessor.MemberAccessorFactory.MemberAccessorType.*;
 
 public class ConfigUtils {
+
+    private static final AlphabeticMemberComparator alphabeticMemberComparator = new AlphabeticMemberComparator();
 
     public static <T> T newInstance(Object bean, String propertyName, Class<T> clazz) {
         try {
@@ -64,8 +65,8 @@ public class ConfigUtils {
         }
     }
 
-    public static void applyCustomProperties(Object bean, String wrappingPropertyName,
-            Map<String, String> customProperties) {
+    public static void applyCustomProperties(Object bean, String beanClassPropertyName,
+            Map<String, String> customProperties, String customPropertiesPropertyName) {
         if (customProperties == null) {
             return;
         }
@@ -73,12 +74,14 @@ public class ConfigUtils {
         customProperties.forEach((propertyName, valueString) -> {
             Method setterMethod = ReflectionHelper.getSetterMethod(beanClass, propertyName);
             if (setterMethod == null) {
-                throw new IllegalStateException("The customProperty (" + propertyName
-                        + ") with value (" + valueString
-                        + ") cannot be set on class (" + beanClass
-                        + ") because it has no public setter for that property.\n"
-                        + "Maybe add a public setter for that customProperty (" + propertyName
-                        + ") on that class (" + beanClass.getSimpleName() + ").");
+                throw new IllegalStateException("The custom property " + propertyName + " (" + valueString
+                        + ") in the " + customPropertiesPropertyName
+                        + " cannot be set on the " + beanClassPropertyName + " (" + beanClass
+                        + ") because that class has no public setter for that property.\n"
+                        + "Maybe add a public setter for that custom property (" + propertyName
+                        + ") on that class (" + beanClass.getSimpleName() + ").\n"
+                        + "Maybe don't configure that custom property " + propertyName + " (" + valueString
+                        + ") in the " + customPropertiesPropertyName + ".");
             }
             Class<?> propertyType = setterMethod.getParameterTypes()[0];
             Object typedValue;
@@ -95,25 +98,33 @@ public class ConfigUtils {
                     typedValue = Float.parseFloat(valueString);
                 } else if (propertyType.equals(Double.TYPE) || propertyType.equals(Double.class)) {
                     typedValue = Double.parseDouble(valueString);
+                } else if (propertyType.equals(BigDecimal.class)) {
+                    typedValue = new BigDecimal(valueString);
+                } else if (propertyType.isEnum()) {
+                    typedValue = Enum.valueOf((Class<? extends Enum>) propertyType, valueString);
                 } else {
-                    throw new IllegalStateException("The customProperty (" + propertyName + ") of class (" + beanClass
-                            + ") has an unsupported propertyType (" + propertyType + ") for value (" + valueString + ").");
+                    throw new IllegalStateException("The custom property " + propertyName + " (" + valueString
+                            + ") in the " + customPropertiesPropertyName
+                            + " has an unsupported propertyType (" + propertyType + ") for value (" + valueString + ").");
                 }
             } catch (NumberFormatException e) {
-                throw new IllegalStateException("The customProperty (" + propertyName + ")'s value (" + valueString
-                        + ") cannot be parsed to the propertyType (" + propertyType
+                throw new IllegalStateException("The custom property " + propertyName + " (" + valueString
+                        + ") in the " + customPropertiesPropertyName
+                        + " cannot be parsed to the propertyType (" + propertyType
                         + ") of the setterMethod (" + setterMethod + ").");
             }
             try {
                 setterMethod.invoke(bean, typedValue);
             } catch (IllegalAccessException e) {
-                throw new IllegalStateException("Cannot call property (" + propertyName
-                        + ") setterMethod (" + setterMethod + ") on bean of class (" + bean.getClass()
-                        + ") for value (" + typedValue + ").", e);
+                throw new IllegalStateException("The custom property " + propertyName + " (" + valueString
+                        + ") in the " + customPropertiesPropertyName
+                        + " has a setterMethod (" + setterMethod + ") on the beanClass (" + beanClass
+                        + ") that cannot be called for the typedValue (" + typedValue + ").", e);
             } catch (InvocationTargetException e) {
-                throw new IllegalStateException("The property (" + propertyName
-                        + ") setterMethod (" + setterMethod + ") on bean of class (" + bean.getClass()
-                        + ") throws an exception for value (" + typedValue + ").",
+                throw new IllegalStateException("The custom property " + propertyName + " (" + valueString
+                        + ") in the " + customPropertiesPropertyName
+                        + " has a setterMethod (" + setterMethod + ") on the beanClass (" + beanClass
+                        + ") that throws an exception for the typedValue (" + typedValue + ").",
                         e.getCause());
             }
         });
@@ -254,6 +265,11 @@ public class ConfigUtils {
     public static int resolveThreadPoolSizeScript(String propertyName, String script, String... magicValues) {
         final String scriptLanguage = "JavaScript";
         ScriptEngine scriptEngine = new ScriptEngineManager().getEngineByName(scriptLanguage);
+        if (scriptEngine == null) {
+            throw new IllegalStateException("The " + propertyName + " (" + script
+                    + ") could not resolve because the JVM doesn't support scriptLanguage (" + scriptLanguage + ").\n"
+                    + "Maybe try running in a normal JVM.");
+        }
         scriptEngine.put(AVAILABLE_PROCESSOR_COUNT, Runtime.getRuntime().availableProcessors());
         Object scriptResult;
         try {
@@ -297,11 +313,14 @@ public class ConfigUtils {
      */
     public static List<Member> getDeclaredMembers(Class<?> baseClass) {
         Stream<Field> fieldStream = Stream.of(baseClass.getDeclaredFields())
-                .sorted(new AlphabeticMemberComparator());
+                .sorted(alphabeticMemberComparator);
         Stream<Method> methodStream = Stream.of(baseClass.getDeclaredMethods())
-                .sorted(new AlphabeticMemberComparator());
+                // A bridge method is a generic variant that duplicates a concrete method
+                // Example: "Score getScore()" that duplicates "HardSoftScore getScore()"
+                .filter(method -> !method.isBridge())
+                .sorted(alphabeticMemberComparator);
         return Stream.<Member>concat(fieldStream, methodStream)
-            .collect(Collectors.toList());
+                .collect(Collectors.toList());
     }
 
     /**
@@ -315,10 +334,10 @@ public class ConfigUtils {
         while (clazz != null) {
             Stream<Field> fieldStream = Stream.of(clazz.getDeclaredFields())
                     .filter(field -> field.isAnnotationPresent(annotationClass))
-                    .sorted(new AlphabeticMemberComparator());
+                    .sorted(alphabeticMemberComparator);
             Stream<Method> methodStream = Stream.of(clazz.getDeclaredMethods())
                     .filter(method -> method.isAnnotationPresent(annotationClass))
-                    .sorted(new AlphabeticMemberComparator());
+                    .sorted(alphabeticMemberComparator);
             memberStream = Stream.concat(memberStream, Stream.concat(fieldStream, methodStream));
             clazz = clazz.getSuperclass();
         }
@@ -384,45 +403,6 @@ public class ConfigUtils {
         return ((Class) typeArgument);
     }
 
-    public static MemberAccessor buildMemberAccessor(Member member, MemberAccessorType memberAccessorType, Class<? extends Annotation> annotationClass) {
-        if (member instanceof Field) {
-            Field field = (Field) member;
-            return new FieldMemberAccessor(field);
-        } else if (member instanceof Method) {
-            Method method = (Method) member;
-            MemberAccessor memberAccessor;
-            switch (memberAccessorType) {
-                case FIELD_OR_READ_METHOD:
-                    if (ReflectionHelper.isGetterMethod(method)) {
-                        memberAccessor = new BeanPropertyMemberAccessor(method);
-                    } else {
-                        ReflectionHelper.assertReadMethod(method, annotationClass);
-                        memberAccessor = new MethodMemberAccessor(method);
-                    }
-                    break;
-                case FIELD_OR_GETTER_METHOD:
-                case FIELD_OR_GETTER_METHOD_WITH_SETTER:
-                    ReflectionHelper.assertGetterMethod(method, annotationClass);
-                    memberAccessor = new BeanPropertyMemberAccessor(method);
-                    break;
-                default:
-                    throw new IllegalStateException("The memberAccessorType (" + memberAccessorType
-                            + ") is not implemented.");
-            }
-            if (memberAccessorType == MemberAccessorType.FIELD_OR_GETTER_METHOD_WITH_SETTER
-                    && !memberAccessor.supportSetter()) {
-                throw new IllegalStateException("The class (" + method.getDeclaringClass()
-                        + ") has a " + annotationClass.getSimpleName()
-                        + " annotated getter method (" + method
-                        + "), but lacks a setter for that property (" + memberAccessor.getName() + ").");
-            }
-            return memberAccessor;
-        } else {
-            throw new IllegalStateException("Impossible state: the member (" + member + ")'s type is not a "
-                    + Field.class.getSimpleName() + " or a " + Method.class.getSimpleName() + ".");
-        }
-    }
-
     public static <C> MemberAccessor findPlanningIdMemberAccessor(Class<C> clazz) {
         List<Member> memberList = getAllMembers(clazz, PlanningId.class);
         if (memberList.isEmpty()) {
@@ -434,7 +414,7 @@ public class ConfigUtils {
                     + PlanningId.class.getSimpleName() + " annotation.");
         }
         Member member = memberList.get(0);
-        MemberAccessor memberAccessor = buildMemberAccessor(member, FIELD_OR_READ_METHOD, PlanningId.class);
+        MemberAccessor memberAccessor = MemberAccessorFactory.buildMemberAccessor(member, FIELD_OR_READ_METHOD, PlanningId.class);
         if (!Comparable.class.isAssignableFrom(memberAccessor.getType())) {
             throw new IllegalArgumentException("The class (" + clazz
                     + ") has a member (" + member + ") with a " + PlanningId.class.getSimpleName()
@@ -444,12 +424,6 @@ public class ConfigUtils {
                     + " or " + String.class.getSimpleName() + " type instead.");
         }
         return memberAccessor;
-    }
-
-    public enum MemberAccessorType {
-        FIELD_OR_READ_METHOD,
-        FIELD_OR_GETTER_METHOD,
-        FIELD_OR_GETTER_METHOD_WITH_SETTER
     }
 
     // ************************************************************************

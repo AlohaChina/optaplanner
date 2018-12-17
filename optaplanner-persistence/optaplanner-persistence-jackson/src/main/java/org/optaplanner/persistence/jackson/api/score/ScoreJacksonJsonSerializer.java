@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Red Hat, Inc. and/or its affiliates.
+ * Copyright 2018 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,20 +19,35 @@ package org.optaplanner.persistence.jackson.api.score;
 import java.io.IOException;
 
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.BeanProperty;
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.ser.ContextualSerializer;
 import org.optaplanner.core.api.score.Score;
+import org.optaplanner.persistence.jackson.api.score.buildin.hardsoft.HardSoftScoreJacksonJsonSerializer;
 
 /**
- * Jackson binding support for a {@link Score} type.
- * <p>
- * For example: use {@code @JsonSerialize(using = ScoreJacksonJsonSerializer.class) @JsonDeserialize(using = HardSoftScoreJacksonJsonDeserializer.class)}
- * on a {@code HardSoftScore score} field and it will marshalled to JSON as {@code "score":"-999hard/-999soft"}.
- * @see Score
- * @param <Score_> the actual score type
+ * This class will be removed in 8.0.
+ * @deprecated in favor of {@link HardSoftScoreJacksonJsonSerializer} and variants.
  */
-public class ScoreJacksonJsonSerializer<Score_ extends Score<Score_>>
-        extends JsonSerializer<Score_> {
+@Deprecated
+public class ScoreJacksonJsonSerializer<Score_ extends Score<Score_>> extends JsonSerializer<Score_>
+        implements ContextualSerializer {
+
+    @Override
+    public JsonSerializer<?> createContextual(SerializerProvider provider, BeanProperty property)
+            throws JsonMappingException {
+        JavaType propertyType = property.getType();
+        if (Score.class.equals(propertyType.getRawClass())) {
+            // If the property type is Score (not HardSoftScore for example),
+            // delegate to PolymorphicScoreJacksonJsonSerializer instead to write the score type too
+            // This presumes that OptaPlannerJacksonModule is registered
+            return provider.findValueSerializer(propertyType);
+        }
+        return this;
+    }
 
     @Override
     public void serialize(Score_ score, JsonGenerator generator, SerializerProvider serializers) throws IOException {

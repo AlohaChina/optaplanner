@@ -61,6 +61,17 @@ public class CloudProcessSwapMove extends AbstractMove<CloudBalance> {
     }
 
     @Override
+    public CloudProcessSwapMove rebase(ScoreDirector<CloudBalance> destinationScoreDirector) {
+        return new CloudProcessSwapMove(destinationScoreDirector.lookUpWorkingObject(leftCloudProcess),
+                destinationScoreDirector.lookUpWorkingObject(rightCloudProcess));
+    }
+
+    @Override
+    public String getSimpleMoveTypeDescription() {
+        return getClass().getSimpleName() + "(" + CloudProcess.class.getSimpleName() + ".computer)";
+    }
+
+    @Override
     public Collection<? extends Object> getPlanningEntities() {
         return Arrays.asList(leftCloudProcess, rightCloudProcess);
     }

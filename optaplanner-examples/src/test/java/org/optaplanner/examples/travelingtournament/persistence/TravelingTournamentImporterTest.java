@@ -20,19 +20,20 @@ import java.io.File;
 import java.util.Collection;
 
 import org.junit.runners.Parameterized;
-import org.optaplanner.examples.common.persistence.AbstractSolutionImporter;
-import org.optaplanner.examples.common.persistence.SolutionImporterTest;
+import org.optaplanner.examples.common.persistence.ImportDataFilesTest;
+import org.optaplanner.examples.travelingtournament.app.TravelingTournamentApp;
+import org.optaplanner.examples.travelingtournament.domain.TravelingTournament;
 
-public class TravelingTournamentImporterTest extends SolutionImporterTest {
+public class TravelingTournamentImporterTest extends ImportDataFilesTest<TravelingTournament> {
 
     @Override
-    protected AbstractSolutionImporter createSolutionImporter() {
+    protected TravelingTournamentImporter createSolutionImporter() {
         return new TravelingTournamentImporter();
     }
 
     @Parameterized.Parameters(name = "{index}: {0}")
     public static Collection<Object[]> getInputFilesAsParameters() {
-        return getInputFilesAsParameters(new TravelingTournamentImporter());
+        return getInputFilesAsParameters(TravelingTournamentApp.DATA_DIR_NAME, new TravelingTournamentImporter());
     }
 
     public TravelingTournamentImporterTest(File solutionFile) {

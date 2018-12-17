@@ -21,19 +21,17 @@ import java.io.File;
 import org.junit.Test;
 import org.optaplanner.core.config.solver.EnvironmentMode;
 import org.optaplanner.examples.common.app.SolverPerformanceTest;
-import org.optaplanner.examples.common.persistence.SolutionDao;
-import org.optaplanner.examples.meetingscheduling.persistence.MeetingSchedulingDao;
+import org.optaplanner.examples.meetingscheduling.domain.MeetingSchedule;
 
-public class MeetingSchedulingPerformanceTest extends SolverPerformanceTest {
+public class MeetingSchedulingPerformanceTest extends SolverPerformanceTest<MeetingSchedule> {
 
-    @Override
-    protected String createSolverConfigResource() {
-        return MeetingSchedulingApp.SOLVER_CONFIG;
+    public MeetingSchedulingPerformanceTest(String moveThreadCount) {
+        super(moveThreadCount);
     }
 
     @Override
-    protected SolutionDao createSolutionDao() {
-        return new MeetingSchedulingDao();
+    protected MeetingSchedulingApp createCommonApp() {
+        return new MeetingSchedulingApp();
     }
 
     // ************************************************************************
@@ -41,15 +39,15 @@ public class MeetingSchedulingPerformanceTest extends SolverPerformanceTest {
     // ************************************************************************
 
     @Test(timeout = 600000)
-    public void solveModel_200computers_600processes() {
-        File unsolvedDataFile = new File("data/meetingscheduling/unsolved/50meetings-160timegrains-5rooms.xml");
-        runSpeedTest(unsolvedDataFile, "-19hard/-115medium/-4046soft");
+    public void solveModel() {
+        File unsolvedDataFile = new File("data/meetingscheduling/unsolved/50meetings-160timegrains-5rooms.xlsx");
+        runSpeedTest(unsolvedDataFile, "-35hard/-86medium/-6090soft");
     }
 
     @Test(timeout = 600000)
-    public void solveModel_200computers_600processesFastAssert() {
-        File unsolvedDataFile = new File("data/meetingscheduling/unsolved/50meetings-160timegrains-5rooms.xml");
-        runSpeedTest(unsolvedDataFile, "-29hard/-70medium/-3399soft", EnvironmentMode.FAST_ASSERT);
+    public void solveModelFastAssert() {
+        File unsolvedDataFile = new File("data/meetingscheduling/unsolved/50meetings-160timegrains-5rooms.xlsx");
+        runSpeedTest(unsolvedDataFile, "-36hard/-64medium/-5921soft", EnvironmentMode.FAST_ASSERT);
     }
 
 }

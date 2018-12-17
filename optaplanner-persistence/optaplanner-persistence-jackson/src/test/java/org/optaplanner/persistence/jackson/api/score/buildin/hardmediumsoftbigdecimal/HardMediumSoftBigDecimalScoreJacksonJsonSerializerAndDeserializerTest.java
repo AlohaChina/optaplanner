@@ -23,22 +23,21 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.junit.Test;
 import org.optaplanner.core.api.score.buildin.hardmediumsoftbigdecimal.HardMediumSoftBigDecimalScore;
 import org.optaplanner.persistence.jackson.api.score.AbstractScoreJacksonJsonSerializerAndDeserializerTest;
-import org.optaplanner.persistence.jackson.api.score.ScoreJacksonJsonSerializer;
 
 public class HardMediumSoftBigDecimalScoreJacksonJsonSerializerAndDeserializerTest extends AbstractScoreJacksonJsonSerializerAndDeserializerTest {
 
     @Test
     public void serializeAndDeserialize() {
         assertSerializeAndDeserialize(null, new TestHardMediumSoftBigDecimalScoreWrapper(null));
-        HardMediumSoftBigDecimalScore score = HardMediumSoftBigDecimalScore.valueOf(new BigDecimal("1200.0021"), new BigDecimal("-3.1415"), new BigDecimal("34.4300"));
+        HardMediumSoftBigDecimalScore score = HardMediumSoftBigDecimalScore.of(new BigDecimal("1200.0021"), new BigDecimal("-3.1415"), new BigDecimal("34.4300"));
         assertSerializeAndDeserialize(score, new TestHardMediumSoftBigDecimalScoreWrapper(score));
-        score = HardMediumSoftBigDecimalScore.valueOfUninitialized(-7, new BigDecimal("1200.0021"), new BigDecimal("-3.1415"), new BigDecimal("34.4300"));
+        score = HardMediumSoftBigDecimalScore.ofUninitialized(-7, new BigDecimal("1200.0021"), new BigDecimal("-3.1415"), new BigDecimal("34.4300"));
         assertSerializeAndDeserialize(score, new TestHardMediumSoftBigDecimalScoreWrapper(score));
     }
 
     public static class TestHardMediumSoftBigDecimalScoreWrapper extends TestScoreWrapper<HardMediumSoftBigDecimalScore> {
 
-        @JsonSerialize(using = ScoreJacksonJsonSerializer.class)
+        @JsonSerialize(using = HardMediumSoftBigDecimalScoreJacksonJsonSerializer.class)
         @JsonDeserialize(using = HardMediumSoftBigDecimalScoreJacksonJsonDeserializer.class)
         private HardMediumSoftBigDecimalScore score;
 

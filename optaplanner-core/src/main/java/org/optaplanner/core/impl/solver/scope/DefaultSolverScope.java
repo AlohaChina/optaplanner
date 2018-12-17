@@ -43,12 +43,13 @@ public class DefaultSolverScope<Solution_> {
     protected Random workingRandom;
     protected InnerScoreDirector<Solution_> scoreDirector;
     /**
-     * Used for capping CPU power usage in multi-threaded scenarios.
+     * Used for capping CPU power usage in multithreaded scenarios.
      */
     protected Semaphore runnableThreadSemaphore = null;
 
-    protected Long startingSystemTimeMillis;
-    protected Long endingSystemTimeMillis;
+    protected volatile Long startingSystemTimeMillis;
+    protected volatile Long endingSystemTimeMillis;
+    protected long childThreadsScoreCalculationCount = 0;
 
     protected Score startingInitializedScore;
 
@@ -124,20 +125,8 @@ public class DefaultSolverScope<Solution_> {
         return scoreDirector.calculateScore();
     }
 
-    public void assertExpectedWorkingScore(Score expectedWorkingScore, Object completedAction) {
-        scoreDirector.assertExpectedWorkingScore(expectedWorkingScore, completedAction);
-    }
-
-    public void assertWorkingScoreFromScratch(Score workingScore, Object completedAction) {
-        scoreDirector.assertWorkingScoreFromScratch(workingScore, completedAction);
-    }
-
     public void assertScoreFromScratch(Solution_ solution) {
         scoreDirector.getScoreDirectorFactory().assertScoreFromScratch(solution);
-    }
-
-    public void assertShadowVariablesAreNotStale(Score workingScore, Object completedAction) {
-        scoreDirector.assertShadowVariablesAreNotStale(workingScore, completedAction);
     }
 
     public Score getStartingInitializedScore() {
@@ -148,8 +137,12 @@ public class DefaultSolverScope<Solution_> {
         this.startingInitializedScore = startingInitializedScore;
     }
 
+    public void addChildThreadsScoreCalculationCount(long addition) {
+        childThreadsScoreCalculationCount += addition;
+    }
+
     public long getScoreCalculationCount() {
-        return scoreDirector.getCalculationCount();
+        return scoreDirector.getCalculationCount() + childThreadsScoreCalculationCount;
     }
 
     public Solution_ getBestSolution() {

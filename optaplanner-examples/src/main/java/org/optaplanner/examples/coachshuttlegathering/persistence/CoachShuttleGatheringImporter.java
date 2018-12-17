@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.io.FilenameUtils;
+import org.optaplanner.examples.coachshuttlegathering.app.CoachShuttleGatheringApp;
 import org.optaplanner.examples.coachshuttlegathering.domain.Bus;
 import org.optaplanner.examples.coachshuttlegathering.domain.BusHub;
 import org.optaplanner.examples.coachshuttlegathering.domain.BusStop;
@@ -39,20 +40,15 @@ import org.optaplanner.examples.coachshuttlegathering.domain.Shuttle;
 import org.optaplanner.examples.coachshuttlegathering.domain.location.RoadLocation;
 import org.optaplanner.examples.coachshuttlegathering.domain.location.RoadLocationArc;
 import org.optaplanner.examples.common.persistence.AbstractTxtSolutionImporter;
+import org.optaplanner.examples.common.persistence.SolutionConverter;
 
 public class CoachShuttleGatheringImporter extends AbstractTxtSolutionImporter<CoachShuttleGatheringSolution> {
 
     public static void main(String[] args) {
-        CoachShuttleGatheringImporter importer = new CoachShuttleGatheringImporter();
-        importer.convert("example", "demo01.xml");
-    }
-
-    public CoachShuttleGatheringImporter() {
-        super(new CoachShuttleGatheringDao());
-    }
-
-    public CoachShuttleGatheringImporter(boolean withoutDao) {
-        super(withoutDao);
+        SolutionConverter<CoachShuttleGatheringSolution> converter = SolutionConverter.createImportConverter(
+                CoachShuttleGatheringApp.DATA_DIR_NAME, new CoachShuttleGatheringImporter(),
+                CoachShuttleGatheringSolution.class);
+       converter.convert("example", "demo01.xml");
     }
 
     @Override
@@ -77,7 +73,7 @@ public class CoachShuttleGatheringImporter extends AbstractTxtSolutionImporter<C
         return super.readSolution(instanceFile);
     }
 
-    public static class CoachShuttleGatheringInputBuilder extends TxtInputBuilder {
+    public static class CoachShuttleGatheringInputBuilder extends TxtInputBuilder<CoachShuttleGatheringSolution> {
 
         private CoachShuttleGatheringSolution solution;
 
@@ -95,7 +91,9 @@ public class CoachShuttleGatheringImporter extends AbstractTxtSolutionImporter<C
 
             int busListSize = solution.getCoachList().size() + solution.getShuttleList().size();
             int base = solution.getStopList().size() + solution.getShuttleList().size();
-            BigInteger possibleSolutionSize = factorial(base + busListSize - 1).divide(factorial(busListSize - 1));
+            BigInteger a = factorial(base + busListSize - 1);
+            BigInteger b = factorial(busListSize - 1);
+            BigInteger possibleSolutionSize = (a == null || b == null) ? null : a.divide(b);
             logger.info("CoachShuttleGathering {} has {} road locations, {} coaches, {} shuttles and {} bus stops"
                          + " with a search space of {}.",
                     getInputId(),
@@ -119,7 +117,7 @@ public class CoachShuttleGatheringImporter extends AbstractTxtSolutionImporter<C
             long locationId = 0L;
             try (BufferedReader subBufferedReader = new BufferedReader(
                     new InputStreamReader(new FileInputStream(file), "UTF-8"))) {
-                subBufferedReader.readLine(); // Ignore first line (comment)
+                readConstantLine(subBufferedReader, "X_COORD;Y_COORD");
                 for (String line = subBufferedReader.readLine(); line != null; line = subBufferedReader.readLine()) {
                     if (line.isEmpty()) {
                         continue;
@@ -155,7 +153,7 @@ public class CoachShuttleGatheringImporter extends AbstractTxtSolutionImporter<C
             int locationListIndex = 0;
             try (BufferedReader subBufferedReader = new BufferedReader(
                     new InputStreamReader(new FileInputStream(file), "UTF-8"))) {
-                subBufferedReader.readLine(); // Ignore first line (comment)
+                readConstantLine(subBufferedReader, "Quadratic matrix with as many rows as DistanceTimesCoordinates");
                 for (String line = subBufferedReader.readLine(); line != null; line = subBufferedReader.readLine()) {
                     if (line.isEmpty()) {
                         continue;
@@ -182,7 +180,7 @@ public class CoachShuttleGatheringImporter extends AbstractTxtSolutionImporter<C
             int locationListIndex = 0;
             try (BufferedReader subBufferedReader = new BufferedReader(
                     new InputStreamReader(new FileInputStream(file), "UTF-8"))) {
-                subBufferedReader.readLine(); // Ignore first line (comment)
+                readConstantLine(subBufferedReader, "Quadratic matrix with as many rows as DistanceTimesCoordinates");
                 for (String line = subBufferedReader.readLine(); line != null; line = subBufferedReader.readLine()) {
                     if (line.isEmpty()) {
                         continue;
@@ -208,7 +206,7 @@ public class CoachShuttleGatheringImporter extends AbstractTxtSolutionImporter<C
             List<Shuttle> shuttleList = new ArrayList<>();
             try (BufferedReader subBufferedReader = new BufferedReader(
                     new InputStreamReader(new FileInputStream(file), "UTF-8"))) {
-                subBufferedReader.readLine(); // Ignore first line (comment)
+                readConstantLine(subBufferedReader, "TYPE;VEHICLE_ID;CAPACITY;MAX_NUM_STOPS;COSTS \\[MU/km\\];COSTS \\[MU/USAGE\\];X_COORD;Y_COORD");
                 for (String line = subBufferedReader.readLine(); line != null; line = subBufferedReader.readLine()) {
                     if (line.isEmpty()) {
                         continue;
@@ -269,7 +267,7 @@ public class CoachShuttleGatheringImporter extends AbstractTxtSolutionImporter<C
 
         private void readBusStopList() throws IOException {
             List<BusStop> busStopList = new ArrayList<>();
-            bufferedReader.readLine(); // Ignore first line (comment)
+            readConstantLine("LOCATION_TYPE;LOCATION_ID;POST_CODE;CITY;X_COORD;Y_COORD;QUANTITY;MAX_TRANSPORT_TIME");
             for (String line = bufferedReader.readLine(); line != null; line = bufferedReader.readLine()) {
                 if (line.isEmpty()) {
                     continue;

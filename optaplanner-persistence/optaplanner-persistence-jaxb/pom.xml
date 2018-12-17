@@ -6,7 +6,7 @@
   <parent>
     <groupId>org.optaplanner</groupId>
     <artifactId>optaplanner-persistence</artifactId>
-    <version>8.0.0-SNAPSHOT</version>
+    <version>7.16.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>optaplanner-persistence-jaxb</artifactId>
@@ -23,7 +23,7 @@
   <url>https://www.optaplanner.org</url>
 
   <properties>
-    <osgi.Bundle-SymbolicName>org.optaplanner.persistence.jaxb</osgi.Bundle-SymbolicName>
+    <java.module.name>org.optaplanner.persistence.jaxb</java.module.name>
   </properties>
 
   <dependencies>

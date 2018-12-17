@@ -91,11 +91,29 @@ public class PlannerTestUtils {
 
     public static <Solution_> InnerScoreDirector<Solution_> mockScoreDirector(SolutionDescriptor<Solution_> solutionDescriptor) {
         EasyScoreDirectorFactory<Solution_> scoreDirectorFactory =
-                new EasyScoreDirectorFactory<>((EasyScoreCalculator<Solution_>) (solution_) -> SimpleScore.valueOf(0));
-        scoreDirectorFactory.setSolutionDescriptor(solutionDescriptor);
+                new EasyScoreDirectorFactory<>(solutionDescriptor, (EasyScoreCalculator<Solution_>) (solution_) -> SimpleScore.of(0));
         scoreDirectorFactory.setInitializingScoreTrend(
                 InitializingScoreTrend.buildUniformTrend(InitializingScoreTrendLevel.ONLY_DOWN, 1));
         return mock(InnerScoreDirector.class, AdditionalAnswers.delegatesTo(scoreDirectorFactory.buildScoreDirector(false, false)));
+    }
+
+    public static <Solution_> InnerScoreDirector<Solution_> mockRebasingScoreDirector(
+            SolutionDescriptor<Solution_> solutionDescriptor, Object[][] lookUpMappings) {
+        InnerScoreDirector scoreDirector = mock(InnerScoreDirector.class);
+        when(scoreDirector.getSolutionDescriptor()).thenReturn(solutionDescriptor);
+        when(scoreDirector.lookUpWorkingObject(any())).thenAnswer((invocation) -> {
+            Object externalObject = invocation.getArguments()[0];
+            if (externalObject == null) {
+                return null;
+            }
+            for (Object[] lookUpMapping : lookUpMappings) {
+                if (externalObject == lookUpMapping[0]) {
+                    return lookUpMapping[1];
+                }
+            }
+            throw new IllegalStateException("No method mocked for parameter (" + externalObject + ").");
+        });
+        return scoreDirector;
     }
 
     // ************************************************************************

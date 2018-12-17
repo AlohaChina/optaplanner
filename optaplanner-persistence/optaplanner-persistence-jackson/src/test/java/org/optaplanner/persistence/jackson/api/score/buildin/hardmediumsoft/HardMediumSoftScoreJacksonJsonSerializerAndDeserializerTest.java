@@ -21,22 +21,21 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.junit.Test;
 import org.optaplanner.core.api.score.buildin.hardmediumsoft.HardMediumSoftScore;
 import org.optaplanner.persistence.jackson.api.score.AbstractScoreJacksonJsonSerializerAndDeserializerTest;
-import org.optaplanner.persistence.jackson.api.score.ScoreJacksonJsonSerializer;
 
 public class HardMediumSoftScoreJacksonJsonSerializerAndDeserializerTest extends AbstractScoreJacksonJsonSerializerAndDeserializerTest {
 
     @Test
     public void serializeAndDeserialize() {
         assertSerializeAndDeserialize(null, new TestHardMediumSoftScoreWrapper(null));
-        HardMediumSoftScore score = HardMediumSoftScore.valueOf(1200, 30, 4);
+        HardMediumSoftScore score = HardMediumSoftScore.of(1200, 30, 4);
         assertSerializeAndDeserialize(score, new TestHardMediumSoftScoreWrapper(score));
-        score = HardMediumSoftScore.valueOfUninitialized(-7, 1200, 30, 4);
+        score = HardMediumSoftScore.ofUninitialized(-7, 1200, 30, 4);
         assertSerializeAndDeserialize(score, new TestHardMediumSoftScoreWrapper(score));
     }
 
     public static class TestHardMediumSoftScoreWrapper extends TestScoreWrapper<HardMediumSoftScore> {
 
-        @JsonSerialize(using = ScoreJacksonJsonSerializer.class)
+        @JsonSerialize(using = HardMediumSoftScoreJacksonJsonSerializer.class)
         @JsonDeserialize(using = HardMediumSoftScoreJacksonJsonDeserializer.class)
         private HardMediumSoftScore score;
 

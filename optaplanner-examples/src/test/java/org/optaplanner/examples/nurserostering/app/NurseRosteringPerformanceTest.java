@@ -21,19 +21,17 @@ import java.io.File;
 import org.junit.Test;
 import org.optaplanner.core.config.solver.EnvironmentMode;
 import org.optaplanner.examples.common.app.SolverPerformanceTest;
-import org.optaplanner.examples.common.persistence.SolutionDao;
-import org.optaplanner.examples.nurserostering.persistence.NurseRosteringDao;
+import org.optaplanner.examples.nurserostering.domain.NurseRoster;
 
-public class NurseRosteringPerformanceTest extends SolverPerformanceTest {
+public class NurseRosteringPerformanceTest extends SolverPerformanceTest<NurseRoster> {
 
-    @Override
-    protected String createSolverConfigResource() {
-        return NurseRosteringApp.SOLVER_CONFIG;
+    public NurseRosteringPerformanceTest(String moveThreadCount) {
+        super(moveThreadCount);
     }
 
     @Override
-    protected SolutionDao createSolutionDao() {
-        return new NurseRosteringDao();
+    protected NurseRosteringApp createCommonApp() {
+        return new NurseRosteringApp();
     }
 
     // ************************************************************************

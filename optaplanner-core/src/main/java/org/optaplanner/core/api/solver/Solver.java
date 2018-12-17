@@ -22,9 +22,12 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Future;
 
 import org.optaplanner.core.api.domain.solution.PlanningSolution;
+import org.optaplanner.core.api.score.FeasibilityScore;
 import org.optaplanner.core.api.score.Score;
+import org.optaplanner.core.api.score.constraint.ConstraintMatch;
 import org.optaplanner.core.api.solver.event.BestSolutionChangedEvent;
 import org.optaplanner.core.api.solver.event.SolverEventListener;
+import org.optaplanner.core.impl.score.director.ScoreDirector;
 import org.optaplanner.core.impl.score.director.ScoreDirectorFactory;
 import org.optaplanner.core.impl.solver.ProblemFactChange;
 import org.optaplanner.core.impl.solver.termination.Termination;
@@ -36,7 +39,7 @@ import org.optaplanner.core.impl.solver.termination.Termination;
  * These methods are not thread-safe and should be called from the same thread,
  * except for the methods that are explicitly marked as thread-safe.
  * Note that despite that {@link #solve} is not thread-safe for clients of this class,
- * that method is free to do multi-threading inside itself.
+ * that method is free to do multithreading inside itself.
  * <p>
  * Build by a {@link SolverFactory}.
  * @param <Solution_> the solution type, the class with the {@link PlanningSolution} annotation
@@ -52,7 +55,7 @@ public interface Solver<Solution_> {
      * {@link SolverEventListener#bestSolutionChanged(BestSolutionChangedEvent)} is often more appropriate).
      * <p>
      * This method is thread-safe.
-     * @return never null, but it can return the original, uninitialized {@link PlanningSolution} with a {@link Score} null.
+     * @return never null, but it can return the uninitialized {@link PlanningSolution} with a {@link Score} null.
      */
     Solution_ getBestSolution();
 
@@ -61,12 +64,39 @@ public interface Solver<Solution_> {
      * <p>
      * This is useful for generic code, which doesn't know the type of the {@link PlanningSolution}
      * to retrieve the {@link Score} from the {@link #getBestSolution()} easily.
+     * <p>
+     * This method is thread-safe.
      * @return null if the {@link PlanningSolution} is still uninitialized
      */
     Score getBestScore();
 
     /**
-     * @return the amount of millis spent between when this solver started (or last restarted) and ended
+     * Returns a diagnostic text that explains the {@link #getBestSolution()} through the {@link ConstraintMatch} API
+     * to identify which constraints or planning entities cause that {@link #getBestScore()} quality.
+     * In case of an {@link FeasibilityScore#isFeasible() infeasible} solution,
+     * this can help diagnose the cause of that.
+     * <p>
+     * Do not parse this string.
+     * Instead, to provide this information in a UI or a service, use {@link #getScoreDirectorFactory()}
+     * to retrieve {@link ScoreDirector#getConstraintMatchTotals()} and {@link ScoreDirector#getIndictmentMap()}
+     * and convert those into a domain specific API.
+     * <p>
+     * This method is thread-safe.
+     * @return null if {@link #getBestScore()} returns null
+     * @see ScoreDirector#explainScore()
+     */
+    String explainBestScore();
+
+    /**
+     * Returns the amount of milliseconds spent solving since the last start.
+     * If it hasn't started it yet, it returns 0.
+     * If it hasn't ended yet, it returns the time between the last start and now.
+     * If it has ended already, it returns the time between the last start and the ending.
+     * <p>
+     * A {@link #addProblemFactChange(ProblemFactChange)} triggers a restart which resets this time.
+     * <p>
+     * This method is thread-safe.
+     * @return the amount of milliseconds spent solving since the last (re)start, at least 0
      */
     long getTimeMillisSpent();
 

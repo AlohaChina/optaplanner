@@ -23,24 +23,23 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.junit.Test;
 import org.optaplanner.core.api.score.buildin.bendablebigdecimal.BendableBigDecimalScore;
 import org.optaplanner.persistence.jackson.api.score.AbstractScoreJacksonJsonSerializerAndDeserializerTest;
-import org.optaplanner.persistence.jackson.api.score.ScoreJacksonJsonSerializer;
 
 public class BendableBigDecimalScoreJacksonJsonSerializerAndDeserializerTest extends AbstractScoreJacksonJsonSerializerAndDeserializerTest {
 
     @Test
     public void serializeAndDeserialize() {
         assertSerializeAndDeserialize(null, new TestBendableBigDecimalScoreWrapper(null));
-        BendableBigDecimalScore score = BendableBigDecimalScore.valueOf(
+        BendableBigDecimalScore score = BendableBigDecimalScore.of(
                 new BigDecimal[]{new BigDecimal("1000.0001"), new BigDecimal("200.0020")}, new BigDecimal[]{new BigDecimal("34.4300")});
         assertSerializeAndDeserialize(score, new TestBendableBigDecimalScoreWrapper(score));
-        score = BendableBigDecimalScore.valueOfUninitialized(-7,
+        score = BendableBigDecimalScore.ofUninitialized(-7,
                 new BigDecimal[]{new BigDecimal("1000.0001"), new BigDecimal("200.0020")}, new BigDecimal[]{new BigDecimal("34.4300")});
         assertSerializeAndDeserialize(score, new TestBendableBigDecimalScoreWrapper(score));
     }
 
     public static class TestBendableBigDecimalScoreWrapper extends TestScoreWrapper<BendableBigDecimalScore> {
 
-        @JsonSerialize(using = ScoreJacksonJsonSerializer.class)
+        @JsonSerialize(using = BendableBigDecimalScoreJacksonJsonSerializer.class)
         @JsonDeserialize(using = BendableBigDecimalScoreJacksonJsonDeserializer.class)
         private BendableBigDecimalScore score;
 

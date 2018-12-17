@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.optaplanner</groupId>
     <artifactId>optaplanner</artifactId>
-    <version>8.0.0-SNAPSHOT</version>
+    <version>7.16.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>optaplanner-docs</artifactId>
@@ -54,8 +54,6 @@
               <COMMUNITY-ONLY/>
               <shared-dir>${project.basedir}/../shared/</shared-dir>
               <html-googleAnalyticsId>UA-39485370-1</html-googleAnalyticsId>
-              <html-googleTagManagerId>GTM-NJWS5L</html-googleTagManagerId>
-              <html-googleTagManagerChannel>OptaPlanner</html-googleTagManagerChannel>
             </attributes>
           </configuration>
           <executions>

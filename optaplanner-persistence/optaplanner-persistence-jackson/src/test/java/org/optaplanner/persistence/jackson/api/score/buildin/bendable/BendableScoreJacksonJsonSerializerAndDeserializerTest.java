@@ -21,22 +21,21 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.junit.Test;
 import org.optaplanner.core.api.score.buildin.bendable.BendableScore;
 import org.optaplanner.persistence.jackson.api.score.AbstractScoreJacksonJsonSerializerAndDeserializerTest;
-import org.optaplanner.persistence.jackson.api.score.ScoreJacksonJsonSerializer;
 
 public class BendableScoreJacksonJsonSerializerAndDeserializerTest extends AbstractScoreJacksonJsonSerializerAndDeserializerTest {
 
     @Test
     public void serializeAndDeserialize() {
         assertSerializeAndDeserialize(null, new TestBendableScoreWrapper(null));
-        BendableScore score = BendableScore.valueOf(new int[]{1000, 200}, new int[]{34});
+        BendableScore score = BendableScore.of(new int[]{1000, 200}, new int[]{34});
         assertSerializeAndDeserialize(score, new TestBendableScoreWrapper(score));
-        score = BendableScore.valueOfUninitialized(-7, new int[]{1000, 200}, new int[]{34});
+        score = BendableScore.ofUninitialized(-7, new int[]{1000, 200}, new int[]{34});
         assertSerializeAndDeserialize(score, new TestBendableScoreWrapper(score));
     }
 
     public static class TestBendableScoreWrapper extends TestScoreWrapper<BendableScore> {
 
-        @JsonSerialize(using = ScoreJacksonJsonSerializer.class)
+        @JsonSerialize(using = BendableScoreJacksonJsonSerializer.class)
         @JsonDeserialize(using = BendableScoreJacksonJsonDeserializer.class)
         private BendableScore score;
 

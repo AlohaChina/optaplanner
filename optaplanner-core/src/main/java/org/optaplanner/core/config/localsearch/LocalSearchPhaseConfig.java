@@ -19,6 +19,7 @@ package org.optaplanner.core.config.localsearch;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ThreadFactory;
 
 import com.thoughtworks.xstream.annotations.XStreamAlias;
 import com.thoughtworks.xstream.annotations.XStreamImplicit;
@@ -33,6 +34,7 @@ import org.optaplanner.core.config.heuristic.selector.move.generic.SwapMoveSelec
 import org.optaplanner.core.config.localsearch.decider.acceptor.AcceptorConfig;
 import org.optaplanner.core.config.localsearch.decider.acceptor.AcceptorType;
 import org.optaplanner.core.config.localsearch.decider.forager.LocalSearchForagerConfig;
+import org.optaplanner.core.config.localsearch.decider.forager.LocalSearchPickEarlyType;
 import org.optaplanner.core.config.phase.PhaseConfig;
 import org.optaplanner.core.config.solver.EnvironmentMode;
 import org.optaplanner.core.config.util.ConfigUtils;
@@ -40,8 +42,10 @@ import org.optaplanner.core.impl.heuristic.selector.move.MoveSelector;
 import org.optaplanner.core.impl.localsearch.DefaultLocalSearchPhase;
 import org.optaplanner.core.impl.localsearch.LocalSearchPhase;
 import org.optaplanner.core.impl.localsearch.decider.LocalSearchDecider;
+import org.optaplanner.core.impl.localsearch.decider.MultiThreadedLocalSearchDecider;
 import org.optaplanner.core.impl.localsearch.decider.acceptor.Acceptor;
-import org.optaplanner.core.impl.localsearch.decider.forager.Forager;
+import org.optaplanner.core.impl.localsearch.decider.forager.LocalSearchForager;
+import org.optaplanner.core.impl.solver.ChildThreadType;
 import org.optaplanner.core.impl.solver.recaller.BestSolutionRecaller;
 import org.optaplanner.core.impl.solver.termination.Termination;
 
@@ -126,9 +130,7 @@ public class LocalSearchPhaseConfig extends PhaseConfig<LocalSearchPhaseConfig> 
     private LocalSearchDecider buildDecider(HeuristicConfigPolicy configPolicy, Termination termination) {
         MoveSelector moveSelector = buildMoveSelector(configPolicy);
         Acceptor acceptor = buildAcceptor(configPolicy);
-        Forager forager = buildForager(configPolicy);
-        LocalSearchDecider decider = new LocalSearchDecider(configPolicy.getLogIndentation(),
-                termination, moveSelector, acceptor, forager);
+        LocalSearchForager forager = buildForager(configPolicy);
         if (moveSelector.isNeverEnding() && !forager.supportsNeverEndingMoveSelector()) {
             throw new IllegalStateException("The moveSelector (" + moveSelector
                     + ") has neverEnding (" + moveSelector.isNeverEnding()
@@ -136,7 +138,34 @@ public class LocalSearchPhaseConfig extends PhaseConfig<LocalSearchPhaseConfig> 
                     + ") does not support it.\n"
                     + "Maybe configure the <forager> with an <acceptedCountLimit>.");
         }
+        Integer moveThreadCount = configPolicy.getMoveThreadCount();
         EnvironmentMode environmentMode = configPolicy.getEnvironmentMode();
+        LocalSearchDecider decider;
+        if (moveThreadCount == null) {
+            decider = new LocalSearchDecider(configPolicy.getLogIndentation(),
+                    termination, moveSelector, acceptor, forager);
+        } else {
+            Integer moveThreadBufferSize = configPolicy.getMoveThreadBufferSize();
+            if (moveThreadBufferSize == null) {
+                // TODO Verify this is a good default by more meticulous benchmarking on multiple machines and JDK's
+                // If it's too low, move threads will need to wait on the buffer, which hurts performance
+                // If it's too high, more moves are selected that aren't foraged
+                moveThreadBufferSize = 10;
+            }
+            ThreadFactory threadFactory = configPolicy.buildThreadFactory(ChildThreadType.MOVE_THREAD);
+            int selectedMoveBufferSize = moveThreadCount * moveThreadBufferSize;
+            MultiThreadedLocalSearchDecider multiThreadedDecider = new MultiThreadedLocalSearchDecider(
+                    configPolicy.getLogIndentation(), termination, moveSelector, acceptor, forager,
+                    threadFactory, moveThreadCount, selectedMoveBufferSize);
+            if (environmentMode.isNonIntrusiveFullAsserted()) {
+                multiThreadedDecider.setAssertStepScoreFromScratch(true);
+            }
+            if (environmentMode.isIntrusiveFastAsserted()) {
+                multiThreadedDecider.setAssertExpectedStepScore(true);
+                multiThreadedDecider.setAssertShadowVariablesAreNotStaleAfterStep(true);
+            }
+            decider = multiThreadedDecider;
+        }
         if (environmentMode.isNonIntrusiveFullAsserted()) {
             decider.setAssertMoveScoreFromScratch(true);
         }
@@ -160,6 +189,7 @@ public class LocalSearchPhaseConfig extends PhaseConfig<LocalSearchPhaseConfig> 
             acceptorConfig_ = new AcceptorConfig();
             switch (localSearchType_) {
                 case HILL_CLIMBING:
+                case VARIABLE_NEIGHBORHOOD_DESCENT:
                     acceptorConfig_.setAcceptorTypeList(Collections.singletonList(AcceptorType.HILL_CLIMBING));
                     break;
                 case TABU_SEARCH:
@@ -179,7 +209,7 @@ public class LocalSearchPhaseConfig extends PhaseConfig<LocalSearchPhaseConfig> 
         return acceptorConfig_.buildAcceptor(configPolicy);
     }
 
-    protected Forager buildForager(HeuristicConfigPolicy configPolicy) {
+    protected LocalSearchForager buildForager(HeuristicConfigPolicy configPolicy) {
         LocalSearchForagerConfig foragerConfig_;
         if (foragerConfig != null) {
             if (localSearchType != null) {
@@ -204,6 +234,9 @@ public class LocalSearchPhaseConfig extends PhaseConfig<LocalSearchPhaseConfig> 
                     // Fast stepping algorithm
                     foragerConfig_.setAcceptedCountLimit(1);
                     break;
+                case VARIABLE_NEIGHBORHOOD_DESCENT:
+                    foragerConfig_.setPickEarlyType(LocalSearchPickEarlyType.FIRST_LAST_STEP_SCORE_IMPROVING);
+                    break;
                 default:
                     throw new IllegalStateException("The localSearchType (" + localSearchType_
                             + ") is not implemented.");
@@ -215,7 +248,12 @@ public class LocalSearchPhaseConfig extends PhaseConfig<LocalSearchPhaseConfig> 
     protected MoveSelector buildMoveSelector(HeuristicConfigPolicy configPolicy) {
         MoveSelector moveSelector;
         SelectionCacheType defaultCacheType = SelectionCacheType.JUST_IN_TIME;
-        SelectionOrder defaultSelectionOrder = SelectionOrder.RANDOM;
+        SelectionOrder defaultSelectionOrder;
+        if (localSearchType == LocalSearchType.VARIABLE_NEIGHBORHOOD_DESCENT) {
+            defaultSelectionOrder = SelectionOrder.ORIGINAL;
+        } else {
+            defaultSelectionOrder = SelectionOrder.RANDOM;
+        }
         if (ConfigUtils.isEmptyCollection(moveSelectorConfigList)) {
             // Default to changeMoveSelector and swapMoveSelector
             UnionMoveSelectorConfig unionMoveSelectorConfig = new UnionMoveSelectorConfig();

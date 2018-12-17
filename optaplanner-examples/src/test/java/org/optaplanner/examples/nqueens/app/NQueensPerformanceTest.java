@@ -21,19 +21,17 @@ import java.io.File;
 import org.junit.Test;
 import org.optaplanner.core.config.solver.EnvironmentMode;
 import org.optaplanner.examples.common.app.SolverPerformanceTest;
-import org.optaplanner.examples.common.persistence.SolutionDao;
-import org.optaplanner.examples.nqueens.persistence.NQueensDao;
+import org.optaplanner.examples.nqueens.domain.NQueens;
 
-public class NQueensPerformanceTest extends SolverPerformanceTest {
+public class NQueensPerformanceTest extends SolverPerformanceTest<NQueens> {
 
-    @Override
-    protected String createSolverConfigResource() {
-        return NQueensApp.SOLVER_CONFIG;
+    public NQueensPerformanceTest(String moveThreadCount) {
+        super(moveThreadCount);
     }
 
     @Override
-    protected SolutionDao createSolutionDao() {
-        return new NQueensDao();
+    protected NQueensApp createCommonApp() {
+        return new NQueensApp();
     }
 
     // ************************************************************************

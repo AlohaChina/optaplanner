@@ -87,8 +87,29 @@ public class PlannerAssert extends Assert {
     }
 
     @SafeVarargs
-    public static <C extends Comparable<C>> void assertCompareToOrder(C... comparables) {
-        assertCompareToOrder(Comparator.naturalOrder(), comparables);
+    public static <C extends Comparable<C>> void assertObjectsAreEqual(C... objects) {
+        for (int i = 0; i < objects.length; i++) {
+            for (int j = i + 1; j < objects.length; j++) {
+                assertEquals(objects[i], objects[j]);
+                assertEquals(objects[i].hashCode(), objects[j].hashCode());
+                assertEquals(0, objects[i].compareTo(objects[j]));
+            }
+        }
+    }
+
+    @SafeVarargs
+    public static <C extends Comparable<C>> void assertObjectsAreNotEqual(C... objects) {
+        for (int i = 0; i < objects.length; i++) {
+            for (int j = i + 1; j < objects.length; j++) {
+                assertNotEquals(objects[i], objects[j]);
+                assertNotEquals(0, objects[i].compareTo(objects[j]));
+            }
+        }
+    }
+
+    @SafeVarargs
+    public static <C extends Comparable<C>> void assertCompareToOrder(C... objects) {
+        assertCompareToOrder(Comparator.naturalOrder(), objects);
     }
 
     @SafeVarargs
@@ -133,6 +154,20 @@ public class PlannerAssert extends Assert {
                 fail("The asserted collection (" + collection
                         + ") does not contain expected element (" + elements[i] + ")");
             }
+        }
+    }
+
+    public static <E> void assertListElementsSameExactly(List<E> expectedList, List<E> actualList) {
+        assertEquals(expectedList.size(), actualList.size());
+        for (int i = 0; i < expectedList.size(); i++) {
+            assertSame(expectedList.get(i), actualList.get(i));
+        }
+    }
+
+    public static <E> void assertArrayElementsSameExactly(E[] expectedArray, E[] actualArray) {
+        assertEquals(expectedArray.length, actualArray.length);
+        for (int i = 0; i < expectedArray.length; i++) {
+            assertSame(expectedArray[i], actualArray[i]);
         }
     }
 

@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.optaplanner</groupId>
     <artifactId>optaplanner-workbench-models</artifactId>
-    <version>8.0.0-SNAPSHOT</version>
+    <version>7.16.0-SNAPSHOT</version>
   </parent>
 
   <!-- TODO Remove and replace by optaplanner-core-gwt once the workbench supports net.ltgt.gwt.maven:gwt-maven-plugin -->
@@ -22,6 +22,10 @@
 
     This module wraps OptaPlanner core classes used by OptaPlanner Workbench.
   </description>
+
+  <properties>
+    <java.module.name>org.optaplanner.workbench.models.core</java.module.name>
+  </properties>
 
   <dependencyManagement>
     <dependencies>

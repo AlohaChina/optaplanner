@@ -21,22 +21,21 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.junit.Test;
 import org.optaplanner.core.api.score.buildin.simplelong.SimpleLongScore;
 import org.optaplanner.persistence.jackson.api.score.AbstractScoreJacksonJsonSerializerAndDeserializerTest;
-import org.optaplanner.persistence.jackson.api.score.ScoreJacksonJsonSerializer;
 
 public class SimpleLongScoreJacksonJsonSerializerAndDeserializerTest extends AbstractScoreJacksonJsonSerializerAndDeserializerTest {
 
     @Test
     public void serializeAndDeserialize() {
         assertSerializeAndDeserialize(null, new TestSimpleLongScoreWrapper(null));
-        SimpleLongScore score = SimpleLongScore.valueOf(1234L);
+        SimpleLongScore score = SimpleLongScore.of(1234L);
         assertSerializeAndDeserialize(score, new TestSimpleLongScoreWrapper(score));
-        score = SimpleLongScore.valueOfUninitialized(-7, 1234L);
+        score = SimpleLongScore.ofUninitialized(-7, 1234L);
         assertSerializeAndDeserialize(score, new TestSimpleLongScoreWrapper(score));
     }
 
     public static class TestSimpleLongScoreWrapper extends AbstractScoreJacksonJsonSerializerAndDeserializerTest.TestScoreWrapper<SimpleLongScore> {
 
-        @JsonSerialize(using = ScoreJacksonJsonSerializer.class)
+        @JsonSerialize(using = SimpleLongScoreJacksonJsonSerializer.class)
         @JsonDeserialize(using = SimpleLongScoreJacksonJsonDeserializer.class)
         private SimpleLongScore score;
 

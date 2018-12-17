@@ -17,6 +17,7 @@
 package org.optaplanner.core.impl.score.director.easy;
 
 import org.optaplanner.core.api.domain.solution.PlanningSolution;
+import org.optaplanner.core.impl.domain.solution.descriptor.SolutionDescriptor;
 import org.optaplanner.core.impl.score.director.AbstractScoreDirectorFactory;
 import org.optaplanner.core.impl.score.director.ScoreDirectorFactory;
 
@@ -30,12 +31,10 @@ public class EasyScoreDirectorFactory<Solution_> extends AbstractScoreDirectorFa
 
     private final EasyScoreCalculator<Solution_> easyScoreCalculator;
 
-    public EasyScoreDirectorFactory(EasyScoreCalculator<Solution_> easyScoreCalculator) {
+    public EasyScoreDirectorFactory(SolutionDescriptor<Solution_> solutionDescriptor,
+            EasyScoreCalculator<Solution_> easyScoreCalculator) {
+        super(solutionDescriptor);
         this.easyScoreCalculator = easyScoreCalculator;
-    }
-
-    public EasyScoreCalculator<Solution_> getEasyScoreCalculator() {
-        return easyScoreCalculator;
     }
 
     // ************************************************************************

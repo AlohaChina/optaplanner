@@ -34,11 +34,13 @@ import org.optaplanner.core.impl.score.director.InnerScoreDirector;
 import org.optaplanner.core.impl.score.director.ScoreDirector;
 
 /**
+ * Applies a new best solution from a partition child solver into the global working solution of the parent solver.
  * @param <Solution_> the solution type, the class with the {@link PlanningSolution} annotation
  */
 public final class PartitionChangeMove<Solution_> extends AbstractMove<Solution_> {
 
-    public static <Solution_> PartitionChangeMove<Solution_> createMove(InnerScoreDirector<Solution_> scoreDirector) {
+    public static <Solution_> PartitionChangeMove<Solution_> createMove(InnerScoreDirector<Solution_> scoreDirector,
+            int partIndex) {
         SolutionDescriptor<Solution_> solutionDescriptor = scoreDirector.getSolutionDescriptor();
         Solution_ workingSolution = scoreDirector.getWorkingSolution();
 
@@ -63,13 +65,16 @@ public final class PartitionChangeMove<Solution_> extends AbstractMove<Solution_
                 }
             }
         }
-        return new PartitionChangeMove<>(changeMap);
+        return new PartitionChangeMove<>(changeMap, partIndex);
     }
 
     private final Map<GenuineVariableDescriptor<Solution_>, List<Pair<Object, Object>>> changeMap;
+    private final int partIndex;
 
-    public PartitionChangeMove(Map<GenuineVariableDescriptor<Solution_>, List<Pair<Object, Object>>> changeMap) {
+    public PartitionChangeMove(Map<GenuineVariableDescriptor<Solution_>, List<Pair<Object, Object>>> changeMap,
+            int partIndex) {
         this.changeMap = changeMap;
+        this.partIndex = partIndex;
     }
 
     @Override
@@ -90,22 +95,14 @@ public final class PartitionChangeMove<Solution_> extends AbstractMove<Solution_
     }
 
     @Override
-    protected AbstractMove<Solution_> createUndoMove(ScoreDirector<Solution_> scoreDirector) {
-        // TODO not yet implemented, returns null to fail fast if it is used
+    protected PartitionChangeMove<Solution_> createUndoMove(ScoreDirector<Solution_> scoreDirector) {
+        // HACK Creating an undoMove is a waste of time because it is never used,
+        // but this method is called anyway so it returns null to fail fast if it is used
         return null;
     }
 
     @Override
-    public Collection<? extends Object> getPlanningEntities() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Collection<? extends Object> getPlanningValues() {
-        throw new UnsupportedOperationException();
-    }
-
-    public PartitionChangeMove<Solution_> rebase(InnerScoreDirector<Solution_> destinationScoreDirector) {
+    public PartitionChangeMove<Solution_> rebase(ScoreDirector<Solution_> destinationScoreDirector) {
         Map<GenuineVariableDescriptor<Solution_>, List<Pair<Object, Object>>> destinationChangeMap
                 = new LinkedHashMap<>(changeMap.size());
         for (Map.Entry<GenuineVariableDescriptor<Solution_>, List<Pair<Object, Object>>> entry : changeMap.entrySet()) {
@@ -134,8 +131,25 @@ public final class PartitionChangeMove<Solution_> extends AbstractMove<Solution_
             }
             destinationChangeMap.put(variableDescriptor, destinationPairList);
         }
-        return new PartitionChangeMove<>(destinationChangeMap);
+        return new PartitionChangeMove<>(destinationChangeMap, partIndex);
     }
 
-    // TODO implement toString()
+    @Override
+    public Collection<? extends Object> getPlanningEntities() {
+        throw new UnsupportedOperationException("Impossible situation: " + PartitionChangeMove.class.getSimpleName()
+                + " is only used to communicate between a part thread and the solver thread, it's never used in Tabu Search.");
+    }
+
+    @Override
+    public Collection<? extends Object> getPlanningValues() {
+        throw new UnsupportedOperationException("Impossible situation: " + PartitionChangeMove.class.getSimpleName()
+                + " is only used to communicate between a part thread and the solver thread, it's never used in Tabu Search.");
+    }
+
+    @Override
+    public String toString() {
+        int changeCount = changeMap.values().stream().mapToInt(List::size).sum();
+        return "part-" + partIndex + " {" + changeCount + " variables changed}";
+    }
+
 }

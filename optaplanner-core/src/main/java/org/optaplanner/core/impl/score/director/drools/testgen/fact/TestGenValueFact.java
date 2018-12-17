@@ -28,7 +28,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.optaplanner.core.impl.domain.common.ReflectionHelper;
-import org.optaplanner.core.impl.domain.common.accessor.BeanPropertyMemberAccessor;
+import org.optaplanner.core.impl.domain.common.accessor.ReflectionBeanPropertyMemberAccessor;
 
 public class TestGenValueFact implements TestGenFact {
 
@@ -62,7 +62,7 @@ public class TestGenValueFact implements TestGenFact {
         Method setter = ReflectionHelper.getSetterMethod(instance.getClass(), field.getType(), fieldName);
         Method getter = ReflectionHelper.getGetterMethod(instance.getClass(), fieldName);
         if (setter != null && getter != null) {
-            BeanPropertyMemberAccessor accessor = new BeanPropertyMemberAccessor(getter);
+            ReflectionBeanPropertyMemberAccessor accessor = new ReflectionBeanPropertyMemberAccessor(getter);
             Object value = accessor.executeGetter(instance);
             if (value != null) {
                 if (field.getType().equals(String.class)) {
@@ -99,7 +99,7 @@ public class TestGenValueFact implements TestGenFact {
                     if (parseMethod != null) {
                         fields.add(new TestGenFactField(this, fieldName, new TestGenParsedValueProvider(parseMethod, value)));
                     } else {
-                        throw new IllegalStateException("Unsupported type: " + field.getType());
+                        throw new IllegalStateException("Unsupported type: " + field);
                     }
                 }
             } else {
@@ -108,12 +108,12 @@ public class TestGenValueFact implements TestGenFact {
         }
     }
 
-    private static Method getParseMethod(Field f) {
+    static Method getParseMethod(Field f) {
         for (Method m : f.getType().getMethods()) {
             if (Modifier.isStatic(m.getModifiers())
                     && f.getType().equals(m.getReturnType())
                     && m.getParameters().length == 1
-                    && m.getParameters()[0].getType().equals(String.class)
+                    && CharSequence.class.isAssignableFrom(m.getParameters()[0].getType())
                     && (m.getName().startsWith("parse") || m.getName().startsWith("valueOf"))) {
                 return m;
             }
