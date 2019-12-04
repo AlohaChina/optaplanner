@@ -80,6 +80,7 @@ public abstract class AbstractXlsxSolutionFileIO<Solution_> implements SolutionF
     protected static final XSSFColor HARD_PENALTY_COLOR = new XSSFColor(TangoColorFactory.SCARLET_1);
     protected static final XSSFColor MEDIUM_PENALTY_COLOR = new XSSFColor(TangoColorFactory.SCARLET_3);
     protected static final XSSFColor SOFT_PENALTY_COLOR = new XSSFColor(TangoColorFactory.ORANGE_1);
+    protected static final XSSFColor PLANNING_VARIABLE_COLOR = new XSSFColor(TangoColorFactory.BUTTER_1);
     protected static final XSSFColor REPUBLISHED_COLOR = new XSSFColor(TangoColorFactory.MAGENTA);
 
     @Override
@@ -103,8 +104,7 @@ public abstract class AbstractXlsxSolutionFileIO<Solution_> implements SolutionF
         public AbstractXlsxReader(XSSFWorkbook workbook, String solverConfigResource) {
             this.workbook = workbook;
             ScoreDirectorFactory<Solution_> scoreDirectorFactory
-                    = SolverFactory.<Solution_>createFromXmlResource(solverConfigResource)
-                    .buildSolver().getScoreDirectorFactory();
+                    = SolverFactory.<Solution_>createFromXmlResource(solverConfigResource).getScoreDirectorFactory();
             scoreDefinition = ((InnerScoreDirectorFactory) scoreDirectorFactory).getScoreDefinition();
         }
 
@@ -363,6 +363,7 @@ public abstract class AbstractXlsxSolutionFileIO<Solution_> implements SolutionF
         protected XSSFCellStyle mediumPenaltyStyle;
         protected XSSFCellStyle softPenaltyStyle;
         protected XSSFCellStyle wrappedStyle;
+        protected XSSFCellStyle planningVariableStyle;
         protected XSSFCellStyle republishedStyle;
 
         protected XSSFSheet currentSheet;
@@ -375,8 +376,7 @@ public abstract class AbstractXlsxSolutionFileIO<Solution_> implements SolutionF
         public AbstractXlsxWriter(Solution_ solution, String solverConfigResource) {
             this.solution = solution;
             ScoreDirectorFactory<Solution_> scoreDirectorFactory
-                    = SolverFactory.<Solution_>createFromXmlResource(solverConfigResource)
-                    .buildSolver().getScoreDirectorFactory();
+                    = SolverFactory.<Solution_>createFromXmlResource(solverConfigResource).getScoreDirectorFactory();
             scoreDefinition = ((InnerScoreDirectorFactory) scoreDirectorFactory).getScoreDefinition();
             try (ScoreDirector<Solution_> scoreDirector = scoreDirectorFactory.buildScoreDirector()) {
                 scoreDirector.setWorkingSolution(solution);
@@ -410,6 +410,7 @@ public abstract class AbstractXlsxSolutionFileIO<Solution_> implements SolutionF
             mediumPenaltyStyle = createStyle(MEDIUM_PENALTY_COLOR);
             softPenaltyStyle = createStyle(SOFT_PENALTY_COLOR);
             wrappedStyle = createStyle(null);
+            planningVariableStyle = createStyle(PLANNING_VARIABLE_COLOR);
             republishedStyle = createStyle(REPUBLISHED_COLOR);
         }
 
@@ -495,9 +496,11 @@ public abstract class AbstractXlsxSolutionFileIO<Solution_> implements SolutionF
             }
             Comparator<ConstraintMatchTotal> constraintWeightComparator = Comparator.comparing(
                     ConstraintMatchTotal::getConstraintWeight, Comparator.nullsLast(Comparator.reverseOrder()));
-            constraintMatchTotals.stream().sorted(constraintWeightComparator
-                    .thenComparing(ConstraintMatchTotal::getConstraintPackage)
-                    .thenComparing(ConstraintMatchTotal::getConstraintName)).forEach(constraintMatchTotal -> {
+            constraintMatchTotals.stream()
+                    .sorted(constraintWeightComparator
+                            .thenComparing(ConstraintMatchTotal::getConstraintPackage)
+                            .thenComparing(ConstraintMatchTotal::getConstraintName))
+                    .forEach(constraintMatchTotal -> {
                 nextRow();
                 nextHeaderCell(constraintMatchTotal.getConstraintName());
                 Score constraintWeight = constraintMatchTotal.getConstraintWeight();
@@ -508,13 +511,16 @@ public abstract class AbstractXlsxSolutionFileIO<Solution_> implements SolutionF
             nextRow();
             nextRow();
 
-            Comparator<ConstraintMatchTotal> c1 = Comparator.<ConstraintMatchTotal, Score>comparing(ConstraintMatchTotal::getScore);
-            Comparator<ConstraintMatchTotal> c2 = c1.thenComparing(ConstraintMatchTotal::getConstraintPackage)
+            Comparator<ConstraintMatchTotal> constraintMatchTotalComparator
+                    = Comparator.<ConstraintMatchTotal, Score>comparing(ConstraintMatchTotal::getScore);
+            constraintMatchTotalComparator = constraintMatchTotalComparator
+                    .thenComparing(ConstraintMatchTotal::getConstraintPackage)
                     .thenComparing(ConstraintMatchTotal::getConstraintName);
-
-            Comparator<ConstraintMatch> c3 = Comparator.<ConstraintMatch, Score>comparing(ConstraintMatch::getScore);
-
-            constraintMatchTotals.stream().sorted(c2).forEach(constraintMatchTotal -> {
+            Comparator<ConstraintMatch> constraintMatchComparator
+                    = Comparator.<ConstraintMatch, Score>comparing(ConstraintMatch::getScore);
+            constraintMatchTotals.stream()
+                    .sorted(constraintMatchTotalComparator)
+                    .forEach(constraintMatchTotal -> {
                 nextRow();
                 nextHeaderCell(constraintMatchTotal.getConstraintName());
                 Score constraintWeight = constraintMatchTotal.getConstraintWeight();
@@ -522,7 +528,8 @@ public abstract class AbstractXlsxSolutionFileIO<Solution_> implements SolutionF
                 nextCell().setCellValue(constraintMatchTotal.getConstraintMatchSet().size());
                 nextCell(scoreStyle).setCellValue(constraintMatchTotal.getScore().toShortString());
                 constraintMatchTotal.getConstraintMatchSet().stream()
-                        .sorted(c3).forEach(constraintMatch -> {
+                        .sorted(constraintMatchComparator)
+                        .forEach(constraintMatch -> {
                     nextRow();
                     nextCell();
                     nextCell();

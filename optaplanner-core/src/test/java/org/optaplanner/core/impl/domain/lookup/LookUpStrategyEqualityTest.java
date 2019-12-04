@@ -22,10 +22,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.optaplanner.core.api.domain.lookup.LookUpStrategyType;
-import org.optaplanner.core.impl.testdata.domain.lookup.TestdataObjectEquals;
-import org.optaplanner.core.impl.testdata.domain.lookup.TestdataObjectEqualsNoHashCode;
-import org.optaplanner.core.impl.testdata.domain.lookup.TestdataObjectEqualsSubclass;
-import org.optaplanner.core.impl.testdata.domain.lookup.TestdataObjectNoId;
+import org.optaplanner.core.impl.testdata.domain.clone.lookup.TestdataObjectEquals;
+import org.optaplanner.core.impl.testdata.domain.clone.lookup.TestdataObjectEqualsNoHashCode;
+import org.optaplanner.core.impl.testdata.domain.clone.lookup.TestdataObjectEqualsSubclass;
+import org.optaplanner.core.impl.testdata.domain.clone.lookup.TestdataObjectNoId;
 
 import static org.junit.Assert.*;
 
@@ -48,7 +48,7 @@ public class LookUpStrategyEqualityTest {
         lookUpManager.addWorkingObject(object);
         lookUpManager.removeWorkingObject(object);
         // The removed object cannot be looked up
-        assertNull(lookUpManager.lookUpWorkingObject(object));
+        assertNull(lookUpManager.lookUpWorkingObjectOrReturnNull(object));
     }
 
     @Test
@@ -120,7 +120,7 @@ public class LookUpStrategyEqualityTest {
     @Test
     public void lookUpWithoutAdding() {
         TestdataObjectEquals object = new TestdataObjectEquals(0);
-        assertNull(lookUpManager.lookUpWorkingObject(object));
+        assertNull(lookUpManager.lookUpWorkingObjectOrReturnNull(object));
     }
 
 }

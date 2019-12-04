@@ -52,8 +52,14 @@ import org.optaplanner.examples.flightcrewscheduling.domain.FlightCrewParametriz
 import org.optaplanner.examples.flightcrewscheduling.domain.FlightCrewSolution;
 import org.optaplanner.examples.flightcrewscheduling.domain.Skill;
 
-import static java.util.stream.Collectors.*;
-import static org.optaplanner.examples.flightcrewscheduling.domain.FlightCrewParametrization.*;
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toList;
+import static org.optaplanner.examples.flightcrewscheduling.domain.FlightCrewParametrization.EMPLOYEE_UNAVAILABILITY;
+import static org.optaplanner.examples.flightcrewscheduling.domain.FlightCrewParametrization.FLIGHT_CONFLICT;
+import static org.optaplanner.examples.flightcrewscheduling.domain.FlightCrewParametrization.LOAD_BALANCE_FLIGHT_DURATION_TOTAL_PER_EMPLOYEE;
+import static org.optaplanner.examples.flightcrewscheduling.domain.FlightCrewParametrization.REQUIRED_SKILL;
+import static org.optaplanner.examples.flightcrewscheduling.domain.FlightCrewParametrization.TRANSFER_BETWEEN_TWO_FLIGHTS;
 
 public class FlightCrewSchedulingXlsxFileIO extends AbstractXlsxSolutionFileIO<FlightCrewSolution> {
 
@@ -68,6 +74,17 @@ public class FlightCrewSchedulingXlsxFileIO extends AbstractXlsxSolutionFileIO<F
         } catch (IOException | RuntimeException e) {
             throw new IllegalStateException("Failed reading inputSolutionFile ("
                     + inputSolutionFile + ").", e);
+        }
+    }
+
+    @Override
+    public void write(FlightCrewSolution solution, File outputSolutionFile) {
+        try (FileOutputStream out = new FileOutputStream(outputSolutionFile)) {
+            Workbook workbook = new FlightCrewSchedulingXlsxWriter(solution).write();
+            workbook.write(out);
+        } catch (IOException | RuntimeException e) {
+            throw new IllegalStateException("Failed writing outputSolutionFile ("
+                    + outputSolutionFile + ") for solution (" + solution + ").", e);
         }
     }
 
@@ -247,7 +264,7 @@ public class FlightCrewSchedulingXlsxFileIO extends AbstractXlsxSolutionFileIO<F
                     }
                 }
                 employee.setUnavailableDaySet(unavailableDaySet);
-                employee.setFlightAssignmentSet(new TreeSet<>(FlightAssignment.DATE_TIME_COMPARATOR));
+                employee.setFlightAssignmentSet(new TreeSet<>());
                 nameToEmployeeMap.put(employee.getName(), employee);
                 employeeList.add(employee);
             }
@@ -329,22 +346,14 @@ public class FlightCrewSchedulingXlsxFileIO extends AbstractXlsxSolutionFileIO<F
             solution.setFlightList(flightList);
             solution.setFlightAssignmentList(flightAssignmentList);
         }
-
-    }
-
-
-    @Override
-    public void write(FlightCrewSolution solution, File outputSolutionFile) {
-        try (FileOutputStream out = new FileOutputStream(outputSolutionFile)) {
-            Workbook workbook = new FlightCrewSchedulingXlsxWriter(solution).write();
-            workbook.write(out);
-        } catch (IOException | RuntimeException e) {
-            throw new IllegalStateException("Failed writing outputSolutionFile ("
-                    + outputSolutionFile + ") for solution (" + solution + ").", e);
-        }
     }
 
     private static class FlightCrewSchedulingXlsxWriter extends AbstractXlsxWriter<FlightCrewSolution> {
+
+        private static final Comparator<FlightAssignment> COMPARATOR =
+                Comparator.<FlightAssignment, LocalDateTime>comparing(a -> a.getFlight().getDepartureUTCDateTime())
+                        .thenComparing(a -> a.getFlight().getArrivalUTCDateTime())
+                        .thenComparingLong(FlightAssignment::getId);
 
         public FlightCrewSchedulingXlsxWriter(FlightCrewSolution solution) {
             super(solution, FlightCrewSchedulingApp.SOLVER_CONFIG);
@@ -547,16 +556,13 @@ public class FlightCrewSchedulingXlsxFileIO extends AbstractXlsxSolutionFileIO<F
                 nextHeaderCell(employee.getHomeAirport().getCode());
                 List<FlightAssignment> employeeAssignmentList = employeeToFlightAssignmentMap.get(employee);
                 if (employeeAssignmentList != null) {
-                    employeeAssignmentList.sort(Comparator
-                            .<FlightAssignment, LocalDateTime>comparing(a -> a.getFlight().getDepartureUTCDateTime())
-                            .thenComparing(a -> a.getFlight().getArrivalUTCDateTime())
-                            .thenComparing(FlightAssignment::getId));
+                    employeeAssignmentList.sort(COMPARATOR);
                     for (LocalDate date = firstDate; date.compareTo(lastDate) <= 0; date = date.plusDays(1)) {
                         boolean unavailable = employee.getUnavailableDaySet().contains(date);
                         Map<Integer, List<FlightAssignment>> hourToAssignmentListMap = extractHourToAssignmentListMap(employeeAssignmentList, date);
                         for (int departureHour = minimumHour; departureHour <= maximumHour; departureHour++) {
                             List<FlightAssignment> flightAssignmentList = hourToAssignmentListMap.get(departureHour);
-                            if (flightAssignmentList != null) {
+                            if (flightAssignmentList != null && !flightAssignmentList.isEmpty()) {
                                 nextCell(unavailable ? unavailableStyle : defaultStyle).setCellValue(flightAssignmentList.stream()
                                         .map(FlightAssignment::getFlight)
                                         .map(flight -> flight.getDepartureAirport().getCode()
@@ -602,12 +608,11 @@ public class FlightCrewSchedulingXlsxFileIO extends AbstractXlsxSolutionFileIO<F
                     } else {
                         previousArrivalHour = Math.max(previousArrivalHour, arrivalHour);
                     }
+                    // The list is never null; gets initialized in the first loop due to previousArrivalHour = -1
                     previousFlightAssignmentList.add(flightAssignment);
                 }
             }
             return hourToAssignmentListMap;
         }
-
     }
-
 }

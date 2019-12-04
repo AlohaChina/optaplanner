@@ -58,8 +58,7 @@ public class NQueensConstructionHeuristicTrackingTest extends NQueensAbstractTra
 
     @Test
     public void trackConstructionHeuristics() {
-        SolverFactory<NQueens> solverFactory = SolverFactory.createFromXmlResource(NQueensApp.SOLVER_CONFIG);
-        SolverConfig solverConfig = solverFactory.getSolverConfig();
+        SolverConfig solverConfig = SolverConfig.createFromXmlResource(NQueensApp.SOLVER_CONFIG);
 
         ConstructionHeuristicPhaseConfig chConfig = new ConstructionHeuristicPhaseConfig();
         chConfig.setValueSorterManner(valueSorterManner);
@@ -71,6 +70,7 @@ public class NQueensConstructionHeuristicTrackingTest extends NQueensAbstractTra
         NQueens problem = generator.createNQueens(8);
 
         NQueensStepTracker listener = new NQueensStepTracker();
+        SolverFactory<NQueens> solverFactory = SolverFactory.create(solverConfig);
         DefaultSolver<NQueens> solver = (DefaultSolver<NQueens>) solverFactory.buildSolver();
         solver.addPhaseLifecycleListener(listener);
         NQueens bestSolution = solver.solve(problem);

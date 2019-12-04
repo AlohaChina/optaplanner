@@ -64,28 +64,26 @@ public class NQueensApp extends CommonApp<NQueens> {
     }
 
     @Override
-    protected Solver<NQueens> createSolver() {
-        return createSolverByXml();
+    protected SolverFactory<NQueens> createSolverFactory() {
+        return createSolverFactoryByXml();
     }
 
     /**
      * Normal way to create a {@link Solver}.
      * @return never null
      */
-    protected Solver<NQueens> createSolverByXml() {
-        SolverFactory<NQueens> solverFactory = SolverFactory.createFromXmlResource(SOLVER_CONFIG);
-        return solverFactory.buildSolver();
+    protected SolverFactory<NQueens> createSolverFactoryByXml() {
+        return SolverFactory.createFromXmlResource(SOLVER_CONFIG);
     }
 
     /**
-     * Unused alternative. Abnormal way to create a {@link Solver}.
+     * Unused alternative. A way to create a {@link Solver} without using XML.
      * <p>
-     * Not recommended! It is recommended to use {@link #createSolverByXml()} instead.
+     * It is recommended to use {@link #createSolverFactoryByXml()} instead.
      * @return never null
      */
-    protected Solver<NQueens> createSolverByApi() {
-        SolverFactory<NQueens> solverFactory = SolverFactory.createEmpty();
-        SolverConfig solverConfig = solverFactory.getSolverConfig();
+    protected SolverFactory<NQueens> createSolverFactoryByApi() {
+        SolverConfig solverConfig = new SolverConfig();
 
         solverConfig.setSolutionClass(NQueens.class);
         solverConfig.setEntityClassList(Collections.<Class<?>>singletonList(Queen.class));
@@ -111,7 +109,7 @@ public class NQueensApp extends CommonApp<NQueens> {
         phaseConfigList.add(localSearchPhaseConfig);
 
         solverConfig.setPhaseConfigList(phaseConfigList);
-        return solverFactory.buildSolver();
+        return SolverFactory.create(solverConfig);
     }
 
     @Override

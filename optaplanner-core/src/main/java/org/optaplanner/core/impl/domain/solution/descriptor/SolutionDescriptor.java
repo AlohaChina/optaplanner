@@ -35,6 +35,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
 import com.google.common.collect.Iterators;
 import org.apache.commons.lang3.tuple.MutablePair;
@@ -95,6 +97,7 @@ import org.optaplanner.core.impl.score.buildin.simple.SimpleScoreDefinition;
 import org.optaplanner.core.impl.score.buildin.simplebigdecimal.SimpleBigDecimalScoreDefinition;
 import org.optaplanner.core.impl.score.buildin.simpledouble.SimpleDoubleScoreDefinition;
 import org.optaplanner.core.impl.score.buildin.simplelong.SimpleLongScoreDefinition;
+import org.optaplanner.core.impl.score.definition.AbstractBendableScoreDefinition;
 import org.optaplanner.core.impl.score.definition.ScoreDefinition;
 import org.optaplanner.core.impl.score.director.ScoreDirector;
 import org.slf4j.Logger;
@@ -839,6 +842,9 @@ public class SolutionDescriptor<Solution_> {
         return constraintConfigurationMemberAccessor;
     }
 
+    /**
+     * @return sometimes null
+     */
     public ConstraintConfigurationDescriptor<Solution_> getConstraintConfigurationDescriptor() {
         return constraintConfigurationDescriptor;
     }
@@ -935,6 +941,68 @@ public class SolutionDescriptor<Solution_> {
         return lookUpStrategyResolver;
     }
 
+    public void validateConstraintWeight(String constraintPackage, String constraintName, Score<?> constraintWeight) {
+        if (constraintWeight == null) {
+            throw new IllegalArgumentException("The constraintWeight (" + constraintWeight
+                    + ") for constraintPackage (" + constraintPackage
+                    + ") and constraintName (" + constraintName
+                    + ") must not be null.\n"
+                    + (constraintConfigurationDescriptor == null ? "Maybe check your constraint implementation."
+                    : "Maybe validate the data input of your constraintConfigurationClass ("
+                    + constraintConfigurationDescriptor.getConstraintConfigurationClass()
+                    + ") for that constraint (" + constraintName + ")."));
+        }
+        if (!scoreDefinition.getScoreClass().isAssignableFrom(constraintWeight.getClass())) {
+            throw new IllegalArgumentException("The constraintWeight (" + constraintWeight
+                    + ") of class (" + constraintWeight.getClass()
+                    + ") for constraintPackage (" + constraintPackage + ") and constraintName (" + constraintName
+                    + ") must be of the scoreClass (" + scoreDefinition.getScoreClass() + ").\n"
+                    + (constraintConfigurationDescriptor == null ? "Maybe check your constraint implementation."
+                    : "Maybe validate the data input of your constraintConfigurationClass ("
+                    + constraintConfigurationDescriptor.getConstraintConfigurationClass()
+                    + ") for that constraint (" + constraintName + ")."));
+        }
+        if (constraintWeight.getInitScore() != 0) {
+            throw new IllegalArgumentException("The constraintWeight (" + constraintWeight
+                    + ") for constraintPackage (" + constraintPackage
+                    + ") and constraintName (" + constraintName
+                    + ") must have an initScore (" + constraintWeight.getInitScore() + ") equal to 0.\n"
+                    + (constraintConfigurationDescriptor == null ? "Maybe check your constraint implementation."
+                    : "Maybe validate the data input of your constraintConfigurationClass ("
+                    + constraintConfigurationDescriptor.getConstraintConfigurationClass()
+                    + ") for that constraint (" + constraintName + ")."));
+        }
+        if (!scoreDefinition.isPositiveOrZero(constraintWeight)) {
+            throw new IllegalArgumentException("The constraintWeight (" + constraintWeight
+                    + ") for constraintPackage (" + constraintPackage
+                    + ") and constraintName (" + constraintName
+                    + ") must have a positive or zero constraintWeight (" + constraintWeight + ").\n"
+                    + (constraintConfigurationDescriptor == null ? "Maybe check your constraint implementation."
+                    : "Maybe validate the data input of your constraintConfigurationClass ("
+                    + constraintConfigurationDescriptor.getConstraintConfigurationClass()
+                    + ") for that constraint (" + constraintName + ")."));
+        }
+        if (constraintWeight instanceof AbstractBendableScore) {
+            AbstractBendableScore bendableConstraintWeight = (AbstractBendableScore) constraintWeight;
+            AbstractBendableScoreDefinition bendableScoreDefinition = (AbstractBendableScoreDefinition) scoreDefinition;
+            if (bendableConstraintWeight.getHardLevelsSize() != bendableScoreDefinition.getHardLevelsSize()
+                    || bendableConstraintWeight.getSoftLevelsSize() != bendableScoreDefinition.getSoftLevelsSize()) {
+                throw new IllegalArgumentException("The bendable constraintWeight (" + constraintWeight
+                        + ") for constraintPackage (" + constraintPackage
+                        + ") and constraintName (" + constraintName
+                        + ") has a hardLevelsSize (" + bendableConstraintWeight.getHardLevelsSize()
+                        + ") or a softLevelsSize (" + bendableConstraintWeight.getSoftLevelsSize()
+                        + ") that doesn't match the score definition's hardLevelsSize ("
+                        + bendableScoreDefinition.getHardLevelsSize()
+                        + ") or softLevelsSize (" + bendableScoreDefinition.getSoftLevelsSize() + ").\n"
+                        + (constraintConfigurationDescriptor == null ? "Maybe check your constraint implementation."
+                        : "Maybe validate the data input of your constraintConfigurationClass ("
+                        + constraintConfigurationDescriptor.getConstraintConfigurationClass()
+                        + ") for that constraint (" + constraintName + ")."));
+            }
+        }
+    }
+
     // ************************************************************************
     // Extraction methods
     // ************************************************************************
@@ -1013,27 +1081,30 @@ public class SolutionDescriptor<Solution_> {
     }
 
     /**
+     * @param scoreDirector never null
+     * @return {@code >= 0}
+     */
+    public int getMovableEntityCount(ScoreDirector<Solution_> scoreDirector) {
+        return extractAllEntitiesStream(scoreDirector.getWorkingSolution())
+                .mapToInt(entity -> findEntityDescriptorOrFail(entity.getClass()).isMovable(scoreDirector, entity)
+                        ? 1 : 0)
+                .sum();
+    }
+
+    /**
      * @param solution never null
      * @return {@code >= 0}
      */
     public long getGenuineVariableCount(Solution_ solution) {
-        long variableCount = 0L;
-        for (Iterator<Object> it = extractAllEntitiesIterator(solution); it.hasNext(); ) {
-            Object entity = it.next();
-            EntityDescriptor<Solution_> entityDescriptor = findEntityDescriptorOrFail(entity.getClass());
-            variableCount += entityDescriptor.getGenuineVariableCount();
-        }
-        return variableCount;
+        return extractAllEntitiesStream(solution)
+                .mapToLong(entity -> findEntityDescriptorOrFail(entity.getClass()).getGenuineVariableCount())
+                .sum();
     }
 
     public long getMaximumValueCount(Solution_ solution) {
-        long maximumValueCount = 0L;
-        for (Iterator<Object> it = extractAllEntitiesIterator(solution); it.hasNext(); ) {
-            Object entity = it.next();
-            EntityDescriptor<Solution_> entityDescriptor = findEntityDescriptorOrFail(entity.getClass());
-            maximumValueCount = Math.max(maximumValueCount, entityDescriptor.getMaximumValueCount(solution, entity));
-        }
-        return maximumValueCount;
+        return extractAllEntitiesStream(solution)
+                .mapToLong(entity -> findEntityDescriptorOrFail(entity.getClass()).getMaximumValueCount(solution, entity))
+                .max().orElse(0L);
     }
 
     /**
@@ -1055,33 +1126,17 @@ public class SolutionDescriptor<Solution_> {
      * @return {@code >= 0}
      */
     public long getProblemScale(Solution_ solution) {
-        long problemScale = 0L;
-        for (Iterator<Object> it = extractAllEntitiesIterator(solution); it.hasNext(); ) {
-            Object entity = it.next();
-            EntityDescriptor<Solution_> entityDescriptor = findEntityDescriptorOrFail(entity.getClass());
-            problemScale += entityDescriptor.getProblemScale(solution, entity);
-        }
-        return problemScale;
+        return extractAllEntitiesStream(solution)
+                .mapToLong(entity -> findEntityDescriptorOrFail(entity.getClass()).getProblemScale(solution, entity))
+                .sum();
     }
 
     public int countUninitializedVariables(Solution_ solution) {
-        int count = 0;
-        for (Iterator<Object> it = extractAllEntitiesIterator(solution); it.hasNext(); ) {
-            Object entity = it.next();
-            EntityDescriptor<Solution_> entityDescriptor = findEntityDescriptorOrFail(entity.getClass());
-            count += entityDescriptor.countUninitializedVariables(entity);
-        }
-        return count;
-    }
-
-    public int countReinitializableVariables(ScoreDirector<Solution_> scoreDirector, Solution_ solution) {
-        int count = 0;
-        for (Iterator<Object> it = extractAllEntitiesIterator(solution); it.hasNext(); ) {
-            Object entity = it.next();
-            EntityDescriptor<Solution_> entityDescriptor = findEntityDescriptorOrFail(entity.getClass());
-            count += entityDescriptor.countReinitializableVariables(scoreDirector, entity);
-        }
-        return count;
+        long count = extractAllEntitiesStream(solution)
+                .mapToLong(entity -> findEntityDescriptorOrFail(entity.getClass()).countUninitializedVariables(entity))
+                .sum();
+        // Score.initScore is an int
+        return Math.toIntExact(count);
     }
 
     public Iterator<Object> extractAllEntitiesIterator(Solution_ solution) {
@@ -1098,6 +1153,21 @@ public class SolutionDescriptor<Solution_> {
             iteratorList.add(entityCollection.iterator());
         }
         return Iterators.concat(iteratorList.iterator());
+    }
+
+    public Stream<Object> extractAllEntitiesStream(Solution_ solution) {
+        Stream<Object> stream = Stream.empty();
+        for (MemberAccessor memberAccessor : entityMemberAccessorMap.values()) {
+            Object entity = extractMemberObject(memberAccessor, solution);
+            if (entity != null) {
+                stream = Stream.concat(stream, Stream.of(entity));
+            }
+        }
+        for (MemberAccessor memberAccessor : entityCollectionMemberAccessorMap.values()) {
+            Collection<Object> entityCollection = extractMemberCollectionOrArray(memberAccessor, solution, false);
+            stream = Stream.concat(stream, entityCollection.stream());
+        }
+        return stream;
     }
 
     private Object extractMemberObject(MemberAccessor memberAccessor, Solution_ solution) {

@@ -18,7 +18,7 @@ package org.optaplanner.core.impl.score.definition;
 import org.optaplanner.core.api.score.FeasibilityScore;
 import org.optaplanner.core.api.score.Score;
 
-public interface FeasibilityScoreDefinition<S extends FeasibilityScore> extends ScoreDefinition<S> {
+public interface FeasibilityScoreDefinition<S extends FeasibilityScore<S>> extends ScoreDefinition<S> {
 
     /**
      * Returns the number of levels of {@link Score#toLevelNumbers()}.

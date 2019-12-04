@@ -6,7 +6,7 @@
   <parent>
     <groupId>org.optaplanner</groupId>
     <artifactId>optaplanner</artifactId>
-    <version>7.16.0-SNAPSHOT</version>
+    <version>7.31.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>optaplanner-benchmark</artifactId>
@@ -28,6 +28,10 @@
 
   <dependencies>
     <!-- Internal dependencies -->
+    <dependency>
+      <groupId>org.kie</groupId>
+      <artifactId>kie-api</artifactId>
+    </dependency>
     <dependency>
       <groupId>org.optaplanner</groupId>
       <artifactId>optaplanner-core</artifactId>
@@ -61,6 +65,13 @@
       <artifactId>drools-core</artifactId>
       <scope>runtime</scope>
     </dependency>
+    <dependency>
+      <groupId>org.drools</groupId>
+      <artifactId>drools-compiler</artifactId>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
     <!-- External dependencies -->
     <!-- Common utils -->
     <dependency>
@@ -92,12 +103,13 @@
       <artifactId>jfreechart</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.jfree</groupId>
-      <artifactId>jcommon</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.freemarker</groupId>
       <artifactId>freemarker</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 
@@ -118,6 +130,15 @@
       <plugin>
         <groupId>org.revapi</groupId>
         <artifactId>revapi-maven-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <systemPropertyVariables>
+            <java.awt.headless>true</java.awt.headless>
+          </systemPropertyVariables>
+        </configuration>
       </plugin>
     </plugins>
   </build>

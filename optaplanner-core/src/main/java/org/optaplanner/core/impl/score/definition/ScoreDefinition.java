@@ -21,7 +21,10 @@ import org.optaplanner.core.api.score.buildin.hardsoft.HardSoftScore;
 import org.optaplanner.core.api.score.holder.ScoreHolder;
 import org.optaplanner.core.impl.score.ScoreUtils;
 import org.optaplanner.core.impl.score.buildin.hardsoft.HardSoftScoreDefinition;
+import org.optaplanner.core.impl.score.director.ScoreDirector;
 import org.optaplanner.core.impl.score.director.drools.DroolsScoreDirector;
+import org.optaplanner.core.impl.score.inliner.ScoreInliner;
+import org.optaplanner.core.impl.score.stream.bavet.BavetConstraintFactory;
 import org.optaplanner.core.impl.score.trend.InitializingScoreTrend;
 
 /**
@@ -29,7 +32,7 @@ import org.optaplanner.core.impl.score.trend.InitializingScoreTrend;
  * @see AbstractScoreDefinition
  * @see HardSoftScoreDefinition
  */
-public interface ScoreDefinition<S extends Score> {
+public interface ScoreDefinition<S extends Score<S>> {
 
     /**
      * Returns the label for {@link Score#getInitScore()}.
@@ -110,11 +113,18 @@ public interface ScoreDefinition<S extends Score> {
     S fromLevelNumbers(int initScore, Number[] levelNumbers);
 
     /**
-     * Used by {@link DroolsScoreDirector}.
-     * @param constraintMatchEnabled true if {@link ScoreHolder#isConstraintMatchEnabled()} should be true
+     * Used by {@link BavetConstraintFactory}
+     * @param constraintMatchEnabled true if {@link ScoreDirector#isConstraintMatchEnabled()} should be true
      * @return never null
      */
-    ScoreHolder buildScoreHolder(boolean constraintMatchEnabled);
+    ScoreInliner<S> buildScoreInliner(boolean constraintMatchEnabled);
+
+    /**
+     * Used by {@link DroolsScoreDirector}.
+     * @param constraintMatchEnabled true if {@link ScoreDirector#isConstraintMatchEnabled()} should be true
+     * @return never null
+     */
+    ScoreHolder<S> buildScoreHolder(boolean constraintMatchEnabled);
 
     /**
      * Builds a {@link Score} which is equal or better than any other {@link Score} with more variables initialized

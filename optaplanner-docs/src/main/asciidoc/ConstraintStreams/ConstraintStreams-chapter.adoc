@@ -1,5 +1,5 @@
 [[constraintStreams]]
-= Constraint Streams Score Calculation
+= Constraint streams score calculation
 :doctype: book
 :imagesdir: ..
 :sectnums:
@@ -8,8 +8,33 @@
 :experimental:
 
 
-Constraint streams are an Functional Programming form of incremental score calculation in plain Java 8+
-that is fast, scalable and debuggable.
+Constraint streams are a Functional Programming form of incremental score calculation in plain Java that is easy to
+read, write and debug.
+The API should feel familiar if you've worked with Java 8 Streams or SQL.
+
+[WARNING]
+====
+The ConstraintStreams/ConstraintProvider API is an ongoing project.
+It works but it has many API gaps.
+Therefore, it is not rich enough yet to handle complex constraints.
+<<explainingTheScore,Constraint justifications>> may not function properly.
+====
+
+// TODO Remove the previous sentence when PLANNER-1709 is fixed.
+
+To use constraint streams in your project, implement the `ConstraintProvider` interface and use the following in your
+solver config:
+
+[source,xml,options="nowrap"]
+----
+    <solver>
+      <scoreDirectorFactory>
+        <constraintProviderClass>com.example.MyConstraintProvider</constraintProviderClass>
+      </scoreDirectorFactory>
+      ...
+    </solver>
+----
+
 
 [[constraintStreamsIntroduction]]
 == Introduction
@@ -19,18 +44,206 @@ that uses a functional approach:
 
 [source,java,options="nowrap"]
 ----
-List<Talk> talkList = schedule.getTalkList();
-talkList.stream()
-        .filter(talk -> talk.hasAnyUnavailableSpeaker())
-        .forEach(talk -> penalize(talk.getDurationInMinutes()));
+    private int speakerUnavailableTimeslot() {
+        int softScore = 0;
+        schedule.getTalkList().stream()
+                .filter(Talk::hasAnyUnavailableSpeaker)
+                .forEach(talk -> {
+                    softScore -= talk.getDurationInMinutes();
+                });
+        return softScore;
+    }
 ----
 
-However, that scales poorly because it doesn't do an <<incrementalScoreCalculation,incremental calculation>>.
+However, that scales poorly because it doesn't do an <<incrementalScoreCalculation,incremental calculation>>:
 When the planning variable of a single `Talk` changes, to recalculate the score,
 the normal Streams API has to execute the entire stream from scratch.
+
+On the other hand, the ConstraintStreams API uses <<incrementalScoreCalculation,deltas>>:
+
+////
+TODO Replace the previous sentence when PLANNER-1709 is fixed.
+
 So it doesn't do <<incrementalScoreCalculation,deltas>>.
 Nor does it support <<explainingTheScore,justifications>>.
 
-The ConstraintStreams API does do <<incrementalScoreCalculation,deltas>> and support <<explainingTheScore,justifications>>.
+On the other hand, the ConstraintStreams API uses <<incrementalScoreCalculation,deltas>>
+and supports <<explainingTheScore,justifications>>:
+////
 
-*Constraints stream will be implemented soon.*
+[source,java,options="nowrap"]
+----
+    private Constraint speakerUnavailableTimeslot(ConstraintFactory factory) {
+        return factory.from(Talk.class)
+                .filter(Talk::hasAnyUnavailableSpeaker)
+                .penalize("Speaker unavailable timeslot",
+                        HardSoftScore.ONE_SOFT,
+                        Talk::getDurationInMinutes);
+    }
+----
+
+image::ConstraintStreams/constraintStreamIntroduction.png[align="center"]
+image::ConstraintStreams/constraintStreamIncrementalCalculation.png[align="center"]
+image::ConstraintStreams/constraintStreamJustification.png[align="center"]
+
+
+[[constraintStreamsFilter]]
+== Filter
+
+image::ConstraintStreams/constraintStreamFilter.png[align="center"]
+
+
+[[constraintStreamsJoin]]
+== Join
+
+image::ConstraintStreams/constraintStreamJoinWithoutJoiners.png[align="center"]
+
+image::ConstraintStreams/constraintStreamJoinWithJoiners.png[align="center"]
+
+
+[[constraintStreamsGroupingAndCollectors]]
+== Grouping and Collectors
+
+Grouping collects items in a stream according to user-provider criteria (also called "group key"), similar to what a
+`GROUP BY` SQL clause does. Additionally, some grouping operations also accept one or more `Collector`s, which provide
+various aggregation functions.
+
+For example, the following code snippet first groups all processes by the computer they run on, sums up all the power
+required by the processes on that computer using the `ConstraintCollectors.sum(...)` collector, and finally penalizes
+every computer whose processes consume more power than is available.
+
+[source,java,options="nowrap"]
+----
+    private Constraint requiredCpuPowerTotal(ConstraintFactory constraintFactory) {
+        return constraintFactory.from(CloudProcess.class)
+                .groupBy(CloudProcess::getComputer, sum(CloudProcess::getRequiredCpuPower))
+                .filter((computer, requiredCpuPower) -> requiredCpuPower > computer.getCpuPower())
+                .penalize("requiredCpuPowerTotal",
+                        HardSoftScore.ONE_HARD,
+                        (computer, requiredCpuPower) -> requiredCpuPower - computer.getCpuPower());
+    }
+----
+
+image::ConstraintStreams/constraintStreamGroupBy.png[align="center"]
+
+There are several collectors available out of the box. You can also provide your own collectors by implementing the
+`org.optaplanner.core.api.score.stream.uni.UniConstraintCollector` interface, or its `Bi...`, `Tri...` counterparts.
+
+[collectorsOutOfTheBox]
+=== Out-of-the-box Collectors
+
+The following section focuses on the collector implementations provided out of the box. This section only describes the
+`int`-based variants of the collectors in detail. Many of the collectors also provide variants for other applicable
+result data types, such as `long`, `BigDecimal` or `Duration`. You can find a complete list by exploring the
+`org.optaplanner.core.api.score.stream.ConstraintCollectors` class.
+
+[collectorsCount]
+==== Collecting `count()`
+
+The `ConstraintCollectors.count(...)` counts all elements in a group. For example, the following use of the collector
+gives a number of items for two separate groups - one where the talks have unavailable speakers, and one where they
+don't.
+
+[source,java,options="nowrap"]
+----
+    private Constraint speakerAvailability(ConstraintFactory factory) {
+        return factory.from(Talk.class)
+                .groupBy(Talk::hasAnyUnavailableSpeaker, count())
+                .penalize("speakerAvailability",
+                        HardSoftScore.ONE_HARD,
+                        (hasUnavailableSpeaker, count) -> ...);
+    }
+----
+
+The return value for this collector is a 32-bit signed integer (`int`). There is also a 64-bit variant, `countLong()`.
+
+[collectorsCountDistinct]
+==== Collecting `countDistinct()`
+
+The `ConstraintCollectors.countDistinct(...)` counts any element in a group once, regardless of how many times it
+occurs. For example, the following use of the collector gives a number of talks in each unique room.
+
+[source,java,options="nowrap"]
+----
+    private Constraint roomCount(ConstraintFactory factory) {
+        return factory.from(Talk.class)
+                .groupBy(Talk::getRoom, countDistinct())
+                .penalize("roomCount",
+                        HardSoftScore.ONE_SOFT,
+                        (room, count) -> ...);
+    }
+----
+
+The return value for this collector is a 32-bit signed integer (`int`). There is also a 64-bit variant, `countLong()`.
+
+[collectorsSum]
+==== Collecting `sum()`
+
+To sum the values of a particular property of all elements in the group, use the `ConstraintCollectors.sum(...)`
+collector. The following code snippet first groups all processes by the computer they run on and sums up all the power
+required by the processes on that computer using the `ConstraintCollectors.sum(...)` collector.
+
+[source,java,options="nowrap"]
+----
+    private Constraint requiredCpuPowerTotal(ConstraintFactory constraintFactory) {
+        return constraintFactory.from(CloudProcess.class)
+                .groupBy(CloudProcess::getComputer, sum(CloudProcess::getRequiredCpuPower))
+                .penalize("requiredCpuPowerTotal",
+                        HardSoftScore.ONE_SOFT,
+                        (computer, requiredCpuPower) -> requiredCpuPower);
+    }
+----
+
+The return value for this collector is a 32-bit signed integer (`int`). There are also the following variants:
+
+* 64-bit variant `sumLong()`
+* `java.math.BigDecimal`-based variant `sumBigDecimal()`
+* `java.math.BigInteger`-based variant `sumBigInteger()`
+* `java.time.Duration`-based variant `sumDuration()`
+* `java.time.Period`-based variant `sumPeriod()`
+
+
+[collectorsMinMax]
+==== Minimums and maximums
+
+To extract the minimum or maximum of a group, use the `ConstraintCollectors.min(...)` and
+`ConstraintCollectors.max(...)` collectors respectively.
+
+These collectors operate on values of properties which are `Comparable` (such as `Integer`, `String` or `Duration`),
+although there are also variants of these collectors which allow you to provide your own `Comparator`.
+
+The following example finds a computer which runs the most power-demanding process:
+
+[source,java,options="nowrap"]
+----
+    private Constraint computerWithBiggestProcess(ConstraintFactory constraintFactory) {
+        return constraintFactory.from(CloudProcess.class)
+                .groupBy(CloudProcess::getComputer, max(CloudProcess::getRequiredCpuPower))
+                .penalize("computerWithBiggestProcess",
+                        HardSoftScore.ONE_HARD,
+                        computer -> ...);
+    }
+----
+
+
+[[constraintStreamsImplementations]]
+== Variant implementation types
+
+Constraint streams come in two flavours, a default implementation using Drools under the hood and a pure Java-based
+implementation called _Bavet_. Drools-based implementation is more feature-complete.
+
+Bavet is an experimental implementation focusing on raw speed, which often significantly outperforms the Drools
+implementation, or even Drools itself.
+However, it lacks features.
+To try it out, implement the `ConstraintProvider` interface and use the following in your solver config:
+
+[source,xml,options="nowrap"]
+----
+    <solver>
+      <scoreDirectorFactory>
+        <constraintStreamImplType>BAVET</constraintStreamImplType>
+        <constraintProviderClass>com.example.MyConstraintProvider</constraintProviderClass>
+      </scoreDirectorFactory>
+      ...
+    </solver>
+----

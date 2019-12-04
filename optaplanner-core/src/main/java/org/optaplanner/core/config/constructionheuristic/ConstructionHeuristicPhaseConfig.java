@@ -42,7 +42,7 @@ import org.optaplanner.core.impl.constructionheuristic.decider.ConstructionHeuri
 import org.optaplanner.core.impl.constructionheuristic.decider.MultiThreadedConstructionHeuristicDecider;
 import org.optaplanner.core.impl.constructionheuristic.decider.forager.ConstructionHeuristicForager;
 import org.optaplanner.core.impl.constructionheuristic.placer.EntityPlacer;
-import org.optaplanner.core.impl.solver.ChildThreadType;
+import org.optaplanner.core.impl.solver.thread.ChildThreadType;
 import org.optaplanner.core.impl.solver.recaller.BestSolutionRecaller;
 import org.optaplanner.core.impl.solver.termination.Termination;
 
@@ -119,6 +119,40 @@ public class ConstructionHeuristicPhaseConfig extends PhaseConfig<ConstructionHe
 
     public void setForagerConfig(ConstructionHeuristicForagerConfig foragerConfig) {
         this.foragerConfig = foragerConfig;
+    }
+
+    // ************************************************************************
+    // With methods
+    // ************************************************************************
+
+    public ConstructionHeuristicPhaseConfig withConstructionHeuristicType(ConstructionHeuristicType constructionHeuristicType) {
+        this.constructionHeuristicType = constructionHeuristicType;
+        return this;
+    }
+
+    public ConstructionHeuristicPhaseConfig withEntitySorterManner(EntitySorterManner entitySorterManner) {
+        this.entitySorterManner = entitySorterManner;
+        return this;
+    }
+
+    public ConstructionHeuristicPhaseConfig withValueSorterManner(ValueSorterManner valueSorterManner) {
+        this.valueSorterManner = valueSorterManner;
+        return this;
+    }
+
+    public ConstructionHeuristicPhaseConfig withEntityPlacerConfig(EntityPlacerConfig entityPlacerConfig) {
+        this.entityPlacerConfigList = entityPlacerConfig == null ? null : Collections.singletonList(entityPlacerConfig);
+        return this;
+    }
+
+    public ConstructionHeuristicPhaseConfig withMoveSelectorConfigList(List<MoveSelectorConfig> moveSelectorConfigList) {
+        this.moveSelectorConfigList = moveSelectorConfigList;
+        return this;
+    }
+
+    public ConstructionHeuristicPhaseConfig withForagerConfig(ConstructionHeuristicForagerConfig foragerConfig) {
+        this.foragerConfig = foragerConfig;
+        return this;
     }
 
     // ************************************************************************

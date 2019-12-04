@@ -39,7 +39,7 @@ import org.optaplanner.core.impl.score.director.drools.DroolsScoreDirector;
  * @param <Score_> the {@link Score} type
  * @see AbstractScoreHolder
  */
-public interface ScoreHolder<Score_ extends Score> {
+public interface ScoreHolder<Score_ extends Score<Score_>> {
 
     /**
      * Extracts the {@link Score}, calculated by the {@link KieSession} for {@link DroolsScoreDirector}.
@@ -78,6 +78,16 @@ public interface ScoreHolder<Score_ extends Score> {
      * @see ScoreDirector#getConstraintMatchTotals()
      */
     Collection<ConstraintMatchTotal> getConstraintMatchTotals();
+
+    /**
+     * Explains the {@link Score} of {@link #extractScore(int)}.
+     * <p>
+     * Should not be called directly, use {@link ScoreDirector#getConstraintMatchTotalMap()} instead.
+     * @return never null
+     * @throws IllegalStateException if {@link #isConstraintMatchEnabled()} is false
+     * @see ScoreDirector#getConstraintMatchTotalMap()
+     */
+    Map<String, ConstraintMatchTotal> getConstraintMatchTotalMap();
 
     /**
      * Explains the impact of each planning entity or problem fact on the {@link Score}.

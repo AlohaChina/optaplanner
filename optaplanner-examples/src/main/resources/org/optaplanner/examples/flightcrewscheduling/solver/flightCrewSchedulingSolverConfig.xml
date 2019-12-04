@@ -8,6 +8,7 @@
   <entityClass>org.optaplanner.examples.flightcrewscheduling.domain.Employee</entityClass>
 
   <scoreDirectorFactory>
+    <!--<constraintProviderClass>org.optaplanner.examples.flightcrewscheduling.optional.score.FlightCrewSchedulingConstraintProvider</constraintProviderClass>-->
     <scoreDrl>org/optaplanner/examples/flightcrewscheduling/solver/flightCrewSchedulingScoreRules.drl</scoreDrl>
   </scoreDirectorFactory>
 
@@ -19,9 +20,12 @@
     <unionMoveSelector>
       <changeMoveSelector/>
       <swapMoveSelector/>
-      <!-- TODO Use a sorted pillar to heavily improve feasibility and solution quality https://issues.jboss.org/browse/PLANNER-1217 -->
-      <!--<pillarChangeMoveSelector/>-->
-      <!--<pillarSwapMoveSelector/>-->
+      <pillarChangeMoveSelector>
+        <subPillarType>SEQUENCE</subPillarType>
+      </pillarChangeMoveSelector>
+      <pillarSwapMoveSelector>
+        <subPillarType>SEQUENCE</subPillarType>
+      </pillarSwapMoveSelector>
     </unionMoveSelector>
   </localSearch>
 </solver>

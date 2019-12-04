@@ -19,19 +19,19 @@ package org.optaplanner.benchmark.api;
 import java.io.File;
 import java.io.InputStream;
 import java.io.Reader;
-import java.util.Collections;
 import java.util.List;
 
+import org.kie.api.KieServices;
+import org.kie.api.builder.KieModule;
+import org.kie.api.builder.ReleaseId;
+import org.kie.api.runtime.KieContainer;
 import org.optaplanner.benchmark.config.PlannerBenchmarkConfig;
-import org.optaplanner.benchmark.config.SolverBenchmarkConfig;
-import org.optaplanner.benchmark.impl.EmptyPlannerBenchmarkFactory;
-import org.optaplanner.benchmark.impl.FreemarkerXmlPlannerBenchmarkFactory;
-import org.optaplanner.benchmark.impl.XStreamXmlPlannerBenchmarkFactory;
+import org.optaplanner.benchmark.impl.DefaultPlannerBenchmarkFactory;
 import org.optaplanner.core.api.domain.solution.PlanningSolution;
 import org.optaplanner.core.api.solver.SolverFactory;
 import org.optaplanner.core.config.SolverConfigContext;
 import org.optaplanner.core.config.solver.SolverConfig;
-import org.optaplanner.core.impl.solver.AbstractSolverFactory;
+import org.optaplanner.core.impl.solver.DefaultSolverFactory;
 
 /**
  * Builds {@link PlannerBenchmark} instances.
@@ -41,49 +41,120 @@ import org.optaplanner.core.impl.solver.AbstractSolverFactory;
 public abstract class PlannerBenchmarkFactory {
 
     // ************************************************************************
-    // Static creation methods
+    // Static creation methods: SolverConfig
     // ************************************************************************
+
+    /**
+     * Reads an XML solver configuration from the classpath
+     * and uses that {@link SolverConfig} to build a {@link PlannerBenchmarkConfig}
+     * that in turn is used to build a {@link PlannerBenchmarkFactory}.
+     * The XML root element must be {@code <solver>}.
+     * <p>
+     * To read an XML benchmark configuration instead, use {@link #createFromXmlResource(String)}.
+     * @param solverConfigResource never null, a classpath resource
+     * as defined by {@link ClassLoader#getResource(String)}
+     */
+    public static PlannerBenchmarkFactory createFromSolverConfigXmlResource(String solverConfigResource) {
+        SolverConfig solverConfig = SolverConfig.createFromXmlResource(solverConfigResource);
+        PlannerBenchmarkConfig benchmarkConfig = PlannerBenchmarkConfig.createFromSolverConfig(solverConfig);
+        return new DefaultPlannerBenchmarkFactory(benchmarkConfig);
+    }
+
+    /**
+     * As defined by {@link #createFromSolverConfigXmlResource(String)}.
+     * @param solverConfigResource never null, a classpath resource
+     * as defined by {@link ClassLoader#getResource(String)}.
+     * @param classLoader sometimes null, the {@link ClassLoader} to use for loading all resources and {@link Class}es,
+     * null to use the default {@link ClassLoader}
+     */
+    public static PlannerBenchmarkFactory createFromSolverConfigXmlResource(String solverConfigResource,
+            ClassLoader classLoader) {
+        SolverConfig solverConfig = SolverConfig.createFromXmlResource(solverConfigResource, classLoader);
+        PlannerBenchmarkConfig benchmarkConfig = PlannerBenchmarkConfig.createFromSolverConfig(solverConfig);
+        return new DefaultPlannerBenchmarkFactory(benchmarkConfig);
+    }
+
+    /**
+     * As defined by {@link #createFromSolverConfigXmlResource(String)}.
+     * @param solverConfigResource never null, a classpath resource
+     * as defined by {@link ClassLoader#getResource(String)}
+     * @param benchmarkDirectory never null
+     */
+    public static PlannerBenchmarkFactory createFromSolverConfigXmlResource(String solverConfigResource,
+            File benchmarkDirectory) {
+        SolverConfig solverConfig = SolverConfig.createFromXmlResource(solverConfigResource);
+        PlannerBenchmarkConfig benchmarkConfig = PlannerBenchmarkConfig.createFromSolverConfig(solverConfig, benchmarkDirectory);
+        return new DefaultPlannerBenchmarkFactory(benchmarkConfig);
+    }
+
+    /**
+     * As defined by {@link #createFromSolverConfigXmlResource(String)}.
+     * @param solverConfigResource never null, a classpath resource
+     * as defined by {@link ClassLoader#getResource(String)}
+     * @param benchmarkDirectory never null
+     * @param classLoader sometimes null, the {@link ClassLoader} to use for loading all resources and {@link Class}es,
+     * null to use the default {@link ClassLoader}
+     */
+    public static PlannerBenchmarkFactory createFromSolverConfigXmlResource(String solverConfigResource,
+            File benchmarkDirectory, ClassLoader classLoader) {
+        SolverConfig solverConfig = SolverConfig.createFromXmlResource(solverConfigResource, classLoader);
+        PlannerBenchmarkConfig benchmarkConfig = PlannerBenchmarkConfig.createFromSolverConfig(solverConfig, benchmarkDirectory);
+        return new DefaultPlannerBenchmarkFactory(benchmarkConfig);
+    }
 
     /**
      * @param solverFactory never null, also its {@link ClassLoader} is reused if any was configured during creation
      * @param <Solution_> the solution type, the class with the {@link PlanningSolution} annotation
+     * @deprecated in favor of {@link #createFromSolverConfigXmlResource(String)}
+     * or in complex cases {@link PlannerBenchmarkConfig#createFromSolverConfig(SolverConfig)}
+     * and {@link #create(PlannerBenchmarkConfig)}. Will be removed in 8.0.
      */
+    @Deprecated
     public static <Solution_> PlannerBenchmarkFactory createFromSolverFactory(SolverFactory<Solution_> solverFactory) {
-        return createFromSolverFactory(solverFactory, new File("local/benchmarkReport"));
+        SolverConfig solverConfig = solverFactory.getSolverConfig();
+        PlannerBenchmarkConfig benchmarkConfig = PlannerBenchmarkConfig.createFromSolverConfig(solverConfig);
+        SolverConfigContext solverConfigContext = ((DefaultSolverFactory) solverFactory).getSolverConfigContext();
+        return new DefaultPlannerBenchmarkFactory(benchmarkConfig, solverConfigContext);
     }
 
     /**
      * @param solverFactory never null, also its {@link ClassLoader} is reused if any was configured during creation
      * @param benchmarkDirectory never null
      * @param <Solution_> the solution type, the class with the {@link PlanningSolution} annotation
+     * @deprecated in favor of {@link #createFromSolverConfigXmlResource(String, File)}.
+     * or in complex cases {@link PlannerBenchmarkConfig#createFromSolverConfig(SolverConfig, File)}
+     * and {@link #create(PlannerBenchmarkConfig)}. Will be removed in 8.0.
      */
+    @Deprecated
     public static <Solution_> PlannerBenchmarkFactory createFromSolverFactory(SolverFactory<Solution_> solverFactory,
             File benchmarkDirectory) {
-        SolverConfigContext solverConfigContext = ((AbstractSolverFactory) solverFactory).getSolverConfigContext();
-        PlannerBenchmarkFactory plannerBenchmarkFactory = (solverConfigContext == null)
-                ? new EmptyPlannerBenchmarkFactory() : new EmptyPlannerBenchmarkFactory(solverConfigContext);
-        PlannerBenchmarkConfig plannerBenchmarkConfig = plannerBenchmarkFactory.getPlannerBenchmarkConfig();
-        plannerBenchmarkConfig.setBenchmarkDirectory(benchmarkDirectory);
-        SolverBenchmarkConfig solverBenchmarkConfig = new SolverBenchmarkConfig();
-        SolverConfig solverConfig = new SolverConfig(solverFactory.getSolverConfig());
-        solverBenchmarkConfig.setSolverConfig(solverConfig);
-        plannerBenchmarkConfig.setInheritedSolverBenchmarkConfig(solverBenchmarkConfig);
-        plannerBenchmarkConfig.setSolverBenchmarkConfigList(Collections.singletonList(new SolverBenchmarkConfig()));
-        return plannerBenchmarkFactory;
+        SolverConfig solverConfig = solverFactory.getSolverConfig();
+        PlannerBenchmarkConfig benchmarkConfig = PlannerBenchmarkConfig.createFromSolverConfig(solverConfig, benchmarkDirectory);
+        SolverConfigContext solverConfigContext = ((DefaultSolverFactory) solverFactory).getSolverConfigContext();
+        return new DefaultPlannerBenchmarkFactory(benchmarkConfig, solverConfigContext);
     }
 
+    // ************************************************************************
+    // Static creation methods: XML
+    // ************************************************************************
+
     /**
+     * Reads an XML benchmark configuration from the classpath
+     * and uses that {@link PlannerBenchmarkConfig} to build a {@link PlannerBenchmarkFactory}.
+     * The XML root element must be {@code <plannerBenchmark>}.
+     * <p>
+     * To read an XML solver configuration instead, use {@link #createFromSolverConfigXmlResource(String)}.
      * @param benchmarkConfigResource never null, a classpath resource
      * as defined by {@link ClassLoader#getResource(String)}
      * @return never null
      */
     public static PlannerBenchmarkFactory createFromXmlResource(String benchmarkConfigResource) {
-        return new XStreamXmlPlannerBenchmarkFactory()
-                .configure(benchmarkConfigResource);
+        PlannerBenchmarkConfig benchmarkConfig = PlannerBenchmarkConfig.createFromXmlResource(benchmarkConfigResource);
+        return new DefaultPlannerBenchmarkFactory(benchmarkConfig);
     }
 
     /**
-     * See {@link #createFromXmlResource(String)}.
+     * As defined by {@link #createFromXmlResource(String)}.
      * @param benchmarkConfigResource never null, a classpath resource
      * as defined by {@link ClassLoader#getResource(String)}
      * @param classLoader sometimes null, the {@link ClassLoader} to use for loading all resources and {@link Class}es,
@@ -91,37 +162,46 @@ public abstract class PlannerBenchmarkFactory {
      * @return never null
      */
     public static PlannerBenchmarkFactory createFromXmlResource(String benchmarkConfigResource, ClassLoader classLoader) {
-        return new XStreamXmlPlannerBenchmarkFactory(new SolverConfigContext(classLoader))
-                .configure(benchmarkConfigResource);
+        PlannerBenchmarkConfig benchmarkConfig = PlannerBenchmarkConfig.createFromXmlResource(benchmarkConfigResource, classLoader);
+        return new DefaultPlannerBenchmarkFactory(benchmarkConfig);
     }
 
     /**
+     * Reads an XML benchmark configuration from the file system
+     * and uses that {@link PlannerBenchmarkConfig} to build a {@link PlannerBenchmarkFactory}.
+     * <p>
+     * Warning: this leads to platform dependent code,
+     * it's recommend to use {@link #createFromXmlResource(String)} instead.
      * @param benchmarkConfigFile never null
      * @return never null
      */
     public static PlannerBenchmarkFactory createFromXmlFile(File benchmarkConfigFile) {
-        return new XStreamXmlPlannerBenchmarkFactory()
-                .configure(benchmarkConfigFile);
+        PlannerBenchmarkConfig benchmarkConfig = PlannerBenchmarkConfig.createFromXmlFile(benchmarkConfigFile);
+        return new DefaultPlannerBenchmarkFactory(benchmarkConfig);
     }
 
     /**
+     * As defined by {@link #createFromXmlFile(File)}.
      * @param benchmarkConfigFile never null
      * @param classLoader sometimes null, the {@link ClassLoader} to use for loading all resources and {@link Class}es,
      * null to use the default {@link ClassLoader}
      * @return never null
      */
     public static PlannerBenchmarkFactory createFromXmlFile(File benchmarkConfigFile, ClassLoader classLoader) {
-        return new XStreamXmlPlannerBenchmarkFactory(new SolverConfigContext(classLoader))
-                .configure(benchmarkConfigFile);
+        PlannerBenchmarkConfig benchmarkConfig = PlannerBenchmarkConfig.createFromXmlFile(benchmarkConfigFile, classLoader);
+        return new DefaultPlannerBenchmarkFactory(benchmarkConfig);
     }
 
     /**
      * @param in never null, gets closed
      * @return never null
+     * @deprecated in favor of {@link PlannerBenchmarkConfig#createFromXmlInputStream(InputStream)}
+     * and {@link PlannerBenchmarkFactory#create(PlannerBenchmarkConfig)}. Will be removed in 8.0.
      */
+    @Deprecated
     public static PlannerBenchmarkFactory createFromXmlInputStream(InputStream in) {
-        return new XStreamXmlPlannerBenchmarkFactory()
-                .configure(in);
+        PlannerBenchmarkConfig benchmarkConfig = PlannerBenchmarkConfig.createFromXmlInputStream(in);
+        return new DefaultPlannerBenchmarkFactory(benchmarkConfig);
     }
 
     /**
@@ -129,19 +209,25 @@ public abstract class PlannerBenchmarkFactory {
      * @param classLoader sometimes null, the {@link ClassLoader} to use for loading all resources and {@link Class}es,
      * null to use the default {@link ClassLoader}
      * @return never null
+     * @deprecated in favor of {@link PlannerBenchmarkConfig#createFromXmlInputStream(InputStream, ClassLoader)}
+     * and {@link PlannerBenchmarkFactory#create(PlannerBenchmarkConfig)}. Will be removed in 8.0.
      */
+    @Deprecated
     public static PlannerBenchmarkFactory createFromXmlInputStream(InputStream in, ClassLoader classLoader) {
-        return new XStreamXmlPlannerBenchmarkFactory(new SolverConfigContext(classLoader))
-                .configure(in);
+        PlannerBenchmarkConfig benchmarkConfig = PlannerBenchmarkConfig.createFromXmlInputStream(in, classLoader);
+        return new DefaultPlannerBenchmarkFactory(benchmarkConfig);
     }
 
     /**
      * @param reader never null, gets closed
      * @return never null
+     * @deprecated in favor of {@link PlannerBenchmarkConfig#createFromXmlReader(Reader)}
+     * and {@link PlannerBenchmarkFactory#create(PlannerBenchmarkConfig)}. Will be removed in 8.0.
      */
+    @Deprecated
     public static PlannerBenchmarkFactory createFromXmlReader(Reader reader) {
-        return new XStreamXmlPlannerBenchmarkFactory()
-                .configure(reader);
+        PlannerBenchmarkConfig benchmarkConfig = PlannerBenchmarkConfig.createFromXmlReader(reader);
+        return new DefaultPlannerBenchmarkFactory(benchmarkConfig);
     }
 
     /**
@@ -149,45 +235,57 @@ public abstract class PlannerBenchmarkFactory {
      * @param classLoader sometimes null, the {@link ClassLoader} to use for loading all resources and {@link Class}es,
      * null to use the default {@link ClassLoader}
      * @return never null
+     * @deprecated in favor of {@link PlannerBenchmarkConfig#createFromXmlReader(Reader, ClassLoader)}
+     * and {@link PlannerBenchmarkFactory#create(PlannerBenchmarkConfig)}. Will be removed in 8.0.
      */
+    @Deprecated
     public static PlannerBenchmarkFactory createFromXmlReader(Reader reader, ClassLoader classLoader) {
-        return new XStreamXmlPlannerBenchmarkFactory(new SolverConfigContext(classLoader))
-                .configure(reader);
+        PlannerBenchmarkConfig benchmarkConfig = PlannerBenchmarkConfig.createFromXmlReader(reader, classLoader);
+        return new DefaultPlannerBenchmarkFactory(benchmarkConfig);
     }
 
     // ************************************************************************
-    // Static creation methods with Freemarker
+    // Static creation methods: Freemarker XML
     // ************************************************************************
 
     /**
+     * Reads an Freemarker template from the classpath that generates an XML benchmark configuration
+     * and uses that {@link PlannerBenchmarkConfig} to build a {@link PlannerBenchmarkFactory}.
+     * The generated XML root element must be {@code <plannerBenchmark>}.
      * @param templateResource never null, a classpath resource as defined by {@link ClassLoader#getResource(String)}
      * @return never null
+     * @see #createFromFreemarkerXmlResource(String)
      */
     public static PlannerBenchmarkFactory createFromFreemarkerXmlResource(String templateResource) {
-        return createFromFreemarkerXmlResource(templateResource, null);
+        PlannerBenchmarkConfig benchmarkConfig = PlannerBenchmarkConfig.createFromFreemarkerXmlResource(templateResource);
+        return new DefaultPlannerBenchmarkFactory(benchmarkConfig);
     }
 
     /**
+     * As defined by {@link #createFromFreemarkerXmlResource(String)}.
      * @param templateResource never null, a classpath resource as defined by {@link ClassLoader#getResource(String)}
      * @param classLoader sometimes null, the {@link ClassLoader} to use for loading all resources and {@link Class}es,
      * null to use the default {@link ClassLoader}
      * @return never null
      */
     public static PlannerBenchmarkFactory createFromFreemarkerXmlResource(String templateResource, ClassLoader classLoader) {
-        return createFromFreemarkerXmlResource(templateResource, null, classLoader);
+        PlannerBenchmarkConfig benchmarkConfig = PlannerBenchmarkConfig.createFromFreemarkerXmlResource(templateResource, classLoader);
+        return new DefaultPlannerBenchmarkFactory(benchmarkConfig);
     }
 
     /**
+     * As defined by {@link #createFromFreemarkerXmlResource(String)}.
      * @param templateResource never null, a classpath resource as defined by {@link ClassLoader#getResource(String)}
      * @param model sometimes null
      * @return never null
      */
     public static PlannerBenchmarkFactory createFromFreemarkerXmlResource(String templateResource, Object model) {
-        return new FreemarkerXmlPlannerBenchmarkFactory()
-                .configure(templateResource, model);
+        PlannerBenchmarkConfig benchmarkConfig = PlannerBenchmarkConfig.createFromFreemarkerXmlResource(templateResource, model);
+        return new DefaultPlannerBenchmarkFactory(benchmarkConfig);
     }
 
     /**
+     * As defined by {@link #createFromFreemarkerXmlResource(String)}.
      * @param templateResource never null, a classpath resource as defined by {@link ClassLoader#getResource(String)}
      * @param model sometimes null
      * @param classLoader sometimes null, the {@link ClassLoader} to use for loading all resources and {@link Class}es,
@@ -195,39 +293,50 @@ public abstract class PlannerBenchmarkFactory {
      * @return never null
      */
     public static PlannerBenchmarkFactory createFromFreemarkerXmlResource(String templateResource, Object model, ClassLoader classLoader) {
-        return new FreemarkerXmlPlannerBenchmarkFactory(new SolverConfigContext(classLoader))
-                .configure(templateResource, model);
+        PlannerBenchmarkConfig benchmarkConfig = PlannerBenchmarkConfig.createFromFreemarkerXmlResource(templateResource, model, classLoader);
+        return new DefaultPlannerBenchmarkFactory(benchmarkConfig);
     }
 
     /**
+     * Reads an Freemarker template rom the file system that generates an XML benchmark configuration
+     * and uses that {@link PlannerBenchmarkConfig} to build a {@link PlannerBenchmarkFactory}.
+     * The generated XML root element must be {@code <plannerBenchmark>}.
+     * <p>
+     * Warning: this leads to platform dependent code,
+     * it's recommend to use {@link #createFromFreemarkerXmlResource(String)} instead.
      * @param templateFile never null
      * @return never null
      */
     public static PlannerBenchmarkFactory createFromFreemarkerXmlFile(File templateFile) {
-        return createFromFreemarkerXmlFile(templateFile, null);
+        PlannerBenchmarkConfig benchmarkConfig = PlannerBenchmarkConfig.createFromFreemarkerXmlFile(templateFile);
+        return new DefaultPlannerBenchmarkFactory(benchmarkConfig);
     }
 
     /**
+     * As defined by {@link #createFromFreemarkerXmlFile(File)}.
      * @param templateFile never null
      * @param classLoader sometimes null, the {@link ClassLoader} to use for loading all resources and {@link Class}es,
      * null to use the default {@link ClassLoader}
      * @return never null
      */
     public static PlannerBenchmarkFactory createFromFreemarkerXmlFile(File templateFile, ClassLoader classLoader) {
-        return createFromFreemarkerXmlFile(templateFile, null, classLoader);
+        PlannerBenchmarkConfig benchmarkConfig = PlannerBenchmarkConfig.createFromFreemarkerXmlFile(templateFile, classLoader);
+        return new DefaultPlannerBenchmarkFactory(benchmarkConfig);
     }
 
     /**
+     * As defined by {@link #createFromFreemarkerXmlFile(File)}.
      * @param templateFile never null
      * @param model sometimes null
      * @return never null
      */
     public static PlannerBenchmarkFactory createFromFreemarkerXmlFile(File templateFile, Object model) {
-        return new FreemarkerXmlPlannerBenchmarkFactory()
-                .configure(templateFile, model);
+        PlannerBenchmarkConfig benchmarkConfig = PlannerBenchmarkConfig.createFromFreemarkerXmlFile(templateFile, model);
+        return new DefaultPlannerBenchmarkFactory(benchmarkConfig);
     }
 
     /**
+     * As defined by {@link #createFromFreemarkerXmlFile(File)}.
      * @param templateFile never null
      * @param model sometimes null
      * @param classLoader sometimes null, the {@link ClassLoader} to use for loading all resources and {@link Class}es,
@@ -235,16 +344,20 @@ public abstract class PlannerBenchmarkFactory {
      * @return never null
      */
     public static PlannerBenchmarkFactory createFromFreemarkerXmlFile(File templateFile, Object model, ClassLoader classLoader) {
-        return new FreemarkerXmlPlannerBenchmarkFactory(new SolverConfigContext(classLoader))
-                .configure(templateFile, model);
+        PlannerBenchmarkConfig benchmarkConfig = PlannerBenchmarkConfig.createFromFreemarkerXmlFile(templateFile, model, classLoader);
+        return new DefaultPlannerBenchmarkFactory(benchmarkConfig);
     }
 
     /**
      * @param templateIn never null, gets closed
      * @return never null
+     * @deprecated in favor of {@link PlannerBenchmarkConfig#createFromFreemarkerXmlInputStream(InputStream)}
+     * and {@link PlannerBenchmarkFactory#create(PlannerBenchmarkConfig)}. Will be removed in 8.0.
      */
+    @Deprecated
     public static PlannerBenchmarkFactory createFromFreemarkerXmlInputStream(InputStream templateIn) {
-        return createFromFreemarkerXmlInputStream(templateIn, null);
+        PlannerBenchmarkConfig benchmarkConfig = PlannerBenchmarkConfig.createFromFreemarkerXmlInputStream(templateIn);
+        return new DefaultPlannerBenchmarkFactory(benchmarkConfig);
     }
 
     /**
@@ -252,19 +365,26 @@ public abstract class PlannerBenchmarkFactory {
      * @param classLoader sometimes null, the {@link ClassLoader} to use for loading all resources and {@link Class}es,
      * null to use the default {@link ClassLoader}
      * @return never null
+     * @deprecated in favor of {@link PlannerBenchmarkConfig#createFromFreemarkerXmlInputStream(InputStream, ClassLoader)}
+     * and {@link PlannerBenchmarkFactory#create(PlannerBenchmarkConfig)}. Will be removed in 8.0.
      */
+    @Deprecated
     public static PlannerBenchmarkFactory createFromFreemarkerXmlInputStream(InputStream templateIn, ClassLoader classLoader) {
-        return createFromFreemarkerXmlInputStream(templateIn, null, classLoader);
+        PlannerBenchmarkConfig benchmarkConfig = PlannerBenchmarkConfig.createFromFreemarkerXmlInputStream(templateIn, classLoader);
+        return new DefaultPlannerBenchmarkFactory(benchmarkConfig);
     }
 
     /**
      * @param templateIn never null, gets closed
      * @param model sometimes null
      * @return never null
+     * @deprecated in favor of {@link PlannerBenchmarkConfig#createFromFreemarkerXmlInputStream(InputStream, Object)}
+     * and {@link PlannerBenchmarkFactory#create(PlannerBenchmarkConfig)}. Will be removed in 8.0.
      */
+    @Deprecated
     public static PlannerBenchmarkFactory createFromFreemarkerXmlInputStream(InputStream templateIn, Object model) {
-        return new FreemarkerXmlPlannerBenchmarkFactory()
-                .configure(templateIn, model);
+        PlannerBenchmarkConfig benchmarkConfig = PlannerBenchmarkConfig.createFromFreemarkerXmlInputStream(templateIn, model);
+        return new DefaultPlannerBenchmarkFactory(benchmarkConfig);
     }
 
     /**
@@ -273,18 +393,25 @@ public abstract class PlannerBenchmarkFactory {
      * @param classLoader sometimes null, the {@link ClassLoader} to use for loading all resources and {@link Class}es,
      * null to use the default {@link ClassLoader}
      * @return never null
+     * @deprecated in favor of {@link PlannerBenchmarkConfig#createFromFreemarkerXmlInputStream(InputStream, Object, ClassLoader)}
+     * and {@link PlannerBenchmarkFactory#create(PlannerBenchmarkConfig)}. Will be removed in 8.0.
      */
+    @Deprecated
     public static PlannerBenchmarkFactory createFromFreemarkerXmlInputStream(InputStream templateIn, Object model, ClassLoader classLoader) {
-        return new FreemarkerXmlPlannerBenchmarkFactory(new SolverConfigContext(classLoader))
-                .configure(templateIn, model);
+        PlannerBenchmarkConfig benchmarkConfig = PlannerBenchmarkConfig.createFromFreemarkerXmlInputStream(templateIn, model, classLoader);
+        return new DefaultPlannerBenchmarkFactory(benchmarkConfig);
     }
 
     /**
      * @param templateReader never null, gets closed
      * @return never null
+     * @deprecated in favor of {@link PlannerBenchmarkConfig#createFromFreemarkerXmlReader(Reader)}
+     * and {@link PlannerBenchmarkFactory#create(PlannerBenchmarkConfig)}. Will be removed in 8.0.
      */
+    @Deprecated
     public static PlannerBenchmarkFactory createFromFreemarkerXmlReader(Reader templateReader) {
-        return createFromFreemarkerXmlReader(templateReader, null);
+        PlannerBenchmarkConfig benchmarkConfig = PlannerBenchmarkConfig.createFromFreemarkerXmlReader(templateReader);
+        return new DefaultPlannerBenchmarkFactory(benchmarkConfig);
     }
 
     /**
@@ -292,19 +419,26 @@ public abstract class PlannerBenchmarkFactory {
      * @param classLoader sometimes null, the {@link ClassLoader} to use for loading all resources and {@link Class}es,
      * null to use the default {@link ClassLoader}
      * @return never null
+     * @deprecated in favor of {@link PlannerBenchmarkConfig#createFromFreemarkerXmlReader(Reader, ClassLoader)}
+     * and {@link PlannerBenchmarkFactory#create(PlannerBenchmarkConfig)}. Will be removed in 8.0.
      */
+    @Deprecated
     public static PlannerBenchmarkFactory createFromFreemarkerXmlReader(Reader templateReader, ClassLoader classLoader) {
-        return createFromFreemarkerXmlReader(templateReader, null, classLoader);
+        PlannerBenchmarkConfig benchmarkConfig = PlannerBenchmarkConfig.createFromFreemarkerXmlReader(templateReader, classLoader);
+        return new DefaultPlannerBenchmarkFactory(benchmarkConfig);
     }
 
     /**
      * @param templateReader never null, gets closed
      * @param model sometimes null
      * @return never null
+     * @deprecated in favor of {@link PlannerBenchmarkConfig#createFromFreemarkerXmlReader(Reader, Object)}
+     * and {@link PlannerBenchmarkFactory#create(PlannerBenchmarkConfig)}. Will be removed in 8.0.
      */
+    @Deprecated
     public static PlannerBenchmarkFactory createFromFreemarkerXmlReader(Reader templateReader, Object model) {
-        return new FreemarkerXmlPlannerBenchmarkFactory()
-                .configure(templateReader, model);
+        PlannerBenchmarkConfig benchmarkConfig = PlannerBenchmarkConfig.createFromFreemarkerXmlReader(templateReader, model);
+        return new DefaultPlannerBenchmarkFactory(benchmarkConfig);
     }
 
     /**
@@ -313,24 +447,77 @@ public abstract class PlannerBenchmarkFactory {
      * @param classLoader sometimes null, the {@link ClassLoader} to use for loading all resources and {@link Class}es,
      * null to use the default {@link ClassLoader}
      * @return never null
+     * @deprecated in favor of {@link PlannerBenchmarkConfig#createFromFreemarkerXmlReader(Reader, Object, ClassLoader)}
+     * and {@link PlannerBenchmarkFactory#create(PlannerBenchmarkConfig)}. Will be removed in 8.0.
      */
+    @Deprecated
     public static PlannerBenchmarkFactory createFromFreemarkerXmlReader(Reader templateReader, Object model, ClassLoader classLoader) {
-        return new FreemarkerXmlPlannerBenchmarkFactory(new SolverConfigContext(classLoader))
-                .configure(templateReader, model);
+        PlannerBenchmarkConfig benchmarkConfig = PlannerBenchmarkConfig.createFromFreemarkerXmlReader(templateReader, model, classLoader);
+        return new DefaultPlannerBenchmarkFactory(benchmarkConfig);
+    }
+
+    // ************************************************************************
+    // Static creation methods: PlannerBenchmarkConfig
+    // ************************************************************************
+
+    /**
+     * Uses a {@link PlannerBenchmarkConfig} to build a {@link PlannerBenchmarkFactory}.
+     * If you don't need to manipulate the {@link PlannerBenchmarkConfig} programmatically,
+     * use {@link #createFromXmlResource(String)} instead.
+     * @param benchmarkConfig never null
+     * @return never null
+     */
+    public static PlannerBenchmarkFactory create(PlannerBenchmarkConfig benchmarkConfig) {
+        return new DefaultPlannerBenchmarkFactory(benchmarkConfig);
+    }
+
+    // ************************************************************************
+    // Static creation methods: KieContainer
+    // ************************************************************************
+
+    // TODO Deprecate KieContainer methods in favor of Quarkus, Kogito and Spring Boot
+
+    /**
+     * Creates a new {@link PlannerBenchmarkFactory} that uses {@link KieServices#getKieClasspathContainer()}.
+     * @param benchmarkConfigResource never null, a classpath resource in the {@link KieContainer}
+     * as defined by {@link ClassLoader#getResource(String)}
+     * @return never null
+     */
+    public static PlannerBenchmarkFactory createFromKieContainerXmlResource(String benchmarkConfigResource) {
+        KieContainer kieContainer = KieServices.Factory.get().getKieClasspathContainer();
+        return createFromKieContainerXmlResource(kieContainer, benchmarkConfigResource);
+    }
+
+    /**
+     * Creates a new {@link PlannerBenchmarkFactory} that uses a {@link KieModule} represented by its releaseId.
+     * @param releaseId never null
+     * @param benchmarkConfigResource never null, a classpath resource in the {@link KieContainer}
+     * as defined by {@link ClassLoader#getResource(String)}
+     * @return never null
+     */
+    public static PlannerBenchmarkFactory createFromKieContainerXmlResource(ReleaseId releaseId,
+            String benchmarkConfigResource) {
+        KieContainer kieContainer = KieServices.Factory.get().newKieContainer(releaseId);
+        return createFromKieContainerXmlResource(kieContainer, benchmarkConfigResource);
+    }
+
+    /**
+     * Creates a new {@link PlannerBenchmarkFactory} that uses a {@link KieModule} wrapped by a {@link KieContainer}.
+     * @param kieContainer never null
+     * @param benchmarkConfigResource never null, a classpath resource in the {@link KieContainer}
+     * as defined by {@link ClassLoader#getResource(String)}
+     * @return never null
+     */
+    public static PlannerBenchmarkFactory createFromKieContainerXmlResource(KieContainer kieContainer,
+            String benchmarkConfigResource) {
+        PlannerBenchmarkConfig benchmarkConfig = PlannerBenchmarkConfig.createFromXmlResource(benchmarkConfigResource,
+                kieContainer.getClassLoader());
+        return new DefaultPlannerBenchmarkFactory(benchmarkConfig, new SolverConfigContext(kieContainer));
     }
 
     // ************************************************************************
     // Interface methods
     // ************************************************************************
-
-    /**
-     * Allows you to programmatically change the {@link PlannerBenchmarkConfig} at runtime before building
-     * the {@link PlannerBenchmark}.
-     * <p>
-     * This method is not thread-safe.
-     * @return never null
-     */
-    public abstract PlannerBenchmarkConfig getPlannerBenchmarkConfig();
 
     /**
      * Creates a new {@link PlannerBenchmark} instance.
@@ -340,18 +527,32 @@ public abstract class PlannerBenchmarkFactory {
 
     /**
      * Creates a new {@link PlannerBenchmark} instance for datasets that are already in memory.
-     * @param problems never null, can be none
-     * @return never null
+     * @param problemList never null, can be empty
      * @param <Solution_> the solution type, the class with the {@link PlanningSolution} annotation
+     * @return never null
+     */
+    public <Solution_> PlannerBenchmark buildPlannerBenchmark(List<Solution_> problemList) {
+        return buildPlannerBenchmark(problemList.toArray());
+    }
+
+    /**
+     * Creates a new {@link PlannerBenchmark} instance for datasets that are already in memory.
+     * @param problems never null, can be none
+     * @param <Solution_> the solution type, the class with the {@link PlanningSolution} annotation
+     * @return never null
      */
     public abstract <Solution_> PlannerBenchmark buildPlannerBenchmark(Solution_... problems);
 
     /**
-     * Creates a new {@link PlannerBenchmark} instance for datasets that are already in memory.
-     * @param problemList never null, can be empty
+     * Deprecated. To configure a {@link PlannerBenchmarkFactory} dynamically (without parsing XML each time),
+     * use {@link PlannerBenchmarkFactory#create(PlannerBenchmarkConfig)} instead.
+     * <p>
+     * This method is not thread-safe.
      * @return never null
-     * @param <Solution_> the solution type, the class with the {@link PlanningSolution} annotation
+     * @deprecated in favor of {@link PlannerBenchmarkConfig()}
+     * and {@link PlannerBenchmarkFactory#create(PlannerBenchmarkConfig)}. Will be removed in 8.0.
      */
-    public abstract <Solution_> PlannerBenchmark buildPlannerBenchmark(List<Solution_> problemList);
+    @Deprecated
+    public abstract PlannerBenchmarkConfig getPlannerBenchmarkConfig();
 
 }

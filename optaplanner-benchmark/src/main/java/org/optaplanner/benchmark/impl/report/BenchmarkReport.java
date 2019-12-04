@@ -53,12 +53,12 @@ import org.jfree.chart.renderer.category.BarRenderer;
 import org.jfree.chart.renderer.category.BoxAndWhiskerRenderer;
 import org.jfree.chart.renderer.xy.StandardXYItemRenderer;
 import org.jfree.chart.renderer.xy.XYItemRenderer;
+import org.jfree.chart.ui.TextAnchor;
 import org.jfree.data.category.DefaultCategoryDataset;
 import org.jfree.data.statistics.DefaultBoxAndWhiskerCategoryDataset;
 import org.jfree.data.xy.XYDataItem;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
-import org.jfree.ui.TextAnchor;
 import org.optaplanner.benchmark.impl.ranking.SolverRankingWeightFactory;
 import org.optaplanner.benchmark.impl.result.PlannerBenchmarkResult;
 import org.optaplanner.benchmark.impl.result.ProblemBenchmarkResult;
@@ -73,6 +73,8 @@ import org.optaplanner.core.config.solver.EnvironmentMode;
 import org.optaplanner.core.impl.score.ScoreUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static java.lang.Double.isFinite;
 
 public class BenchmarkReport {
 
@@ -354,7 +356,9 @@ public class BenchmarkReport {
                         if (i >= datasetList.size()) {
                             datasetList.add(new DefaultCategoryDataset());
                         }
-                        datasetList.get(i).addValue(levelValues[i], solverLabel, problemLabel);
+                        if (isFinite(levelValues[i])) {
+                            datasetList.get(i).addValue(levelValues[i], solverLabel, problemLabel);
+                        }
                     }
                 }
             }
@@ -470,7 +474,9 @@ public class BenchmarkReport {
                         if (i >= datasetList.size()) {
                             datasetList.add(new DefaultCategoryDataset());
                         }
-                        datasetList.get(i).addValue(levelValues[i], solverLabel, problemLabel);
+                        if (isFinite(levelValues[i])) {
+                            datasetList.get(i).addValue(levelValues[i], solverLabel, problemLabel);
+                        }
                     }
                 }
             }
@@ -502,7 +508,9 @@ public class BenchmarkReport {
                         if (i >= datasetList.size()) {
                             datasetList.add(new DefaultCategoryDataset());
                         }
-                        datasetList.get(i).addValue(levelValues[i], solverLabel, problemLabel);
+                        if (isFinite(levelValues[i])) {
+                            datasetList.get(i).addValue(levelValues[i], solverLabel, problemLabel);
+                        }
                     }
                 }
             }
@@ -554,7 +562,9 @@ public class BenchmarkReport {
                 if (singleBenchmarkResult.hasAllSuccess()) {
                     double worstScoreCalculationSpeedDifferencePercentage
                             = singleBenchmarkResult.getWorstScoreCalculationSpeedDifferencePercentage();
-                    dataset.addValue(worstScoreCalculationSpeedDifferencePercentage, solverLabel, problemLabel);
+                    if (isFinite(worstScoreCalculationSpeedDifferencePercentage)) {
+                        dataset.addValue(worstScoreCalculationSpeedDifferencePercentage, solverLabel, problemLabel);
+                    }
                 }
             }
         }
@@ -669,13 +679,13 @@ public class BenchmarkReport {
         BarRenderer renderer = new BarRenderer();
         ItemLabelPosition positiveItemLabelPosition = new ItemLabelPosition(
                 ItemLabelAnchor.OUTSIDE12, TextAnchor.BOTTOM_CENTER);
-        renderer.setBasePositiveItemLabelPosition(positiveItemLabelPosition);
+        renderer.setDefaultPositiveItemLabelPosition(positiveItemLabelPosition);
         ItemLabelPosition negativeItemLabelPosition = new ItemLabelPosition(
                 ItemLabelAnchor.OUTSIDE6, TextAnchor.TOP_CENTER);
-        renderer.setBaseNegativeItemLabelPosition(negativeItemLabelPosition);
-        renderer.setBaseItemLabelGenerator(new StandardCategoryItemLabelGenerator(
+        renderer.setDefaultNegativeItemLabelPosition(negativeItemLabelPosition);
+        renderer.setDefaultItemLabelGenerator(new StandardCategoryItemLabelGenerator(
                 StandardCategoryItemLabelGenerator.DEFAULT_LABEL_FORMAT_STRING, numberFormat));
-        renderer.setBaseItemLabelsVisible(true);
+        renderer.setDefaultItemLabelsVisible(true);
         return renderer;
     }
 

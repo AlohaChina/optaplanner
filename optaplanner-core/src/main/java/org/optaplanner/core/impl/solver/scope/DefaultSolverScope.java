@@ -27,7 +27,7 @@ import org.optaplanner.core.impl.domain.solution.descriptor.SolutionDescriptor;
 import org.optaplanner.core.impl.phase.scope.AbstractPhaseScope;
 import org.optaplanner.core.impl.score.definition.ScoreDefinition;
 import org.optaplanner.core.impl.score.director.InnerScoreDirector;
-import org.optaplanner.core.impl.solver.ChildThreadType;
+import org.optaplanner.core.impl.solver.thread.ChildThreadType;
 import org.optaplanner.core.impl.solver.termination.Termination;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -226,7 +226,7 @@ public class DefaultSolverScope<Solution_> {
         childThreadSolverScope.workingRandom = new Random(workingRandom.nextLong());
         childThreadSolverScope.scoreDirector = scoreDirector.createChildThreadScoreDirector(childThreadType);
         childThreadSolverScope.startingSystemTimeMillis = startingSystemTimeMillis;
-        childThreadSolverScope.endingSystemTimeMillis = endingSystemTimeMillis;
+        childThreadSolverScope.endingSystemTimeMillis = null;
         childThreadSolverScope.startingInitializedScore = null;
         childThreadSolverScope.bestSolution = null;
         childThreadSolverScope.bestScore = null;

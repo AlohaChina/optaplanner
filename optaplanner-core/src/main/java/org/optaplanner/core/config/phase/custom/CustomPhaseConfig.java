@@ -17,20 +17,25 @@
 package org.optaplanner.core.config.phase.custom;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
 import com.thoughtworks.xstream.annotations.XStreamAlias;
 import com.thoughtworks.xstream.annotations.XStreamConverter;
 import com.thoughtworks.xstream.annotations.XStreamImplicit;
+import org.optaplanner.core.api.solver.Solver;
+import com.thoughtworks.xstream.annotations.XStreamOmitField;
 import org.optaplanner.core.config.heuristic.policy.HeuristicConfigPolicy;
 import org.optaplanner.core.config.phase.PhaseConfig;
 import org.optaplanner.core.config.solver.EnvironmentMode;
+import org.optaplanner.core.config.solver.SolverConfig;
 import org.optaplanner.core.config.util.ConfigUtils;
 import org.optaplanner.core.config.util.KeyAsElementMapConverter;
 import org.optaplanner.core.impl.phase.custom.CustomPhase;
 import org.optaplanner.core.impl.phase.custom.CustomPhaseCommand;
 import org.optaplanner.core.impl.phase.custom.DefaultCustomPhase;
+import org.optaplanner.core.impl.solver.ProblemFactChange;
 import org.optaplanner.core.impl.solver.recaller.BestSolutionRecaller;
 import org.optaplanner.core.impl.solver.termination.Termination;
 
@@ -42,9 +47,14 @@ public class CustomPhaseConfig extends PhaseConfig<CustomPhaseConfig> {
 
     @XStreamImplicit(itemFieldName = "customPhaseCommandClass")
     protected List<Class<? extends CustomPhaseCommand>> customPhaseCommandClassList = null;
-
     @XStreamConverter(KeyAsElementMapConverter.class)
     protected Map<String, String> customProperties = null;
+
+    @XStreamOmitField
+    protected List<CustomPhaseCommand> customPhaseCommandList = null;
+
+    /** @deprecated Use {@link Solver#addProblemFactChange(ProblemFactChange)} instead.*/
+    @Deprecated
     protected Boolean forceUpdateBestSolution = null;
 
     // ************************************************************************
@@ -67,12 +77,45 @@ public class CustomPhaseConfig extends PhaseConfig<CustomPhaseConfig> {
         this.customProperties = customProperties;
     }
 
+    public List<CustomPhaseCommand> getCustomPhaseCommandList() {
+        return customPhaseCommandList;
+    }
+
+    public void setCustomPhaseCommandList(List<CustomPhaseCommand> customPhaseCommandList) {
+        this.customPhaseCommandList = customPhaseCommandList;
+    }
+
+    @Deprecated
     public Boolean getForceUpdateBestSolution() {
         return forceUpdateBestSolution;
     }
 
+    @Deprecated
     public void setForceUpdateBestSolution(Boolean forceUpdateBestSolution) {
         this.forceUpdateBestSolution = forceUpdateBestSolution;
+    }
+
+    // ************************************************************************
+    // With methods
+    // ************************************************************************
+
+    public CustomPhaseConfig withCustomPhaseCommandClassList(List<Class<? extends CustomPhaseCommand>> customPhaseCommandClassList) {
+        this.customPhaseCommandClassList = customPhaseCommandClassList;
+        return this;
+    }
+
+    public void withCustomProperties(Map<String, String> customProperties) {
+        this.customProperties = customProperties;
+    }
+
+    public CustomPhaseConfig withCustomPhaseCommandList(List<CustomPhaseCommand> customPhaseCommandList) {
+        this.customPhaseCommandList = customPhaseCommandList;
+        return this;
+    }
+
+    public CustomPhaseConfig withCustomPhaseCommands(CustomPhaseCommand... customPhaseCommands) {
+        this.customPhaseCommandList = Arrays.asList(customPhaseCommands);
+        return this;
     }
 
     // ************************************************************************
@@ -86,19 +129,27 @@ public class CustomPhaseConfig extends PhaseConfig<CustomPhaseConfig> {
         DefaultCustomPhase phase = new DefaultCustomPhase(
                 phaseIndex, solverConfigPolicy.getLogIndentation(), bestSolutionRecaller,
                 buildPhaseTermination(phaseConfigPolicy, solverTermination));
-        if (ConfigUtils.isEmptyCollection(customPhaseCommandClassList)) {
+        if (ConfigUtils.isEmptyCollection(customPhaseCommandClassList)
+                && ConfigUtils.isEmptyCollection(customPhaseCommandList)) {
             throw new IllegalArgumentException(
                     "Configure at least 1 <customPhaseCommandClass> in the <customPhase> configuration.");
         }
-        List<CustomPhaseCommand> customPhaseCommandList = new ArrayList<>(customPhaseCommandClassList.size());
-        for (Class<? extends CustomPhaseCommand> customPhaseCommandClass : customPhaseCommandClassList) {
-            CustomPhaseCommand customPhaseCommand = ConfigUtils.newInstance(this,
-                    "customPhaseCommandClass", customPhaseCommandClass);
-            ConfigUtils.applyCustomProperties(customPhaseCommand, "customPhaseCommandClass",
-                    customProperties, "customProperties");
-            customPhaseCommandList.add(customPhaseCommand);
+        List<CustomPhaseCommand> customPhaseCommandList_ = new ArrayList<>(
+                (customPhaseCommandClassList == null ? 0 : customPhaseCommandClassList.size())
+                + (customPhaseCommandList == null ? 0 : customPhaseCommandList.size()));
+        if (customPhaseCommandClassList != null) {
+            for (Class<? extends CustomPhaseCommand> customPhaseCommandClass : customPhaseCommandClassList) {
+                CustomPhaseCommand customPhaseCommand = ConfigUtils.newInstance(this,
+                        "customPhaseCommandClass", customPhaseCommandClass);
+                ConfigUtils.applyCustomProperties(customPhaseCommand, "customPhaseCommandClass",
+                        customProperties, "customProperties");
+                customPhaseCommandList_.add(customPhaseCommand);
+            }
         }
-        phase.setCustomPhaseCommandList(customPhaseCommandList);
+        if (customPhaseCommandList != null) {
+            customPhaseCommandList_.addAll(customPhaseCommandList);
+        }
+        phase.setCustomPhaseCommandList(customPhaseCommandList_);
         phase.setForceUpdateBestSolution(forceUpdateBestSolution == null ? false : forceUpdateBestSolution);
         EnvironmentMode environmentMode = phaseConfigPolicy.getEnvironmentMode();
         if (environmentMode.isNonIntrusiveFullAsserted()) {
@@ -112,6 +163,8 @@ public class CustomPhaseConfig extends PhaseConfig<CustomPhaseConfig> {
         super.inherit(inheritedConfig);
         customPhaseCommandClassList = ConfigUtils.inheritMergeableListProperty(
                 customPhaseCommandClassList, inheritedConfig.getCustomPhaseCommandClassList());
+        customPhaseCommandList = ConfigUtils.inheritMergeableListProperty(
+                customPhaseCommandList, inheritedConfig.getCustomPhaseCommandList());
         customProperties = ConfigUtils.inheritMergeableMapProperty(
                 customProperties, inheritedConfig.getCustomProperties());
         forceUpdateBestSolution = ConfigUtils.inheritOverwritableProperty(forceUpdateBestSolution,

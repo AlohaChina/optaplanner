@@ -178,6 +178,9 @@ public class ConferenceSchedulingCfpDevoxxImporter {
             }
         }
 
+        if (roomList.isEmpty()) {
+            LOGGER.warn("There are no rooms. Log into the CFP webapp, open the tab configuration and add the rooms before importing it here.");
+        }
         roomList.sort(Comparator.comparing(Room::getName));
         solution.setRoomList(roomList);
     }
@@ -230,22 +233,24 @@ public class ConferenceSchedulingCfpDevoxxImporter {
 
         String talksUrl = conferenceBaseUrl + "/talks";
         LOGGER.debug("Sending a request to: {}", talksUrl);
-        JsonArray talkArray = readJson(talksUrl, JsonReader::readObject).getJsonObject("talks").getJsonArray("accepted");
+        for (JsonValue talksValue : readJson(talksUrl, JsonReader::readObject).getJsonObject("talks").values()) {
+            JsonArray talkArray = (JsonArray) talksValue;
+            for (int i = 0; i < talkArray.size(); i++) {
+                JsonObject talkObject = talkArray.getJsonObject(i);
 
-        for (int i = 0; i < talkArray.size(); i++) {
-            JsonObject talkObject = talkArray.getJsonObject(i);
+                String code = talkObject.getString("id");
+                String title = talkObject.getString("title");
+                String talkTypeId = talkObject.getJsonObject("talkType").getString("id");
+                Set<String> themeTrackSet = extractThemeTrackSet(talkObject, code, title);
+                String language = talkObject.getString("lang");
+                String audienceLevelAsString = talkObject.getString("audienceLevel").replaceAll("[^0-9]", "");
+                int audienceLevel = Integer.parseInt(audienceLevelAsString.isEmpty() ? "1" : audienceLevelAsString);
+                List<Speaker> speakerList = extractSpeakerList(talkObject, code, title);
+                Set<String> contentTagSet = extractContentTagSet(talkObject);
 
-            String code = talkObject.getString("id");
-            String title = talkObject.getString("title");
-            String talkTypeId = talkObject.getJsonObject("talkType").getString("id");
-            Set<String> themeTrackSet = extractThemeTrackSet(talkObject, code, title);
-            String language = talkObject.getString("lang");
-            int audienceLevel = Integer.parseInt(talkObject.getString("audienceLevel").replaceAll("[^0-9]", ""));
-            List<Speaker> speakerList = extractSpeakerList(talkObject, code, title);
-            Set<String> contentTagSet = extractContentTagSet(talkObject);
-
-            if (!Arrays.asList(IGNORED_TALK_TYPES).contains(talkTypeId)) {
-                createTalk(code, title, talkTypeId, themeTrackSet, language, speakerList, audienceLevel, contentTagSet);
+                if (!Arrays.asList(IGNORED_TALK_TYPES).contains(talkTypeId)) {
+                    createTalk(code, title, talkTypeId, themeTrackSet, language, speakerList, audienceLevel, contentTagSet);
+                }
             }
         }
     }
@@ -254,7 +259,7 @@ public class ConferenceSchedulingCfpDevoxxImporter {
         Set<String> themeTrackSet = new HashSet<>(Arrays.asList(talkObject.getJsonObject("track").getString("id")));
         if (!trackIdSet.containsAll(themeTrackSet)) {
             throw new IllegalStateException("The talk (" + title + ") with id (" + code
-                    + ") contains trackId + (" + trackIdSet + ") that doesn't exist in the trackIdSet.");
+                    + ") contains trackId (" + themeTrackSet + ") that doesn't exist in the trackIdSet.");
         }
         return themeTrackSet;
     }
@@ -330,21 +335,21 @@ public class ConferenceSchedulingCfpDevoxxImporter {
                     + ") has a talkType (" + talkTypeId + ") that doesn't exist in the talkType list.");
         }
         talk.setTalkType(talkTypeIdToTalkTypeMap.get(talkTypeId));
-        talk.withThemeTrackTagSet(themeTrackSet)
-                .withLanguage(languageg)
-                .withSpeakerList(speakerList)
-                .withAudienceLevel(audienceLevel)
-                .withAudienceTypeSet(new HashSet<>())
-                .withContentTagSet(contentTagSet)
-                .withPreferredRoomTagSet(new HashSet<>())
-                .withPreferredTimeslotTagSet(new HashSet<>())
-                .withProhibitedRoomTagSet(new HashSet<>())
-                .withProhibitedTimeslotTagSet(new HashSet<>())
-                .withRequiredRoomTagSet(new HashSet<>())
-                .withRequiredTimeslotTagSet(new HashSet<>())
+        talk.withSpeakerList(speakerList)
+                .withThemeTrackTagSet(themeTrackSet)
                 .withSectorTagSet(new HashSet<>())
-                .withUndesiredRoomTagSet(new HashSet<>())
+                .withLanguage(languageg)
+                .withAudienceTypeSet(new HashSet<>())
+                .withAudienceLevel(audienceLevel)
+                .withContentTagSet(contentTagSet)
+                .withRequiredTimeslotTagSet(new HashSet<>())
+                .withPreferredTimeslotTagSet(new HashSet<>())
+                .withProhibitedTimeslotTagSet(new HashSet<>())
                 .withUndesiredTimeslotTagSet(new HashSet<>())
+                .withRequiredRoomTagSet(new HashSet<>())
+                .withPreferredRoomTagSet(new HashSet<>())
+                .withProhibitedRoomTagSet(new HashSet<>())
+                .withUndesiredRoomTagSet(new HashSet<>())
                 .withMutuallyExclusiveTalksTagSet(new HashSet<>())
                 .withPrerequisiteTalksCodesSet(new HashSet<>());
 
@@ -359,7 +364,56 @@ public class ConferenceSchedulingCfpDevoxxImporter {
         Map<Pair<LocalDateTime, LocalDateTime>, Timeslot> startAndEndTimeToTimeslotMap = new HashMap<>();
         talkTypeIdToTalkTypeMap.put("unknown", talkTypeIdToTalkTypeMap.get("key"));
 
-        Long timeSlotId = 0L;
+        Long timeslotId = 0L;
+        String slotsUrl = conferenceBaseUrl + "/slots";
+        JsonArray slotsArray = readJson(slotsUrl, JsonReader::readObject).getJsonArray("slots");
+
+        for (int i = 0; i < slotsArray.size(); i++) {
+            JsonObject timeslotObject = slotsArray.getJsonObject(i);
+            if (Arrays.asList(IGNORED_ROOM_IDS).contains(timeslotObject.getString("room"))) {
+                continue;
+            }
+
+            LocalDateTime startDateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(timeslotObject.getJsonNumber("from").longValue()),
+                    ZoneId.of(ZONE_ID));
+            LocalDateTime endDateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(timeslotObject.getJsonNumber("to").longValue()),
+                    ZoneId.of(ZONE_ID));
+
+
+            Room room = extractRoom(timeslotObject, "id", "room");
+
+            // Assuming slotId is of format: tia_room6_monday_12_.... take only "tia"
+            // Specific for DevoxxBE, unknown in slotId matches a keynote slot
+            String talkTypeId = timeslotObject.getString("id").split("_")[0];
+            if (Arrays.asList(IGNORED_TALK_TYPES).contains(talkTypeId)) {
+                continue;
+            }
+            TalkType timeslotTalkType = talkTypeIdToTalkTypeMap.get(talkTypeId);
+
+            Timeslot timeslot = startAndEndTimeToTimeslotMap.get(Pair.of(startDateTime, endDateTime));
+            if (timeslot != null) {
+                timeslotToAvailableRoomsMap.get(timeslot).add(room);
+                if (timeslotTalkType != null) {
+                    timeslot.getTalkTypeSet().add(timeslotTalkType);
+                }
+            } else {
+                timeslot = new Timeslot(timeslotId++);
+                timeslot.withStartDateTime(startDateTime)
+                        .withEndDateTime(endDateTime)
+                        .withTalkTypeSet(timeslotTalkType == null ? new HashSet<>() : new HashSet<>(Arrays.asList(timeslotTalkType)));
+                timeslot.setTagSet(new HashSet<>());
+
+                timeslotList.add(timeslot);
+                timeslotToAvailableRoomsMap.put(timeslot, new ArrayList<>(Arrays.asList(room)));
+                startAndEndTimeToTimeslotMap.put(Pair.of(startDateTime, endDateTime), timeslot);
+            }
+
+            for (TalkType talkType : timeslot.getTalkTypeSet()) {
+                talkType.getCompatibleTimeslotSet().add(timeslot);
+            }
+            timeslotTalkTypeToTotalMap.merge(talkTypeId, 1, Integer::sum);
+        }
+
         String schedulesUrl = conferenceBaseUrl + "/schedules/";
         LOGGER.debug("Sending a request to: {}", schedulesUrl);
         JsonArray daysArray = readJson(schedulesUrl, JsonReader::readObject).getJsonArray("links");
@@ -373,71 +427,62 @@ public class ConferenceSchedulingCfpDevoxxImporter {
             for (int j = 0; j < daySlotsArray.size(); j++) {
                 JsonObject timeslotObject = daySlotsArray.getJsonObject(j);
 
+                if (Arrays.asList(IGNORED_ROOM_IDS).contains(timeslotObject.getString("roomId"))
+                        || Arrays.asList(IGNORED_TALK_TYPES).contains(timeslotObject.getString("slotId").split("_")[0])) {
+                    continue;
+                }
+
                 LocalDateTime startDateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(timeslotObject.getJsonNumber("fromTimeMillis").longValue()),
                         ZoneId.of(ZONE_ID));
                 LocalDateTime endDateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(timeslotObject.getJsonNumber("toTimeMillis").longValue()),
                         ZoneId.of(ZONE_ID));
-
-                Room room = roomIdToRoomMap.get(timeslotObject.getString("roomId"));
-                if (room == null) {
-                    throw new IllegalStateException("The timeslot (" + timeslotObject.getString("slotId") + ") has a roomId (" + timeslotObject.getString("roomId")
-                            + ") that does not exist in the rooms list");
+                Timeslot timeslot = startAndEndTimeToTimeslotMap.get(Pair.of(startDateTime, endDateTime));
+                if (timeslot == null) {
+                    throw new IllegalStateException("Timeslot (" + timeslotObject.getString("slotId") + ") in + ("
+                            + dayUrl + ") does not exist in /slots endpoint.");
                 }
+                Room room = extractRoom(timeslotObject, "slotId", "roomId");
 
-                // Assuming slotId is of format: tia_room6_monday_12_.... take only "tia"
-                // Specific for DevoxxBE, unknown in slotId matches a keynote slot
-                String talkTypeId = timeslotObject.getString("slotId").split("_")[0];
-                if (Arrays.asList(IGNORED_TALK_TYPES).contains(talkTypeId)) {
-                    continue;
-                }
-                TalkType timeslotTalkType = talkTypeIdToTalkTypeMap.get(talkTypeId);
-
-                Timeslot timeslot;
-                if (startAndEndTimeToTimeslotMap.keySet().contains(Pair.of(startDateTime, endDateTime))) {
-                    timeslot = startAndEndTimeToTimeslotMap.get(Pair.of(startDateTime, endDateTime));
-                    timeslotToAvailableRoomsMap.get(timeslot).add(room);
-                    if (timeslotTalkType != null) {
-                        timeslot.getTalkTypeSet().add(timeslotTalkType);
-                    }
-                } else {
-                    timeslot = new Timeslot(timeSlotId++);
-                    timeslot.withStartDateTime(startDateTime)
-                            .withEndDateTime(endDateTime)
-                            .withTalkTypeSet(timeslotTalkType == null ? new HashSet<>() : new HashSet<>(Arrays.asList(timeslotTalkType)));
-                    timeslot.setTagSet(new HashSet<>());
-
-                    timeslotList.add(timeslot);
-                    timeslotToAvailableRoomsMap.put(timeslot, new ArrayList<>(Arrays.asList(room)));
-                    startAndEndTimeToTimeslotMap.put(Pair.of(startDateTime, endDateTime), timeslot);
-                }
-
-                if (!timeslotObject.isNull("talk")) {
+                if (timeslotObject.containsKey("talk") && !timeslotObject.isNull("talk")) {
                     scheduleTalk(timeslotObject, room, timeslot);
                 }
-
-                for (TalkType talkType : timeslot.getTalkTypeSet()) {
-                    talkType.getCompatibleTimeslotSet().add(timeslot);
-                }
-                timeslotTalkTypeToTotalMap.merge(talkTypeId, 1, Integer::sum);
             }
         }
 
+        if (timeslotList.isEmpty()) {
+            LOGGER.warn("There are no timeslots. Log into the CFP webapp, open the tab configuration and add the timeslots before importing it here.");
+        }
         for (Room room : solution.getRoomList()) {
             room.setUnavailableTimeslotSet(timeslotList.stream()
                     .filter(timeslot -> !timeslotToAvailableRoomsMap.get(timeslot).contains(room))
                     .collect(Collectors.toSet()));
         }
 
+        timeslotList.sort(Comparator.comparing(timeslot -> timeslot.getStartDateTime()));
         solution.setTimeslotList(timeslotList);
+    }
+
+    private Room extractRoom(JsonObject timeslotObject, String slotId, String roomId) {
+        Room room = roomIdToRoomMap.get(timeslotObject.getString(roomId));
+        if (room == null) {
+            throw new IllegalStateException("The timeslot (" + timeslotObject.getString(slotId) + ") has a roomId (" + timeslotObject.getString(roomId)
+                    + ") that does not exist in the rooms list");
+        }
+        return room;
     }
 
     private Set<TalkType> getTalkTypeSetForCapacity(int capacity) {
         Set<TalkType> talkTypeSet = new HashSet<>();
         List<String> typeNames = new ArrayList<>();
         if (capacity < 100) {
-            typeNames.addAll(Arrays.asList(SMALL_ROOMS_TYPE_NAMES));
+            typeNames.addAll(
+                    Arrays.asList(SMALL_ROOMS_TYPE_NAMES).stream()
+                            .filter(typeName -> solution.getTalkTypeList().contains(talkTypeIdToTalkTypeMap.get(typeName)))
+                            .collect(Collectors.toSet()));
         } else {
-            typeNames.addAll(Arrays.asList(LARGE_ROOMS_TYPE_NAMES));
+            typeNames.addAll(Arrays.asList(LARGE_ROOMS_TYPE_NAMES).stream()
+                    .filter(typeName -> solution.getTalkTypeList().contains(talkTypeIdToTalkTypeMap.get(typeName)))
+                    .collect(Collectors.toSet()));
         }
 
         for (String talkTypeName : typeNames) {
@@ -464,7 +509,6 @@ public class ConferenceSchedulingCfpDevoxxImporter {
         }
         talk.setRoom(room);
         talk.setTimeslot(timeslot);
-        talk.setPinnedByUser(true);
     }
 
     private <R> R readJson(String url, Function<JsonReader, R> mapper) {

@@ -43,7 +43,6 @@ import org.optaplanner.core.impl.heuristic.selector.move.generic.chained.Chained
 import org.optaplanner.core.impl.heuristic.selector.move.generic.chained.ChainedSwapMove;
 import org.optaplanner.core.impl.score.director.InnerScoreDirector;
 import org.optaplanner.core.impl.score.director.ScoreDirector;
-import org.optaplanner.core.impl.score.director.ScoreDirectorFactory;
 import org.optaplanner.core.impl.solver.ProblemFactChange;
 import org.optaplanner.examples.common.app.CommonApp;
 import org.optaplanner.examples.common.persistence.AbstractSolutionExporter;
@@ -182,8 +181,10 @@ public class SolutionBusiness<Solution_> {
 
     public void setSolver(Solver<Solution_> solver) {
         this.solver = solver;
-        ScoreDirectorFactory<Solution_> scoreDirectorFactory = solver.getScoreDirectorFactory();
-        guiScoreDirector = scoreDirectorFactory.buildScoreDirector();
+    }
+
+    public void setGuiScoreDirector(ScoreDirector<Solution_> guiScoreDirector) {
+        this.guiScoreDirector = guiScoreDirector;
     }
 
     public List<File> getUnsolvedFileList() {
@@ -210,6 +211,10 @@ public class SolutionBusiness<Solution_> {
 
     public String getSolutionFileName() {
         return solutionFileName;
+    }
+
+    public void setSolutionFileName(String solutionFileName) {
+        this.solutionFileName = solutionFileName;
     }
 
     public Score getScore() {
@@ -384,5 +389,4 @@ public class SolutionBusiness<Solution_> {
         SwapMove<Solution_> move = createSwapMove(leftEntity, rightEntity);
         doMove(move);
     }
-
 }

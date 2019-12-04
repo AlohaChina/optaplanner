@@ -25,6 +25,7 @@ import org.kie.api.definition.rule.Rule;
 import org.kie.api.runtime.rule.RuleContext;
 import org.optaplanner.core.api.domain.constraintweight.ConstraintConfiguration;
 import org.optaplanner.core.api.domain.constraintweight.ConstraintWeight;
+import org.optaplanner.core.api.domain.solution.PlanningScore;
 import org.optaplanner.core.api.score.holder.AbstractScoreHolder;
 
 /**
@@ -76,7 +77,7 @@ public class BendableLongScoreHolder extends AbstractScoreHolder<BendableLongSco
             Long singleLevelWeight = null;
             for (int i = 0; i < constraintWeight.getLevelsSize(); i++) {
                 long levelWeight = constraintWeight.getHardOrSoftScore(i);
-                if (levelWeight != 0) {
+                if (levelWeight != 0L) {
                     if (singleLevel != null) {
                         singleLevel = null;
                         singleLevelWeight = null;
@@ -134,7 +135,7 @@ public class BendableLongScoreHolder extends AbstractScoreHolder<BendableLongSco
      * @param kcontext never null, the magic variable in DRL
      */
     public void penalize(RuleContext kcontext) {
-        reward(kcontext, -1L);
+        impactScore(kcontext, -1L);
     }
 
     /**
@@ -143,7 +144,7 @@ public class BendableLongScoreHolder extends AbstractScoreHolder<BendableLongSco
      * @param weightMultiplier at least 0
      */
     public void penalize(RuleContext kcontext, long weightMultiplier) {
-        reward(kcontext, -weightMultiplier);
+        impactScore(kcontext, -weightMultiplier);
     }
 
     /**
@@ -162,7 +163,7 @@ public class BendableLongScoreHolder extends AbstractScoreHolder<BendableLongSco
         for (int i = 0; i < negatedSoftWeightsMultiplier.length; i++) {
             negatedSoftWeightsMultiplier[i] = -softWeightsMultiplier[i];
         }
-        reward(kcontext, negatedHardWeightsMultiplier, negatedSoftWeightsMultiplier);
+        impactScore(kcontext, negatedHardWeightsMultiplier, negatedSoftWeightsMultiplier);
     }
 
     /**
@@ -170,7 +171,7 @@ public class BendableLongScoreHolder extends AbstractScoreHolder<BendableLongSco
      * @param kcontext never null, the magic variable in DRL
      */
     public void reward(RuleContext kcontext) {
-        reward(kcontext, 1L);
+        impactScore(kcontext, 1L);
     }
 
     /**
@@ -179,14 +180,7 @@ public class BendableLongScoreHolder extends AbstractScoreHolder<BendableLongSco
      * @param weightMultiplier at least 0
      */
     public void reward(RuleContext kcontext, long weightMultiplier) {
-        Rule rule = kcontext.getRule();
-        BiConsumer<RuleContext, Long> matchExecutor = matchExecutorByNumberMap.get(rule);
-        if (matchExecutor == null) {
-            throw new IllegalStateException("The DRL rule (" + rule.getPackageName() + ":" + rule.getName()
-                    + ") does not match a @" + ConstraintWeight.class.getSimpleName() + " on the @"
-                    + ConstraintConfiguration.class.getSimpleName() + " annotated class.");
-        }
-        matchExecutor.accept(kcontext, weightMultiplier);
+        impactScore(kcontext, weightMultiplier);
     }
 
     /**
@@ -197,6 +191,27 @@ public class BendableLongScoreHolder extends AbstractScoreHolder<BendableLongSco
      * @param softWeightsMultiplier elements at least 0
      */
     public void reward(RuleContext kcontext, long[] hardWeightsMultiplier, long[] softWeightsMultiplier) {
+        impactScore(kcontext, hardWeightsMultiplier, softWeightsMultiplier);
+    }
+
+    @Override
+    public void impactScore(RuleContext kcontext) {
+        impactScore(kcontext, 1L);
+    }
+
+    @Override
+    public void impactScore(RuleContext kcontext, long weightMultiplier) {
+        Rule rule = kcontext.getRule();
+        BiConsumer<RuleContext, Long> matchExecutor = matchExecutorByNumberMap.get(rule);
+        if (matchExecutor == null) {
+            throw new IllegalStateException("The DRL rule (" + rule.getPackageName() + ":" + rule.getName()
+                    + ") does not match a @" + ConstraintWeight.class.getSimpleName() + " on the @"
+                    + ConstraintConfiguration.class.getSimpleName() + " annotated class.");
+        }
+        matchExecutor.accept(kcontext, weightMultiplier);
+    }
+
+    private void impactScore(RuleContext kcontext, long[] hardWeightsMultiplier, long[] softWeightsMultiplier) {
         Rule rule = kcontext.getRule();
         BiConsumer<RuleContext, BendableLongScore> matchExecutor = matchExecutorByScoreMap.get(rule);
         if (matchExecutor == null) {
@@ -218,6 +233,11 @@ public class BendableLongScoreHolder extends AbstractScoreHolder<BendableLongSco
      * @param weight higher is better, negative for a penalty, positive for a reward
      */
     public void addHardConstraintMatch(RuleContext kcontext, int hardLevel, long weight) {
+        if (hardLevel >= hardScores.length) {
+            throw new IllegalArgumentException("The hardLevel (" + hardLevel
+                    + ") isn't lower than the hardScores length (" + hardScores.length
+                    + ") defined by the @" + PlanningScore.class.getSimpleName() + " on the planning solution class.");
+        }
         hardScores[hardLevel] += weight;
         registerConstraintMatch(kcontext,
                 () -> hardScores[hardLevel] -= weight,
@@ -236,6 +256,11 @@ public class BendableLongScoreHolder extends AbstractScoreHolder<BendableLongSco
      * @param weight higher is better, negative for a penalty, positive for a reward
      */
     public void addSoftConstraintMatch(RuleContext kcontext, int softLevel, long weight) {
+        if (softLevel >= softScores.length) {
+            throw new IllegalArgumentException("The softLevel (" + softLevel
+                    + ") isn't lower than the softScores length (" + softScores.length
+                    + ") defined by the @" + PlanningScore.class.getSimpleName() + " on the planning solution class.");
+        }
         softScores[softLevel] += weight;
         registerConstraintMatch(kcontext,
                 () -> softScores[softLevel] -= weight,
@@ -253,16 +278,18 @@ public class BendableLongScoreHolder extends AbstractScoreHolder<BendableLongSco
      * @param softWeights never null, array of length {@link #getSoftLevelsSize()}
      */
     public void addMultiConstraintMatch(RuleContext kcontext, long[] hardWeights, long[] softWeights) {
-        if (hardScores.length != hardWeights.length) {
-            throw new IllegalArgumentException("The hardScores length (" + hardScores.length
-                    + ") is different than the hardWeights length (" + hardWeights.length + ").");
+        if (hardWeights.length != hardScores.length) {
+            throw new IllegalArgumentException("The hardWeights length (" + hardWeights.length
+                    + ") is different than the hardScores length (" + hardScores.length
+                    + ") defined by the @" + PlanningScore.class.getSimpleName() + " on the planning solution class.");
         }
         for (int i = 0; i < hardScores.length; i++) {
             hardScores[i] += hardWeights[i];
         }
-        if (softScores.length != softWeights.length) {
-            throw new IllegalArgumentException("The softScores length (" + softScores.length
-                    + ") is different than the softWeights length (" + softWeights.length + ").");
+        if (softWeights.length != softScores.length) {
+            throw new IllegalArgumentException("The softWeights length (" + softWeights.length
+                    + ") is different than the softScores length (" + softScores.length
+                    + ") defined by the @" + PlanningScore.class.getSimpleName() + " on the planning solution class.");
         }
         for (int i = 0; i < softScores.length; i++) {
             softScores[i] += softWeights[i];

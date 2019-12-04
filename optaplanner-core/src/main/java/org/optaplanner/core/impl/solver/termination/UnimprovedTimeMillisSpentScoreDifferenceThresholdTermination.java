@@ -16,6 +16,7 @@
 
 package org.optaplanner.core.impl.solver.termination;
 
+import java.time.Clock;
 import java.util.ArrayDeque;
 import java.util.Iterator;
 import java.util.Queue;
@@ -24,27 +25,37 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.optaplanner.core.api.score.Score;
 import org.optaplanner.core.impl.phase.scope.AbstractPhaseScope;
 import org.optaplanner.core.impl.phase.scope.AbstractStepScope;
-import org.optaplanner.core.impl.solver.ChildThreadType;
+import org.optaplanner.core.impl.solver.thread.ChildThreadType;
 import org.optaplanner.core.impl.solver.scope.DefaultSolverScope;
 
 public class UnimprovedTimeMillisSpentScoreDifferenceThresholdTermination extends AbstractTermination {
 
     private final long unimprovedTimeMillisSpentLimit;
     private final Score unimprovedScoreDifferenceThreshold;
+    private final Clock clock;
 
     private Queue<Pair<Long, Score>> bestScoreImprovementHistoryQueue;
     // safeTimeMillis is until when we're safe from termination
     private long solverSafeTimeMillis = -1L;
     private long phaseSafeTimeMillis = -1L;
 
-    public UnimprovedTimeMillisSpentScoreDifferenceThresholdTermination(long unimprovedTimeMillisSpentLimit,
+    public UnimprovedTimeMillisSpentScoreDifferenceThresholdTermination(
+            long unimprovedTimeMillisSpentLimit,
             Score unimprovedScoreDifferenceThreshold) {
+        this(unimprovedTimeMillisSpentLimit, unimprovedScoreDifferenceThreshold, Clock.systemUTC());
+    }
+
+    protected UnimprovedTimeMillisSpentScoreDifferenceThresholdTermination(
+            long unimprovedTimeMillisSpentLimit,
+            Score unimprovedScoreDifferenceThreshold,
+            Clock clock) {
         this.unimprovedTimeMillisSpentLimit = unimprovedTimeMillisSpentLimit;
         this.unimprovedScoreDifferenceThreshold = unimprovedScoreDifferenceThreshold;
-        if (unimprovedTimeMillisSpentLimit <= 0L) {
+        if (unimprovedTimeMillisSpentLimit < 0L) {
             throw new IllegalArgumentException("The unimprovedTimeMillisSpentLimit (" + unimprovedTimeMillisSpentLimit
-                    + ") cannot be negative.");
+                                                       + ") cannot be negative.");
         }
+        this.clock = clock;
     }
 
     public long getUnimprovedTimeMillisSpentLimit() {
@@ -86,9 +97,12 @@ public class UnimprovedTimeMillisSpentScoreDifferenceThresholdTermination extend
             for (Iterator<Pair<Long, Score>> it = bestScoreImprovementHistoryQueue.iterator(); it.hasNext(); ) {
                 Pair<Long, Score> bestScoreImprovement = it.next();
                 Score scoreDifference = bestScore.subtract(bestScoreImprovement.getValue());
-                if (scoreDifference.compareTo(unimprovedScoreDifferenceThreshold) >= 0) {
+                boolean timeLimitNotYetReached =
+                        bestScoreImprovement.getKey() + unimprovedTimeMillisSpentLimit >= bestSolutionTimeMillis;
+                boolean scoreImprovedOverThreshold = scoreDifference.compareTo(unimprovedScoreDifferenceThreshold) >= 0;
+                if (scoreImprovedOverThreshold && timeLimitNotYetReached) {
                     it.remove();
-                    long safeTimeMillis = bestScoreImprovement.getKey() + unimprovedTimeMillisSpentLimit;
+                    long safeTimeMillis = bestSolutionTimeMillis + unimprovedTimeMillisSpentLimit;
                     solverSafeTimeMillis = safeTimeMillis;
                     phaseSafeTimeMillis = safeTimeMillis;
                 } else {
@@ -118,7 +132,7 @@ public class UnimprovedTimeMillisSpentScoreDifferenceThresholdTermination extend
         // that will end up pushing the safeTimeMillis further
         // but that doesn't change the fact that the best score didn't improve enough in the specified time interval.
         // It just looks weird because it terminates even though the final step is a high enough score improvement.
-        long now = System.currentTimeMillis();
+        long now = clock.millis();
         return now > safeTimeMillis;
     }
 
@@ -137,7 +151,7 @@ public class UnimprovedTimeMillisSpentScoreDifferenceThresholdTermination extend
     }
 
     protected double calculateTimeGradient(long safeTimeMillis) {
-        long now = System.currentTimeMillis();
+        long now = clock.millis();
         long unimprovedTimeMillisSpent = now - (safeTimeMillis - unimprovedTimeMillisSpentLimit);
         double timeGradient = ((double) unimprovedTimeMillisSpent) / ((double) unimprovedTimeMillisSpentLimit);
         return Math.min(timeGradient, 1.0);
@@ -158,5 +172,4 @@ public class UnimprovedTimeMillisSpentScoreDifferenceThresholdTermination extend
     public String toString() {
         return "UnimprovedTimeMillisSpent(" + unimprovedTimeMillisSpentLimit + ")";
     }
-
 }

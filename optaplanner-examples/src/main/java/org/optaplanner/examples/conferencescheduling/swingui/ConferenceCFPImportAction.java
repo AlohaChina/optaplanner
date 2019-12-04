@@ -56,13 +56,14 @@ public class ConferenceCFPImportAction implements CommonApp.ExtraAction<Conferen
             JTextField cfpRestUrlTextField = new JTextField("https://dvbe18.confinabox.com/api/conferences/DVBE18");
             Object[] dialogue = {
                     "Choose conference:", cfpConferenceBox,
-                    "Enter CFP REST Url:", cfpRestUrlTextField
+                    "Enter CFP REST Url:", cfpRestUrlTextField,
             };
 
             int option = JOptionPane.showConfirmDialog(solutionPanel, dialogue, "Import", JOptionPane.OK_CANCEL_OPTION);
             if (option == JOptionPane.OK_OPTION) {
                 String conferenceBaseUrl = cfpRestUrlTextField.getText();
-                new ConferenceCFPImportWorker(solutionBusiness, solutionPanel, conferenceBaseUrl).executeAndShowDialog();
+                new ConferenceCFPImportWorker(solutionBusiness, solutionPanel, conferenceBaseUrl)
+                        .executeAndShowDialog();
             }
         };
     }
@@ -71,12 +72,12 @@ public class ConferenceCFPImportAction implements CommonApp.ExtraAction<Conferen
 
         private final SolutionBusiness<ConferenceSolution> solutionBusiness;
         private final SolutionPanel<ConferenceSolution> solutionPanel;
-        private final String conferenceBaseUrl;
+        private String conferenceBaseUrl;
 
         private final JDialog dialog;
 
-        public ConferenceCFPImportWorker(SolutionBusiness<ConferenceSolution> solutionBusiness,
-                SolutionPanel<ConferenceSolution> solutionPanel, String conferenceBaseUrl) {
+        public ConferenceCFPImportWorker(SolutionBusiness<ConferenceSolution> solutionBusiness, SolutionPanel<ConferenceSolution> solutionPanel,
+                                         String conferenceBaseUrl) {
             this.solutionBusiness = solutionBusiness;
             this.solutionPanel = solutionPanel;
             this.conferenceBaseUrl = conferenceBaseUrl;
@@ -127,13 +128,13 @@ public class ConferenceCFPImportAction implements CommonApp.ExtraAction<Conferen
             } catch (ExecutionException e) {
                 JOptionPane.showMessageDialog(solutionPanel,
                         "CFP import failed.\nThe next dialog will explain the cause.\n\n"
-                        + "Fix it in ConferenceSchedulingCfpDevoxxImporter.java in the optaplanner repository.");
+                                + "Fix it in ConferenceSchedulingCfpDevoxxImporter.java in the optaplanner repository.");
                 throw new IllegalStateException("Importing failed.", e.getCause());
             }
             solutionBusiness.setSolution(cfpProblem);
+            solutionBusiness.setSolutionFileName(solutionBusiness.getSolution().getConferenceName());
             JOptionPane.showMessageDialog(solutionPanel, "CFP data imported successfully.");
+            solutionPanel.getSolverAndPersistenceFrame().setSolutionLoaded(null);
         }
-
     }
-
 }

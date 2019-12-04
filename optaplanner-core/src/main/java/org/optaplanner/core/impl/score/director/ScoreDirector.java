@@ -19,9 +19,11 @@ package org.optaplanner.core.impl.score.director;
 import java.util.Collection;
 import java.util.Map;
 
+import org.optaplanner.core.api.domain.entity.PlanningEntity;
 import org.optaplanner.core.api.domain.lookup.LookUpStrategyType;
 import org.optaplanner.core.api.domain.lookup.PlanningId;
 import org.optaplanner.core.api.domain.solution.PlanningSolution;
+import org.optaplanner.core.api.domain.solution.drools.ProblemFactCollectionProperty;
 import org.optaplanner.core.api.domain.variable.PlanningVariable;
 import org.optaplanner.core.api.score.FeasibilityScore;
 import org.optaplanner.core.api.score.Score;
@@ -29,6 +31,7 @@ import org.optaplanner.core.api.score.constraint.ConstraintMatch;
 import org.optaplanner.core.api.score.constraint.ConstraintMatchTotal;
 import org.optaplanner.core.api.score.constraint.Indictment;
 import org.optaplanner.core.api.solver.Solver;
+import org.optaplanner.core.api.solver.SolverFactory;
 import org.optaplanner.core.impl.domain.variable.descriptor.VariableDescriptor;
 import org.optaplanner.core.impl.heuristic.move.Move;
 import org.optaplanner.core.impl.solver.ProblemFactChange;
@@ -57,7 +60,7 @@ public interface ScoreDirector<Solution_> extends AutoCloseable {
      * {@link PlanningSolution best solution}, it should be a (un)changed clone.
      * <p>
      * Only call this method on a separate {@link ScoreDirector} instance,
-     * built by {@link Solver#getScoreDirectorFactory()},
+     * built by {@link SolverFactory#getScoreDirectorFactory()},
      * not on the one used inside the {@link Solver} itself.
      * @param workingSolution never null
      */
@@ -70,7 +73,8 @@ public interface ScoreDirector<Solution_> extends AutoCloseable {
     Score calculateScore();
 
     /**
-     * @return true if {@link #getConstraintMatchTotals()} can be called
+     * @return true if {@link #getConstraintMatchTotals()}, {@link #getConstraintMatchTotalMap()}
+     * and {@link #getIndictmentMap} can be called
      */
     boolean isConstraintMatchEnabled();
 
@@ -84,12 +88,29 @@ public interface ScoreDirector<Solution_> extends AutoCloseable {
      * unless that method has already been called since the last {@link PlanningVariable} changes.
      * @return never null
      * @throws IllegalStateException if {@link #isConstraintMatchEnabled()} returns false
+     * @see #getConstraintMatchTotalMap()
+     * @see #getIndictmentMap()
      */
     Collection<ConstraintMatchTotal> getConstraintMatchTotals();
 
     /**
+     * Explains the {@link Score} of {@link #calculateScore()} by splitting it up per constraint type
+     * (which is usually a score rule).
+     * <p>
+     * The sum of {@link ConstraintMatchTotal#getScore()} equals {@link #calculateScore()}.
+     * <p>
+     * Call {@link #calculateScore()} before calling this method,
+     * unless that method has already been called since the last {@link PlanningVariable} changes.
+     * @return never null, the key is the {@link ConstraintMatchTotal#getConstraintId() constraintId}
+     * (to create one, use {@link ConstraintMatchTotal#composeConstraintId(String, String)}).
+     * @throws IllegalStateException if {@link #isConstraintMatchEnabled()} returns false
+     * @see #getIndictmentMap()
+     */
+    Map<String, ConstraintMatchTotal> getConstraintMatchTotalMap();
+
+    /**
      * Explains the impact of each planning entity or problem fact on the {@link Score}.
-     * An indictment is basically the inverse of {@link #getConstraintMatchTotals()}:
+     * An {@link Indictment} is basically the inverse of a {@link ConstraintMatchTotal}:
      * it is a {@link Score} total for each justification {@link Object}
      * in {@link ConstraintMatch#getJustificationList()}.
      * <p>
@@ -102,8 +123,9 @@ public interface ScoreDirector<Solution_> extends AutoCloseable {
      * <p>
      * Call {@link #calculateScore()} before calling this method,
      * unless that method has already been called since the last {@link PlanningVariable} changes.
-     * @return never null
+     * @return never null, the key is a {@link ProblemFactCollectionProperty problem fact} or a {@link PlanningEntity planning entity}
      * @throws IllegalStateException if {@link #isConstraintMatchEnabled()} returns false
+     * @see #getConstraintMatchTotalMap()
      */
     Map<Object, Indictment> getIndictmentMap();
 
@@ -115,7 +137,7 @@ public interface ScoreDirector<Solution_> extends AutoCloseable {
      * <p>
      * Do not parse this string.
      * Instead, to provide this information in a UI or a service,
-     * use {@link #getConstraintMatchTotals()} and {@link #getIndictmentMap()}
+     * use {@link #getConstraintMatchTotalMap()} and {@link #getIndictmentMap()}
      * and convert those into a domain specific API.
      * <p>
      * This automatically calls {@link #calculateScore()} first.
@@ -131,14 +153,6 @@ public interface ScoreDirector<Solution_> extends AutoCloseable {
     void beforeVariableChanged(Object entity, String variableName);
 
     void afterVariableChanged(Object entity, String variableName);
-
-    // TODO VariableDescriptor is not likely to go to public API
-
-    void beforeVariableChanged(VariableDescriptor variableDescriptor, Object entity);
-
-    void afterVariableChanged(VariableDescriptor variableDescriptor, Object entity);
-
-    void changeVariableFacade(VariableDescriptor variableDescriptor, Object entity, Object newValue);
 
     void triggerVariableListeners();
 
@@ -168,12 +182,26 @@ public interface ScoreDirector<Solution_> extends AutoCloseable {
      * Matching is determined by the {@link LookUpStrategyType} on {@link PlanningSolution}.
      * Matching uses a {@link PlanningId} by default.
      * @param externalObject sometimes null
+     * @return null if externalObject is null
+     * @throws IllegalArgumentException if there is no workingObject for externalObject, if it cannot be looked up
+     * or if the externalObject's class is not supported
+     * @throws IllegalStateException if it cannot be looked up
+     * @param <E> the object type
+     */
+    <E> E lookUpWorkingObject(E externalObject);
+
+    /**
+     * As defined by {@link #lookUpWorkingObject(Object)},
+     * but doesn't fail fast if no workingObject was ever added for the externalObject.
+     * It's recommended to use {@link #lookUpWorkingObject(Object)} instead,
+     * especially in a {@link Move#rebase(ScoreDirector)} code.
+     * @param externalObject sometimes null
      * @return null if externalObject is null or if there is no workingObject for externalObject
      * @throws IllegalArgumentException if it cannot be looked up or if the externalObject's class is not supported
      * @throws IllegalStateException if it cannot be looked up
      * @param <E> the object type
      */
-    <E> E lookUpWorkingObject(E externalObject);
+    <E> E lookUpWorkingObjectOrReturnNull(E externalObject);
 
     /**
      * Needs to be called after use because some implementations need to clean up their resources.
@@ -188,5 +216,13 @@ public interface ScoreDirector<Solution_> extends AutoCloseable {
     default void dispose() {
         close();
     }
+
+    // TODO VariableDescriptor is not likely to go to public API: move these into InnerScoreDirector
+
+    void beforeVariableChanged(VariableDescriptor variableDescriptor, Object entity);
+
+    void afterVariableChanged(VariableDescriptor variableDescriptor, Object entity);
+
+    void changeVariableFacade(VariableDescriptor variableDescriptor, Object entity, Object newValue);
 
 }

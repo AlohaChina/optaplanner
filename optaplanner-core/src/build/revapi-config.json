@@ -23,550 +23,206 @@
       }
     }
   },
-
   "ignores": {
     "revapi": {
-      "_comment": "Changes between 7.11.0.Final and the current branch. These changes are desired and thus ignored.",
+      "_comment": "Changes between 7.26.0.Final and the current branch. These changes are desired and thus ignored.",
       "ignore": [
         {
-          "code": "java.method.returnTypeChanged",
-          "old": "method org.optaplanner.core.api.score.Score org.optaplanner.core.api.score.buildin.bendable.BendableScoreHolder::extractScore(int)",
-          "new": "method org.optaplanner.core.api.score.buildin.bendable.BendableScore org.optaplanner.core.api.score.buildin.bendable.BendableScoreHolder::extractScore(int)",
-          "oldType": "org.optaplanner.core.api.score.Score",
-          "newType": "org.optaplanner.core.api.score.buildin.bendable.BendableScore",
-          "package": "org.optaplanner.core.api.score.buildin.bendable",
-          "classSimpleName": "BendableScoreHolder",
-          "methodName": "extractScore",
+          "code": "java.method.addedToInterface",
+          "new": "method <ResultContainer_, Result_> org.optaplanner.core.api.score.stream.uni.UniConstraintStream<Result_> org.optaplanner.core.api.score.stream.uni.UniConstraintStream<A>::groupBy(org.optaplanner.core.api.score.stream.uni.UniConstraintCollector<A, ResultContainer_, Result_>)",
+          "package": "org.optaplanner.core.api.score.stream.uni",
+          "classSimpleName": "UniConstraintStream",
+          "methodName": "groupBy",
           "elementKind": "method",
-          "justification": "ScoreHolder now has the Score type as a generic type parameter."
+          "justification": "We removed an unused generic type binding on a class that has no external implementors."
         },
         {
-          "code": "java.class.noLongerImplementsInterface",
-          "old": "class org.optaplanner.core.api.score.buildin.bendable.BendableScoreHolder",
-          "new": "class org.optaplanner.core.api.score.buildin.bendable.BendableScoreHolder",
-          "interface": "org.optaplanner.core.api.score.holder.ScoreHolder",
-          "package": "org.optaplanner.core.api.score.buildin.bendable",
-          "classSimpleName": "BendableScoreHolder",
+          "code": "java.class.nonFinalClassInheritsFromNewClass",
+          "old": "class org.optaplanner.core.config.heuristic.selector.move.generic.PillarChangeMoveSelectorConfig",
+          "new": "class org.optaplanner.core.config.heuristic.selector.move.generic.PillarChangeMoveSelectorConfig",
+          "superClass": "org.optaplanner.core.config.heuristic.selector.move.generic.AbstractPillarMoveSelectorConfig<org.optaplanner.core.config.heuristic.selector.move.generic.PillarChangeMoveSelectorConfig>",
+          "package": "org.optaplanner.core.config.heuristic.selector.move.generic",
+          "classSimpleName": "PillarChangeMoveSelectorConfig",
           "elementKind": "class",
-          "justification": "ScoreHolder now has the Score type as a generic type parameter."
+          "justification": "Pillar moves now share some properties."
         },
         {
-          "code": "java.class.superTypeTypeParametersChanged",
-          "old": "class org.optaplanner.core.api.score.buildin.bendable.BendableScoreHolder",
-          "new": "class org.optaplanner.core.api.score.buildin.bendable.BendableScoreHolder",
-          "oldSuperType": "org.optaplanner.core.api.score.holder.AbstractScoreHolder",
-          "newSuperType": "org.optaplanner.core.api.score.holder.AbstractScoreHolder<org.optaplanner.core.api.score.buildin.bendable.BendableScore>",
-          "package": "org.optaplanner.core.api.score.buildin.bendable",
-          "classSimpleName": "BendableScoreHolder",
+          "code": "java.class.nonFinalClassInheritsFromNewClass",
+          "old": "class org.optaplanner.core.config.heuristic.selector.move.generic.PillarSwapMoveSelectorConfig",
+          "new": "class org.optaplanner.core.config.heuristic.selector.move.generic.PillarSwapMoveSelectorConfig",
+          "superClass": "org.optaplanner.core.config.heuristic.selector.move.generic.AbstractPillarMoveSelectorConfig<org.optaplanner.core.config.heuristic.selector.move.generic.PillarSwapMoveSelectorConfig>",
+          "package": "org.optaplanner.core.config.heuristic.selector.move.generic",
+          "classSimpleName": "PillarSwapMoveSelectorConfig",
           "elementKind": "class",
-          "justification": "ScoreHolder now has the Score type as a generic type parameter."
-        },
-        {
-          "code": "java.method.returnTypeChanged",
-          "old": "method org.optaplanner.core.api.score.Score org.optaplanner.core.api.score.buildin.bendablebigdecimal.BendableBigDecimalScoreHolder::extractScore(int)",
-          "new": "method org.optaplanner.core.api.score.buildin.bendablebigdecimal.BendableBigDecimalScore org.optaplanner.core.api.score.buildin.bendablebigdecimal.BendableBigDecimalScoreHolder::extractScore(int)",
-          "oldType": "org.optaplanner.core.api.score.Score",
-          "newType": "org.optaplanner.core.api.score.buildin.bendablebigdecimal.BendableBigDecimalScore",
-          "package": "org.optaplanner.core.api.score.buildin.bendablebigdecimal",
-          "classSimpleName": "BendableBigDecimalScoreHolder",
-          "methodName": "extractScore",
-          "elementKind": "method",
-          "justification": "ScoreHolder now has the Score type as a generic type parameter."
-        },
-        {
-          "code": "java.class.noLongerImplementsInterface",
-          "old": "class org.optaplanner.core.api.score.buildin.bendablebigdecimal.BendableBigDecimalScoreHolder",
-          "new": "class org.optaplanner.core.api.score.buildin.bendablebigdecimal.BendableBigDecimalScoreHolder",
-          "interface": "org.optaplanner.core.api.score.holder.ScoreHolder",
-          "package": "org.optaplanner.core.api.score.buildin.bendablebigdecimal",
-          "classSimpleName": "BendableBigDecimalScoreHolder",
-          "elementKind": "class",
-          "justification": "ScoreHolder now has the Score type as a generic type parameter."
-        },
-        {
-          "code": "java.class.superTypeTypeParametersChanged",
-          "old": "class org.optaplanner.core.api.score.buildin.bendablebigdecimal.BendableBigDecimalScoreHolder",
-          "new": "class org.optaplanner.core.api.score.buildin.bendablebigdecimal.BendableBigDecimalScoreHolder",
-          "oldSuperType": "org.optaplanner.core.api.score.holder.AbstractScoreHolder",
-          "newSuperType": "org.optaplanner.core.api.score.holder.AbstractScoreHolder<org.optaplanner.core.api.score.buildin.bendablebigdecimal.BendableBigDecimalScore>",
-          "package": "org.optaplanner.core.api.score.buildin.bendablebigdecimal",
-          "classSimpleName": "BendableBigDecimalScoreHolder",
-          "elementKind": "class",
-          "justification": "ScoreHolder now has the Score type as a generic type parameter."
-        },
-        {
-          "code": "java.method.returnTypeChanged",
-          "old": "method org.optaplanner.core.api.score.Score org.optaplanner.core.api.score.buildin.bendablelong.BendableLongScoreHolder::extractScore(int)",
-          "new": "method org.optaplanner.core.api.score.buildin.bendablelong.BendableLongScore org.optaplanner.core.api.score.buildin.bendablelong.BendableLongScoreHolder::extractScore(int)",
-          "oldType": "org.optaplanner.core.api.score.Score",
-          "newType": "org.optaplanner.core.api.score.buildin.bendablelong.BendableLongScore",
-          "package": "org.optaplanner.core.api.score.buildin.bendablelong",
-          "classSimpleName": "BendableLongScoreHolder",
-          "methodName": "extractScore",
-          "elementKind": "method",
-          "justification": "ScoreHolder now has the Score type as a generic type parameter."
-        },
-        {
-          "code": "java.class.noLongerImplementsInterface",
-          "old": "class org.optaplanner.core.api.score.buildin.bendablelong.BendableLongScoreHolder",
-          "new": "class org.optaplanner.core.api.score.buildin.bendablelong.BendableLongScoreHolder",
-          "interface": "org.optaplanner.core.api.score.holder.ScoreHolder",
-          "package": "org.optaplanner.core.api.score.buildin.bendablelong",
-          "classSimpleName": "BendableLongScoreHolder",
-          "elementKind": "class",
-          "justification": "ScoreHolder now has the Score type as a generic type parameter."
-        },
-        {
-          "code": "java.class.superTypeTypeParametersChanged",
-          "old": "class org.optaplanner.core.api.score.buildin.bendablelong.BendableLongScoreHolder",
-          "new": "class org.optaplanner.core.api.score.buildin.bendablelong.BendableLongScoreHolder",
-          "oldSuperType": "org.optaplanner.core.api.score.holder.AbstractScoreHolder",
-          "newSuperType": "org.optaplanner.core.api.score.holder.AbstractScoreHolder<org.optaplanner.core.api.score.buildin.bendablelong.BendableLongScore>",
-          "package": "org.optaplanner.core.api.score.buildin.bendablelong",
-          "classSimpleName": "BendableLongScoreHolder",
-          "elementKind": "class",
-          "justification": "ScoreHolder now has the Score type as a generic type parameter."
-        },
-        {
-          "code": "java.method.returnTypeChanged",
-          "old": "method org.optaplanner.core.api.score.Score org.optaplanner.core.api.score.buildin.hardmediumsoft.HardMediumSoftScoreHolder::extractScore(int)",
-          "new": "method org.optaplanner.core.api.score.buildin.hardmediumsoft.HardMediumSoftScore org.optaplanner.core.api.score.buildin.hardmediumsoft.HardMediumSoftScoreHolder::extractScore(int)",
-          "oldType": "org.optaplanner.core.api.score.Score",
-          "newType": "org.optaplanner.core.api.score.buildin.hardmediumsoft.HardMediumSoftScore",
-          "package": "org.optaplanner.core.api.score.buildin.hardmediumsoft",
-          "classSimpleName": "HardMediumSoftScoreHolder",
-          "methodName": "extractScore",
-          "elementKind": "method",
-          "justification": "ScoreHolder now has the Score type as a generic type parameter."
-        },
-        {
-          "code": "java.class.noLongerImplementsInterface",
-          "old": "class org.optaplanner.core.api.score.buildin.hardmediumsoft.HardMediumSoftScoreHolder",
-          "new": "class org.optaplanner.core.api.score.buildin.hardmediumsoft.HardMediumSoftScoreHolder",
-          "interface": "org.optaplanner.core.api.score.holder.ScoreHolder",
-          "package": "org.optaplanner.core.api.score.buildin.hardmediumsoft",
-          "classSimpleName": "HardMediumSoftScoreHolder",
-          "elementKind": "class",
-          "justification": "ScoreHolder now has the Score type as a generic type parameter."
-        },
-        {
-          "code": "java.class.superTypeTypeParametersChanged",
-          "old": "class org.optaplanner.core.api.score.buildin.hardmediumsoft.HardMediumSoftScoreHolder",
-          "new": "class org.optaplanner.core.api.score.buildin.hardmediumsoft.HardMediumSoftScoreHolder",
-          "oldSuperType": "org.optaplanner.core.api.score.holder.AbstractScoreHolder",
-          "newSuperType": "org.optaplanner.core.api.score.holder.AbstractScoreHolder<org.optaplanner.core.api.score.buildin.hardmediumsoft.HardMediumSoftScore>",
-          "package": "org.optaplanner.core.api.score.buildin.hardmediumsoft",
-          "classSimpleName": "HardMediumSoftScoreHolder",
-          "elementKind": "class",
-          "justification": "ScoreHolder now has the Score type as a generic type parameter."
-        },
-        {
-          "code": "java.method.returnTypeChanged",
-          "old": "method org.optaplanner.core.api.score.Score org.optaplanner.core.api.score.buildin.hardmediumsoftbigdecimal.HardMediumSoftBigDecimalScoreHolder::extractScore(int)",
-          "new": "method org.optaplanner.core.api.score.buildin.hardmediumsoftbigdecimal.HardMediumSoftBigDecimalScore org.optaplanner.core.api.score.buildin.hardmediumsoftbigdecimal.HardMediumSoftBigDecimalScoreHolder::extractScore(int)",
-          "oldType": "org.optaplanner.core.api.score.Score",
-          "newType": "org.optaplanner.core.api.score.buildin.hardmediumsoftbigdecimal.HardMediumSoftBigDecimalScore",
-          "package": "org.optaplanner.core.api.score.buildin.hardmediumsoftbigdecimal",
-          "classSimpleName": "HardMediumSoftBigDecimalScoreHolder",
-          "methodName": "extractScore",
-          "elementKind": "method",
-          "justification": "ScoreHolder now has the Score type as a generic type parameter."
-        },
-        {
-          "code": "java.class.noLongerImplementsInterface",
-          "old": "class org.optaplanner.core.api.score.buildin.hardmediumsoftbigdecimal.HardMediumSoftBigDecimalScoreHolder",
-          "new": "class org.optaplanner.core.api.score.buildin.hardmediumsoftbigdecimal.HardMediumSoftBigDecimalScoreHolder",
-          "interface": "org.optaplanner.core.api.score.holder.ScoreHolder",
-          "package": "org.optaplanner.core.api.score.buildin.hardmediumsoftbigdecimal",
-          "classSimpleName": "HardMediumSoftBigDecimalScoreHolder",
-          "elementKind": "class",
-          "justification": "ScoreHolder now has the Score type as a generic type parameter."
-        },
-        {
-          "code": "java.class.superTypeTypeParametersChanged",
-          "old": "class org.optaplanner.core.api.score.buildin.hardmediumsoftbigdecimal.HardMediumSoftBigDecimalScoreHolder",
-          "new": "class org.optaplanner.core.api.score.buildin.hardmediumsoftbigdecimal.HardMediumSoftBigDecimalScoreHolder",
-          "oldSuperType": "org.optaplanner.core.api.score.holder.AbstractScoreHolder",
-          "newSuperType": "org.optaplanner.core.api.score.holder.AbstractScoreHolder<org.optaplanner.core.api.score.buildin.hardmediumsoftbigdecimal.HardMediumSoftBigDecimalScore>",
-          "package": "org.optaplanner.core.api.score.buildin.hardmediumsoftbigdecimal",
-          "classSimpleName": "HardMediumSoftBigDecimalScoreHolder",
-          "elementKind": "class",
-          "justification": "ScoreHolder now has the Score type as a generic type parameter."
-        },
-        {
-          "code": "java.method.returnTypeChanged",
-          "old": "method org.optaplanner.core.api.score.Score org.optaplanner.core.api.score.buildin.hardmediumsoftlong.HardMediumSoftLongScoreHolder::extractScore(int)",
-          "new": "method org.optaplanner.core.api.score.buildin.hardmediumsoftlong.HardMediumSoftLongScore org.optaplanner.core.api.score.buildin.hardmediumsoftlong.HardMediumSoftLongScoreHolder::extractScore(int)",
-          "oldType": "org.optaplanner.core.api.score.Score",
-          "newType": "org.optaplanner.core.api.score.buildin.hardmediumsoftlong.HardMediumSoftLongScore",
-          "package": "org.optaplanner.core.api.score.buildin.hardmediumsoftlong",
-          "classSimpleName": "HardMediumSoftLongScoreHolder",
-          "methodName": "extractScore",
-          "elementKind": "method",
-          "justification": "ScoreHolder now has the Score type as a generic type parameter."
-        },
-        {
-          "code": "java.class.noLongerImplementsInterface",
-          "old": "class org.optaplanner.core.api.score.buildin.hardmediumsoftlong.HardMediumSoftLongScoreHolder",
-          "new": "class org.optaplanner.core.api.score.buildin.hardmediumsoftlong.HardMediumSoftLongScoreHolder",
-          "interface": "org.optaplanner.core.api.score.holder.ScoreHolder",
-          "package": "org.optaplanner.core.api.score.buildin.hardmediumsoftlong",
-          "classSimpleName": "HardMediumSoftLongScoreHolder",
-          "elementKind": "class",
-          "justification": "ScoreHolder now has the Score type as a generic type parameter."
-        },
-        {
-          "code": "java.class.superTypeTypeParametersChanged",
-          "old": "class org.optaplanner.core.api.score.buildin.hardmediumsoftlong.HardMediumSoftLongScoreHolder",
-          "new": "class org.optaplanner.core.api.score.buildin.hardmediumsoftlong.HardMediumSoftLongScoreHolder",
-          "oldSuperType": "org.optaplanner.core.api.score.holder.AbstractScoreHolder",
-          "newSuperType": "org.optaplanner.core.api.score.holder.AbstractScoreHolder<org.optaplanner.core.api.score.buildin.hardmediumsoftlong.HardMediumSoftLongScore>",
-          "package": "org.optaplanner.core.api.score.buildin.hardmediumsoftlong",
-          "classSimpleName": "HardMediumSoftLongScoreHolder",
-          "elementKind": "class",
-          "justification": "ScoreHolder now has the Score type as a generic type parameter."
-        },
-        {
-          "code": "java.method.returnTypeChanged",
-          "old": "method org.optaplanner.core.api.score.Score org.optaplanner.core.api.score.buildin.hardsoft.HardSoftScoreHolder::extractScore(int)",
-          "new": "method org.optaplanner.core.api.score.buildin.hardsoft.HardSoftScore org.optaplanner.core.api.score.buildin.hardsoft.HardSoftScoreHolder::extractScore(int)",
-          "oldType": "org.optaplanner.core.api.score.Score",
-          "newType": "org.optaplanner.core.api.score.buildin.hardsoft.HardSoftScore",
-          "package": "org.optaplanner.core.api.score.buildin.hardsoft",
-          "classSimpleName": "HardSoftScoreHolder",
-          "methodName": "extractScore",
-          "elementKind": "method",
-          "justification": "ScoreHolder now has the Score type as a generic type parameter."
-        },
-        {
-          "code": "java.class.noLongerImplementsInterface",
-          "old": "class org.optaplanner.core.api.score.buildin.hardsoft.HardSoftScoreHolder",
-          "new": "class org.optaplanner.core.api.score.buildin.hardsoft.HardSoftScoreHolder",
-          "interface": "org.optaplanner.core.api.score.holder.ScoreHolder",
-          "package": "org.optaplanner.core.api.score.buildin.hardsoft",
-          "classSimpleName": "HardSoftScoreHolder",
-          "elementKind": "class",
-          "justification": "ScoreHolder now has the Score type as a generic type parameter."
-        },
-        {
-          "code": "java.class.superTypeTypeParametersChanged",
-          "old": "class org.optaplanner.core.api.score.buildin.hardsoft.HardSoftScoreHolder",
-          "new": "class org.optaplanner.core.api.score.buildin.hardsoft.HardSoftScoreHolder",
-          "oldSuperType": "org.optaplanner.core.api.score.holder.AbstractScoreHolder",
-          "newSuperType": "org.optaplanner.core.api.score.holder.AbstractScoreHolder<org.optaplanner.core.api.score.buildin.hardsoft.HardSoftScore>",
-          "package": "org.optaplanner.core.api.score.buildin.hardsoft",
-          "classSimpleName": "HardSoftScoreHolder",
-          "elementKind": "class",
-          "justification": "ScoreHolder now has the Score type as a generic type parameter."
-        },
-        {
-          "code": "java.method.returnTypeChanged",
-          "old": "method org.optaplanner.core.api.score.Score org.optaplanner.core.api.score.buildin.hardsoftbigdecimal.HardSoftBigDecimalScoreHolder::extractScore(int)",
-          "new": "method org.optaplanner.core.api.score.buildin.hardsoftbigdecimal.HardSoftBigDecimalScore org.optaplanner.core.api.score.buildin.hardsoftbigdecimal.HardSoftBigDecimalScoreHolder::extractScore(int)",
-          "oldType": "org.optaplanner.core.api.score.Score",
-          "newType": "org.optaplanner.core.api.score.buildin.hardsoftbigdecimal.HardSoftBigDecimalScore",
-          "package": "org.optaplanner.core.api.score.buildin.hardsoftbigdecimal",
-          "classSimpleName": "HardSoftBigDecimalScoreHolder",
-          "methodName": "extractScore",
-          "elementKind": "method",
-          "justification": "ScoreHolder now has the Score type as a generic type parameter."
-        },
-        {
-          "code": "java.class.noLongerImplementsInterface",
-          "old": "class org.optaplanner.core.api.score.buildin.hardsoftbigdecimal.HardSoftBigDecimalScoreHolder",
-          "new": "class org.optaplanner.core.api.score.buildin.hardsoftbigdecimal.HardSoftBigDecimalScoreHolder",
-          "interface": "org.optaplanner.core.api.score.holder.ScoreHolder",
-          "package": "org.optaplanner.core.api.score.buildin.hardsoftbigdecimal",
-          "classSimpleName": "HardSoftBigDecimalScoreHolder",
-          "elementKind": "class",
-          "justification": "ScoreHolder now has the Score type as a generic type parameter."
-        },
-        {
-          "code": "java.class.superTypeTypeParametersChanged",
-          "old": "class org.optaplanner.core.api.score.buildin.hardsoftbigdecimal.HardSoftBigDecimalScoreHolder",
-          "new": "class org.optaplanner.core.api.score.buildin.hardsoftbigdecimal.HardSoftBigDecimalScoreHolder",
-          "oldSuperType": "org.optaplanner.core.api.score.holder.AbstractScoreHolder",
-          "newSuperType": "org.optaplanner.core.api.score.holder.AbstractScoreHolder<org.optaplanner.core.api.score.buildin.hardsoftbigdecimal.HardSoftBigDecimalScore>",
-          "package": "org.optaplanner.core.api.score.buildin.hardsoftbigdecimal",
-          "classSimpleName": "HardSoftBigDecimalScoreHolder",
-          "elementKind": "class",
-          "justification": "ScoreHolder now has the Score type as a generic type parameter."
-        },
-        {
-          "code": "java.method.returnTypeChanged",
-          "old": "method org.optaplanner.core.api.score.Score org.optaplanner.core.api.score.buildin.hardsoftdouble.HardSoftDoubleScoreHolder::extractScore(int)",
-          "new": "method org.optaplanner.core.api.score.buildin.hardsoftdouble.HardSoftDoubleScore org.optaplanner.core.api.score.buildin.hardsoftdouble.HardSoftDoubleScoreHolder::extractScore(int)",
-          "oldType": "org.optaplanner.core.api.score.Score",
-          "newType": "org.optaplanner.core.api.score.buildin.hardsoftdouble.HardSoftDoubleScore",
-          "package": "org.optaplanner.core.api.score.buildin.hardsoftdouble",
-          "classSimpleName": "HardSoftDoubleScoreHolder",
-          "methodName": "extractScore",
-          "elementKind": "method",
-          "justification": "ScoreHolder now has the Score type as a generic type parameter."
-        },
-        {
-          "code": "java.class.noLongerImplementsInterface",
-          "old": "class org.optaplanner.core.api.score.buildin.hardsoftdouble.HardSoftDoubleScoreHolder",
-          "new": "class org.optaplanner.core.api.score.buildin.hardsoftdouble.HardSoftDoubleScoreHolder",
-          "interface": "org.optaplanner.core.api.score.holder.ScoreHolder",
-          "package": "org.optaplanner.core.api.score.buildin.hardsoftdouble",
-          "classSimpleName": "HardSoftDoubleScoreHolder",
-          "elementKind": "class",
-          "justification": "ScoreHolder now has the Score type as a generic type parameter."
-        },
-        {
-          "code": "java.class.superTypeTypeParametersChanged",
-          "old": "class org.optaplanner.core.api.score.buildin.hardsoftdouble.HardSoftDoubleScoreHolder",
-          "new": "class org.optaplanner.core.api.score.buildin.hardsoftdouble.HardSoftDoubleScoreHolder",
-          "oldSuperType": "org.optaplanner.core.api.score.holder.AbstractScoreHolder",
-          "newSuperType": "org.optaplanner.core.api.score.holder.AbstractScoreHolder<org.optaplanner.core.api.score.buildin.hardsoftdouble.HardSoftDoubleScore>",
-          "package": "org.optaplanner.core.api.score.buildin.hardsoftdouble",
-          "classSimpleName": "HardSoftDoubleScoreHolder",
-          "elementKind": "class",
-          "justification": "ScoreHolder now has the Score type as a generic type parameter."
-        },
-        {
-          "code": "java.method.returnTypeChanged",
-          "old": "method org.optaplanner.core.api.score.Score org.optaplanner.core.api.score.buildin.hardsoftlong.HardSoftLongScoreHolder::extractScore(int)",
-          "new": "method org.optaplanner.core.api.score.buildin.hardsoftlong.HardSoftLongScore org.optaplanner.core.api.score.buildin.hardsoftlong.HardSoftLongScoreHolder::extractScore(int)",
-          "oldType": "org.optaplanner.core.api.score.Score",
-          "newType": "org.optaplanner.core.api.score.buildin.hardsoftlong.HardSoftLongScore",
-          "package": "org.optaplanner.core.api.score.buildin.hardsoftlong",
-          "classSimpleName": "HardSoftLongScoreHolder",
-          "methodName": "extractScore",
-          "elementKind": "method",
-          "justification": "ScoreHolder now has the Score type as a generic type parameter."
-        },
-        {
-          "code": "java.class.noLongerImplementsInterface",
-          "old": "class org.optaplanner.core.api.score.buildin.hardsoftlong.HardSoftLongScoreHolder",
-          "new": "class org.optaplanner.core.api.score.buildin.hardsoftlong.HardSoftLongScoreHolder",
-          "interface": "org.optaplanner.core.api.score.holder.ScoreHolder",
-          "package": "org.optaplanner.core.api.score.buildin.hardsoftlong",
-          "classSimpleName": "HardSoftLongScoreHolder",
-          "elementKind": "class",
-          "justification": "ScoreHolder now has the Score type as a generic type parameter."
-        },
-        {
-          "code": "java.class.superTypeTypeParametersChanged",
-          "old": "class org.optaplanner.core.api.score.buildin.hardsoftlong.HardSoftLongScoreHolder",
-          "new": "class org.optaplanner.core.api.score.buildin.hardsoftlong.HardSoftLongScoreHolder",
-          "oldSuperType": "org.optaplanner.core.api.score.holder.AbstractScoreHolder",
-          "newSuperType": "org.optaplanner.core.api.score.holder.AbstractScoreHolder<org.optaplanner.core.api.score.buildin.hardsoftlong.HardSoftLongScore>",
-          "package": "org.optaplanner.core.api.score.buildin.hardsoftlong",
-          "classSimpleName": "HardSoftLongScoreHolder",
-          "elementKind": "class",
-          "justification": "ScoreHolder now has the Score type as a generic type parameter."
-        },
-        {
-          "code": "java.method.returnTypeChanged",
-          "old": "method org.optaplanner.core.api.score.Score org.optaplanner.core.api.score.buildin.simple.SimpleScoreHolder::extractScore(int)",
-          "new": "method org.optaplanner.core.api.score.buildin.simple.SimpleScore org.optaplanner.core.api.score.buildin.simple.SimpleScoreHolder::extractScore(int)",
-          "oldType": "org.optaplanner.core.api.score.Score",
-          "newType": "org.optaplanner.core.api.score.buildin.simple.SimpleScore",
-          "package": "org.optaplanner.core.api.score.buildin.simple",
-          "classSimpleName": "SimpleScoreHolder",
-          "methodName": "extractScore",
-          "elementKind": "method",
-          "justification": "ScoreHolder now has the Score type as a generic type parameter."
-        },
-        {
-          "code": "java.class.noLongerImplementsInterface",
-          "old": "class org.optaplanner.core.api.score.buildin.simple.SimpleScoreHolder",
-          "new": "class org.optaplanner.core.api.score.buildin.simple.SimpleScoreHolder",
-          "interface": "org.optaplanner.core.api.score.holder.ScoreHolder",
-          "package": "org.optaplanner.core.api.score.buildin.simple",
-          "classSimpleName": "SimpleScoreHolder",
-          "elementKind": "class",
-          "justification": "ScoreHolder now has the Score type as a generic type parameter."
-        },
-        {
-          "code": "java.class.superTypeTypeParametersChanged",
-          "old": "class org.optaplanner.core.api.score.buildin.simple.SimpleScoreHolder",
-          "new": "class org.optaplanner.core.api.score.buildin.simple.SimpleScoreHolder",
-          "oldSuperType": "org.optaplanner.core.api.score.holder.AbstractScoreHolder",
-          "newSuperType": "org.optaplanner.core.api.score.holder.AbstractScoreHolder<org.optaplanner.core.api.score.buildin.simple.SimpleScore>",
-          "package": "org.optaplanner.core.api.score.buildin.simple",
-          "classSimpleName": "SimpleScoreHolder",
-          "elementKind": "class",
-          "justification": "ScoreHolder now has the Score type as a generic type parameter."
-        },
-        {
-          "code": "java.method.returnTypeChanged",
-          "old": "method org.optaplanner.core.api.score.Score org.optaplanner.core.api.score.buildin.simplebigdecimal.SimpleBigDecimalScoreHolder::extractScore(int)",
-          "new": "method org.optaplanner.core.api.score.buildin.simplebigdecimal.SimpleBigDecimalScore org.optaplanner.core.api.score.buildin.simplebigdecimal.SimpleBigDecimalScoreHolder::extractScore(int)",
-          "oldType": "org.optaplanner.core.api.score.Score",
-          "newType": "org.optaplanner.core.api.score.buildin.simplebigdecimal.SimpleBigDecimalScore",
-          "package": "org.optaplanner.core.api.score.buildin.simplebigdecimal",
-          "classSimpleName": "SimpleBigDecimalScoreHolder",
-          "methodName": "extractScore",
-          "elementKind": "method",
-          "justification": "ScoreHolder now has the Score type as a generic type parameter."
-        },
-        {
-          "code": "java.class.noLongerImplementsInterface",
-          "old": "class org.optaplanner.core.api.score.buildin.simplebigdecimal.SimpleBigDecimalScoreHolder",
-          "new": "class org.optaplanner.core.api.score.buildin.simplebigdecimal.SimpleBigDecimalScoreHolder",
-          "interface": "org.optaplanner.core.api.score.holder.ScoreHolder",
-          "package": "org.optaplanner.core.api.score.buildin.simplebigdecimal",
-          "classSimpleName": "SimpleBigDecimalScoreHolder",
-          "elementKind": "class",
-          "justification": "ScoreHolder now has the Score type as a generic type parameter."
-        },
-        {
-          "code": "java.class.superTypeTypeParametersChanged",
-          "old": "class org.optaplanner.core.api.score.buildin.simplebigdecimal.SimpleBigDecimalScoreHolder",
-          "new": "class org.optaplanner.core.api.score.buildin.simplebigdecimal.SimpleBigDecimalScoreHolder",
-          "oldSuperType": "org.optaplanner.core.api.score.holder.AbstractScoreHolder",
-          "newSuperType": "org.optaplanner.core.api.score.holder.AbstractScoreHolder<org.optaplanner.core.api.score.buildin.simplebigdecimal.SimpleBigDecimalScore>",
-          "package": "org.optaplanner.core.api.score.buildin.simplebigdecimal",
-          "classSimpleName": "SimpleBigDecimalScoreHolder",
-          "elementKind": "class",
-          "justification": "ScoreHolder now has the Score type as a generic type parameter."
-        },
-        {
-          "code": "java.method.returnTypeChanged",
-          "old": "method org.optaplanner.core.api.score.Score org.optaplanner.core.api.score.buildin.simpledouble.SimpleDoubleScoreHolder::extractScore(int)",
-          "new": "method org.optaplanner.core.api.score.buildin.simpledouble.SimpleDoubleScore org.optaplanner.core.api.score.buildin.simpledouble.SimpleDoubleScoreHolder::extractScore(int)",
-          "oldType": "org.optaplanner.core.api.score.Score",
-          "newType": "org.optaplanner.core.api.score.buildin.simpledouble.SimpleDoubleScore",
-          "package": "org.optaplanner.core.api.score.buildin.simpledouble",
-          "classSimpleName": "SimpleDoubleScoreHolder",
-          "methodName": "extractScore",
-          "elementKind": "method",
-          "justification": "ScoreHolder now has the Score type as a generic type parameter."
-        },
-        {
-          "code": "java.class.noLongerImplementsInterface",
-          "old": "class org.optaplanner.core.api.score.buildin.simpledouble.SimpleDoubleScoreHolder",
-          "new": "class org.optaplanner.core.api.score.buildin.simpledouble.SimpleDoubleScoreHolder",
-          "interface": "org.optaplanner.core.api.score.holder.ScoreHolder",
-          "package": "org.optaplanner.core.api.score.buildin.simpledouble",
-          "classSimpleName": "SimpleDoubleScoreHolder",
-          "elementKind": "class",
-          "justification": "ScoreHolder now has the Score type as a generic type parameter."
-        },
-        {
-          "code": "java.class.superTypeTypeParametersChanged",
-          "old": "class org.optaplanner.core.api.score.buildin.simpledouble.SimpleDoubleScoreHolder",
-          "new": "class org.optaplanner.core.api.score.buildin.simpledouble.SimpleDoubleScoreHolder",
-          "oldSuperType": "org.optaplanner.core.api.score.holder.AbstractScoreHolder",
-          "newSuperType": "org.optaplanner.core.api.score.holder.AbstractScoreHolder<org.optaplanner.core.api.score.buildin.simpledouble.SimpleDoubleScore>",
-          "package": "org.optaplanner.core.api.score.buildin.simpledouble",
-          "classSimpleName": "SimpleDoubleScoreHolder",
-          "elementKind": "class",
-          "justification": "ScoreHolder now has the Score type as a generic type parameter."
-        },
-        {
-          "code": "java.method.returnTypeChanged",
-          "old": "method org.optaplanner.core.api.score.Score org.optaplanner.core.api.score.buildin.simplelong.SimpleLongScoreHolder::extractScore(int)",
-          "new": "method org.optaplanner.core.api.score.buildin.simplelong.SimpleLongScore org.optaplanner.core.api.score.buildin.simplelong.SimpleLongScoreHolder::extractScore(int)",
-          "oldType": "org.optaplanner.core.api.score.Score",
-          "newType": "org.optaplanner.core.api.score.buildin.simplelong.SimpleLongScore",
-          "package": "org.optaplanner.core.api.score.buildin.simplelong",
-          "classSimpleName": "SimpleLongScoreHolder",
-          "methodName": "extractScore",
-          "elementKind": "method",
-          "justification": "ScoreHolder now has the Score type as a generic type parameter."
-        },
-        {
-          "code": "java.class.noLongerImplementsInterface",
-          "old": "class org.optaplanner.core.api.score.buildin.simplelong.SimpleLongScoreHolder",
-          "new": "class org.optaplanner.core.api.score.buildin.simplelong.SimpleLongScoreHolder",
-          "interface": "org.optaplanner.core.api.score.holder.ScoreHolder",
-          "package": "org.optaplanner.core.api.score.buildin.simplelong",
-          "classSimpleName": "SimpleLongScoreHolder",
-          "elementKind": "class",
-          "justification": "ScoreHolder now has the Score type as a generic type parameter."
-        },
-        {
-          "code": "java.class.superTypeTypeParametersChanged",
-          "old": "class org.optaplanner.core.api.score.buildin.simplelong.SimpleLongScoreHolder",
-          "new": "class org.optaplanner.core.api.score.buildin.simplelong.SimpleLongScoreHolder",
-          "oldSuperType": "org.optaplanner.core.api.score.holder.AbstractScoreHolder",
-          "newSuperType": "org.optaplanner.core.api.score.holder.AbstractScoreHolder<org.optaplanner.core.api.score.buildin.simplelong.SimpleLongScore>",
-          "package": "org.optaplanner.core.api.score.buildin.simplelong",
-          "classSimpleName": "SimpleLongScoreHolder",
-          "elementKind": "class",
-          "justification": "ScoreHolder now has the Score type as a generic type parameter."
-        },
-        {
-          "code": "java.class.noLongerImplementsInterface",
-          "old": "class org.optaplanner.core.api.score.holder.AbstractScoreHolder",
-          "new": "class org.optaplanner.core.api.score.holder.AbstractScoreHolder<Score_ extends org.optaplanner.core.api.score.Score>",
-          "interface": "org.optaplanner.core.api.score.holder.ScoreHolder",
-          "package": "org.optaplanner.core.api.score.holder",
-          "classSimpleName": "AbstractScoreHolder",
-          "elementKind": "class",
-          "justification": "ScoreHolder now has the Score type as a generic type parameter."
-        },
-        {
-          "code": "java.generics.elementNowParameterized",
-          "old": "class org.optaplanner.core.api.score.holder.AbstractScoreHolder",
-          "new": "class org.optaplanner.core.api.score.holder.AbstractScoreHolder<Score_ extends org.optaplanner.core.api.score.Score>",
-          "package": "org.optaplanner.core.api.score.holder",
-          "classSimpleName": "AbstractScoreHolder",
-          "elementKind": "class",
-          "justification": "ScoreHolder now has the Score type as a generic type parameter."
-        },
-        {
-          "code": "java.generics.formalTypeParameterAdded",
-          "old": "class org.optaplanner.core.api.score.holder.AbstractScoreHolder",
-          "new": "class org.optaplanner.core.api.score.holder.AbstractScoreHolder<Score_ extends org.optaplanner.core.api.score.Score>",
-          "package": "org.optaplanner.core.api.score.holder",
-          "classSimpleName": "AbstractScoreHolder",
-          "elementKind": "class",
-          "justification": "ScoreHolder now has the Score type as a generic type parameter."
-        },
-        {
-          "code": "java.class.superTypeTypeParametersChanged",
-          "old": "class org.optaplanner.core.api.score.holder.AbstractScoreHolder",
-          "new": "class org.optaplanner.core.api.score.holder.AbstractScoreHolder<Score_ extends org.optaplanner.core.api.score.Score>",
-          "oldSuperType": "org.optaplanner.core.api.score.holder.ScoreHolder",
-          "newSuperType": "org.optaplanner.core.api.score.holder.ScoreHolder<Score_ extends org.optaplanner.core.api.score.Score>",
-          "package": "org.optaplanner.core.api.score.holder",
-          "classSimpleName": "AbstractScoreHolder",
-          "elementKind": "class",
-          "justification": "ScoreHolder now has the Score type as a generic type parameter."
-        },
-        {
-          "code": "java.method.returnTypeTypeParametersChanged",
-          "old": "method org.optaplanner.core.api.score.Score org.optaplanner.core.api.score.holder.ScoreHolder::extractScore(int)",
-          "new": "method Score_ org.optaplanner.core.api.score.holder.ScoreHolder<Score_ extends org.optaplanner.core.api.score.Score>::extractScore(int)",
-          "oldType": "org.optaplanner.core.api.score.Score",
-          "newType": "Score_ extends org.optaplanner.core.api.score.Score",
-          "package": "org.optaplanner.core.api.score.holder",
-          "classSimpleName": "ScoreHolder",
-          "methodName": "extractScore",
-          "elementKind": "method",
-          "justification": "ScoreHolder now has the Score type as a generic type parameter."
+          "justification": "Pillar moves now share some properties."
         },
         {
           "code": "java.method.addedToInterface",
-          "new": "method void org.optaplanner.core.api.score.holder.ScoreHolder<Score_ extends org.optaplanner.core.api.score.Score>::configureConstraintWeight(org.kie.api.definition.rule.Rule, Score_)",
-          "package": "org.optaplanner.core.api.score.holder",
-          "classSimpleName": "ScoreHolder",
-          "methodName": "configureConstraintWeight",
+          "new": "method <GroupKey_, ResultContainer_, Result_> org.optaplanner.core.api.score.stream.uni.UniConstraintStream<Result_> org.optaplanner.core.api.score.stream.uni.UniConstraintStream<A>::groupBy(org.optaplanner.core.api.score.stream.uni.UniConstraintCollector<A, ResultContainer_, Result_>)",
+          "package": "org.optaplanner.core.api.score.stream.uni",
+          "classSimpleName": "UniConstraintStream",
+          "methodName": "groupBy",
           "elementKind": "method",
-          "justification": "ScoreHolder now is aware of the ConstraintWeights."
+          "justification": "API method proposal to group by collector only"
         },
         {
-          "code": "java.generics.elementNowParameterized",
-          "old": "interface org.optaplanner.core.api.score.holder.ScoreHolder",
-          "new": "interface org.optaplanner.core.api.score.holder.ScoreHolder<Score_ extends org.optaplanner.core.api.score.Score>",
-          "package": "org.optaplanner.core.api.score.holder",
-          "classSimpleName": "ScoreHolder",
-          "elementKind": "interface",
-          "justification": "ScoreHolder now has the Score type as a generic type parameter."
+          "code": "java.method.abstractMethodAdded",
+          "new": "method org.optaplanner.core.impl.score.director.ScoreDirectorFactory<Solution_> org.optaplanner.core.api.solver.SolverFactory<Solution_>::getScoreDirectorFactory()",
+          "package": "org.optaplanner.core.api.solver",
+          "classSimpleName": "SolverFactory",
+          "methodName": "getScoreDirectorFactory",
+          "elementKind": "method",
+          "justification": "Replaces Solver.getScoreDirectorFactory()"
         },
         {
-          "code": "java.generics.formalTypeParameterAdded",
-          "old": "interface org.optaplanner.core.api.score.holder.ScoreHolder",
-          "new": "interface org.optaplanner.core.api.score.holder.ScoreHolder<Score_ extends org.optaplanner.core.api.score.Score>",
-          "package": "org.optaplanner.core.api.score.holder",
-          "classSimpleName": "ScoreHolder",
-          "elementKind": "interface",
-          "justification": "ScoreHolder now has the Score type as a generic type parameter."
+          "code": "java.method.removed",
+          "old": "method java.lang.ClassLoader org.optaplanner.core.config.SolverConfigContext::getClassLoader()",
+          "package": "org.optaplanner.core.config",
+          "classSimpleName": "SolverConfigContext",
+          "methodName": "getClassLoader",
+          "elementKind": "method",
+          "justification": "Replaced by SolverConfig.getClassLoader(). SolverConfigContext isn't public API."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method <A, B, Property_> org.optaplanner.core.api.score.stream.bi.BiJoiner<A, B> org.optaplanner.core.api.score.stream.Joiners::containing(java.util.function.Function<A, ? extends java.util.Collection<Property_>>, java.util.function.Function<B, Property_>)",
+          "package": "org.optaplanner.core.api.score.stream",
+          "classSimpleName": "Joiners",
+          "methodName": "containing",
+          "elementKind": "method",
+          "justification": "Temporarily removed until actually implemented."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method <A, Property_> org.optaplanner.core.api.score.stream.bi.BiJoiner<A, A> org.optaplanner.core.api.score.stream.Joiners::disjoint(java.util.function.Function<A, ? extends java.util.Collection<Property_>>)",
+          "package": "org.optaplanner.core.api.score.stream",
+          "classSimpleName": "Joiners",
+          "methodName": "disjoint",
+          "elementKind": "method",
+          "justification": "Temporarily removed until actually implemented."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method <A, B, Property_> org.optaplanner.core.api.score.stream.bi.BiJoiner<A, B> org.optaplanner.core.api.score.stream.Joiners::disjoint(java.util.function.Function<A, ? extends java.util.Collection<Property_>>, java.util.function.Function<B, ? extends java.util.Collection<Property_>>)",
+          "package": "org.optaplanner.core.api.score.stream",
+          "classSimpleName": "Joiners",
+          "methodName": "disjoint",
+          "elementKind": "method",
+          "justification": "Temporarily removed until actually implemented."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method <A, Property_> org.optaplanner.core.api.score.stream.bi.BiJoiner<A, A> org.optaplanner.core.api.score.stream.Joiners::intersecting(java.util.function.Function<A, ? extends java.util.Collection<Property_>>)",
+          "package": "org.optaplanner.core.api.score.stream",
+          "classSimpleName": "Joiners",
+          "methodName": "intersecting",
+          "elementKind": "method",
+          "justification": "Temporarily removed until actually implemented."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method <A, B, Property_> org.optaplanner.core.api.score.stream.bi.BiJoiner<A, B> org.optaplanner.core.api.score.stream.Joiners::intersecting(java.util.function.Function<A, ? extends java.util.Collection<Property_>>, java.util.function.Function<B, ? extends java.util.Collection<Property_>>)",
+          "package": "org.optaplanner.core.api.score.stream",
+          "classSimpleName": "Joiners",
+          "methodName": "intersecting",
+          "elementKind": "method",
+          "justification": "Temporarily removed until actually implemented."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method <GroupKey_> org.optaplanner.core.api.score.stream.uni.UniConstraintStream<GroupKey_> org.optaplanner.core.api.score.stream.bi.BiConstraintStream<A, B>::groupBy(java.util.function.BiFunction<A, B, GroupKey_>)",
+          "package": "org.optaplanner.core.api.score.stream.bi",
+          "classSimpleName": "BiConstraintStream",
+          "methodName": "groupBy",
+          "elementKind": "method",
+          "justification": "Temporarily removed until actually implemented."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method <GroupKeyA_, GroupKeyB_> org.optaplanner.core.api.score.stream.bi.BiConstraintStream<GroupKeyA_, GroupKeyB_> org.optaplanner.core.api.score.stream.bi.BiConstraintStream<A, B>::groupBy(java.util.function.BiFunction<A, B, GroupKeyA_>, java.util.function.BiFunction<A, B, GroupKeyB_>)",
+          "package": "org.optaplanner.core.api.score.stream.bi",
+          "classSimpleName": "BiConstraintStream",
+          "methodName": "groupBy",
+          "elementKind": "method",
+          "justification": "Temporarily removed until actually implemented."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method <GroupKeyA_, GroupKeyB_, ResultContainer_, Result_> org.optaplanner.core.api.score.stream.tri.TriConstraintStream<GroupKeyA_, GroupKeyB_, Result_> org.optaplanner.core.api.score.stream.bi.BiConstraintStream<A, B>::groupBy(java.util.function.BiFunction<A, B, GroupKeyA_>, java.util.function.BiFunction<A, B, GroupKeyB_>, org.optaplanner.core.api.score.stream.bi.BiConstraintCollector<A, B, ResultContainer_, Result_>)",
+          "package": "org.optaplanner.core.api.score.stream.bi",
+          "classSimpleName": "BiConstraintStream",
+          "methodName": "groupBy",
+          "elementKind": "method",
+          "justification": "Temporarily removed until actually implemented."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method <GroupKey_, ResultContainer_, Result_> org.optaplanner.core.api.score.stream.bi.BiConstraintStream<GroupKey_, Result_> org.optaplanner.core.api.score.stream.bi.BiConstraintStream<A, B>::groupBy(java.util.function.BiFunction<A, B, GroupKey_>, org.optaplanner.core.api.score.stream.bi.BiConstraintCollector<A, B, ResultContainer_, Result_>)",
+          "package": "org.optaplanner.core.api.score.stream.bi",
+          "classSimpleName": "BiConstraintStream",
+          "methodName": "groupBy",
+          "elementKind": "method",
+          "justification": "Temporarily removed until actually implemented."
+        },
+        {
+          "code": "java.method.numberOfParametersChanged",
+          "old": "method <GroupKeyA_, GroupKeyB_, ResultContainer_, Result_> org.optaplanner.core.api.score.stream.tri.TriConstraintStream<GroupKeyA_, GroupKeyB_, Result_> org.optaplanner.core.api.score.stream.uni.UniConstraintStream<A>::groupBy(java.util.function.Function<A, GroupKeyA_>, java.util.function.Function<A, GroupKeyB_>, org.optaplanner.core.api.score.stream.uni.UniConstraintCollector<A, ResultContainer_, Result_>)",
+          "new": "method <ResultContainer_, Result_> org.optaplanner.core.api.score.stream.uni.UniConstraintStream<Result_> org.optaplanner.core.api.score.stream.uni.UniConstraintStream<A>::groupBy(org.optaplanner.core.api.score.stream.uni.UniConstraintCollector<A, ResultContainer_, Result_>)",
+          "package": "org.optaplanner.core.api.score.stream.uni",
+          "classSimpleName": "UniConstraintStream",
+          "methodName": "groupBy",
+          "elementKind": "method",
+          "justification": "Temporarily removed until actually implemented."
+        },
+        {
+          "code": "java.method.returnTypeChanged",
+          "old": "method <GroupKeyA_, GroupKeyB_, ResultContainer_, Result_> org.optaplanner.core.api.score.stream.tri.TriConstraintStream<GroupKeyA_, GroupKeyB_, Result_> org.optaplanner.core.api.score.stream.uni.UniConstraintStream<A>::groupBy(java.util.function.Function<A, GroupKeyA_>, java.util.function.Function<A, GroupKeyB_>, org.optaplanner.core.api.score.stream.uni.UniConstraintCollector<A, ResultContainer_, Result_>)",
+          "new": "method <ResultContainer_, Result_> org.optaplanner.core.api.score.stream.uni.UniConstraintStream<Result_> org.optaplanner.core.api.score.stream.uni.UniConstraintStream<A>::groupBy(org.optaplanner.core.api.score.stream.uni.UniConstraintCollector<A, ResultContainer_, Result_>)",
+          "oldType": "org.optaplanner.core.api.score.stream.tri.TriConstraintStream<GroupKeyA_ extends java.lang.Object, GroupKeyB_ extends java.lang.Object, Result_ extends java.lang.Object>",
+          "newType": "org.optaplanner.core.api.score.stream.uni.UniConstraintStream<Result_ extends java.lang.Object>",
+          "package": "org.optaplanner.core.api.score.stream.uni",
+          "classSimpleName": "UniConstraintStream",
+          "methodName": "groupBy",
+          "elementKind": "method",
+          "justification": "Temporarily removed until actually implemented."
+        },
+        {
+          "code": "java.generics.formalTypeParameterRemoved",
+          "old": "method <GroupKeyA_, GroupKeyB_, ResultContainer_, Result_> org.optaplanner.core.api.score.stream.tri.TriConstraintStream<GroupKeyA_, GroupKeyB_, Result_> org.optaplanner.core.api.score.stream.uni.UniConstraintStream<A>::groupBy(java.util.function.Function<A, GroupKeyA_>, java.util.function.Function<A, GroupKeyB_>, org.optaplanner.core.api.score.stream.uni.UniConstraintCollector<A, ResultContainer_, Result_>)",
+          "new": "method <ResultContainer_, Result_> org.optaplanner.core.api.score.stream.uni.UniConstraintStream<Result_> org.optaplanner.core.api.score.stream.uni.UniConstraintStream<A>::groupBy(org.optaplanner.core.api.score.stream.uni.UniConstraintCollector<A, ResultContainer_, Result_>)",
+          "package": "org.optaplanner.core.api.score.stream.uni",
+          "classSimpleName": "UniConstraintStream",
+          "methodName": "groupBy",
+          "elementKind": "method",
+          "justification": "Temporarily removed until actually implemented."
+        },
+        {
+          "code": "java.generics.formalTypeParameterRemoved",
+          "old": "method <GroupKeyA_, GroupKeyB_, ResultContainer_, Result_> org.optaplanner.core.api.score.stream.tri.TriConstraintStream<GroupKeyA_, GroupKeyB_, Result_> org.optaplanner.core.api.score.stream.uni.UniConstraintStream<A>::groupBy(java.util.function.Function<A, GroupKeyA_>, java.util.function.Function<A, GroupKeyB_>, org.optaplanner.core.api.score.stream.uni.UniConstraintCollector<A, ResultContainer_, Result_>)",
+          "new": "method <ResultContainer_, Result_> org.optaplanner.core.api.score.stream.uni.UniConstraintStream<Result_> org.optaplanner.core.api.score.stream.uni.UniConstraintStream<A>::groupBy(org.optaplanner.core.api.score.stream.uni.UniConstraintCollector<A, ResultContainer_, Result_>)",
+          "package": "org.optaplanner.core.api.score.stream.uni",
+          "classSimpleName": "UniConstraintStream",
+          "methodName": "groupBy",
+          "elementKind": "method",
+          "justification": "Temporarily removed until actually implemented."
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method <GroupKeyA_, GroupKeyB_> org.optaplanner.core.api.score.stream.bi.BiConstraintStream<GroupKeyA_, GroupKeyB_> org.optaplanner.core.api.score.stream.uni.UniConstraintStream<A>::groupBy(java.util.function.Function<A, GroupKeyA_>, java.util.function.Function<A, GroupKeyB_>)",
+          "package": "org.optaplanner.core.api.score.stream.uni",
+          "classSimpleName": "UniConstraintStream",
+          "methodName": "groupBy",
+          "elementKind": "method",
+          "justification": "Temporarily removed until actually implemented."
+        },
+        {
+          "code": "java.method.addedToInterface",
+          "new": "method <D> org.optaplanner.core.api.score.stream.quad.QuadConstraintStream<A, B, C, D> org.optaplanner.core.api.score.stream.tri.TriConstraintStream<A, B, C>::join(org.optaplanner.core.api.score.stream.uni.UniConstraintStream<D>, org.optaplanner.core.api.score.stream.quad.QuadJoiner<A, B, C, D>)",
+          "package": "org.optaplanner.core.api.score.stream.tri",
+          "classSimpleName": "TriConstraintStream",
+          "methodName": "join",
+          "elementKind": "method",
+          "justification": "Introduced QuadStreams"
         }
       ]
     }

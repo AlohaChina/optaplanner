@@ -4,14 +4,14 @@
 
 
 [[taskAssigningProblemDescription]]
-== Problem Description
+== Problem description
 
 Assign each task to a spot in an employee's queue.
 Each task has a duration which is affected by the employee's affinity level with the task's customer.
 
 Hard constraints:
 
-* Skill: Each task requires one or more skills. The employee must posses all these skills.
+* Skill: Each task requires one or more skills. The employee must possess all these skills.
 
 Soft level 0 constraints:
 
@@ -20,7 +20,7 @@ Soft level 0 constraints:
 Soft level 1 constraints:
 
 * Minimize makespan: Reduce the time to complete all tasks.
-** Start with the longest working employee first, then the second longest working employee and so forth, to creates <<fairnessScoreConstraints,fairness and load balancing>>.
+** Start with the longest working employee first, then the second longest working employee and so forth, to create <<fairnessScoreConstraints,fairness and load balancing>>.
 
 Soft level 2 constraints:
 
@@ -32,13 +32,13 @@ Soft level 3 constraints:
 
 
 [[taskAssigningValueProposition]]
-== Value Proposition
+== Value proposition
 
 image::UseCasesAndExamples/TaskAssigning/taskAssigningValueProposition.png[align="center"]
 
 
 [[taskAssigningProblemSize]]
-== Problem Size
+== Problem size
 
 [source,options="nowrap"]
 ----
@@ -50,6 +50,6 @@ image::UseCasesAndExamples/TaskAssigning/taskAssigningValueProposition.png[align
 
 
 [[taskAssigningDomainModel]]
-== Domain Model
+== Domain model
 
 image::UseCasesAndExamples/TaskAssigning/taskAssigningClassDiagram.png[align="center"]

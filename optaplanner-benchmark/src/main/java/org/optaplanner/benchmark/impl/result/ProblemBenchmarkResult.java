@@ -43,8 +43,10 @@ import org.optaplanner.benchmark.impl.report.BenchmarkReport;
 import org.optaplanner.benchmark.impl.report.ReportHelper;
 import org.optaplanner.benchmark.impl.statistic.ProblemStatistic;
 import org.optaplanner.benchmark.impl.statistic.PureSubSingleStatistic;
+import org.optaplanner.core.api.domain.solution.PlanningScore;
 import org.optaplanner.core.api.solver.Solver;
 import org.optaplanner.core.config.util.ConfigUtils;
+import org.optaplanner.core.impl.score.definition.ScoreDefinition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,6 +76,7 @@ public class ProblemBenchmarkResult<Solution_> {
     private Long variableCount = null;
     private Long maximumValueCount = null;
     private Long problemScale = null;
+    private Long inputSolutionLoadingTimeMillisSpent = null;
 
     @XStreamOmitField // Loaded lazily from singleBenchmarkResults
     private Integer maximumSubSingleCount = null;
@@ -163,6 +166,10 @@ public class ProblemBenchmarkResult<Solution_> {
         return problemScale;
     }
 
+    public Long getInputSolutionLoadingTimeMillisSpent() {
+        return inputSolutionLoadingTimeMillisSpent;
+    }
+
     public Integer getMaximumSubSingleCount() {
         return maximumSubSingleCount;
     }
@@ -196,7 +203,13 @@ public class ProblemBenchmarkResult<Solution_> {
     }
 
     public String findScoreLevelLabel(int scoreLevel) {
-        String[] levelLabels = singleBenchmarkResultList.get(0).getSolverBenchmarkResult().getScoreDefinition().getLevelLabels();
+        ScoreDefinition scoreDefinition = singleBenchmarkResultList.get(0).getSolverBenchmarkResult().getScoreDefinition();
+        String[] levelLabels = scoreDefinition.getLevelLabels();
+        if (scoreLevel >= levelLabels.length) {
+            throw new IllegalArgumentException("The scoreLevel (" + scoreLevel
+                    + ") isn't lower than the scoreLevelsSize (" + scoreDefinition.getLevelsSize()
+                    + ") implied by the @" + PlanningScore.class.getSimpleName() + " on the planning solution class.");
+        }
         return levelLabels[scoreLevel];
     }
 
@@ -285,7 +298,10 @@ public class ProblemBenchmarkResult<Solution_> {
     }
 
     public Solution_ readProblem() {
-        return problemProvider.readProblem();
+        long startTimeMillis = System.currentTimeMillis();
+        Solution_ inputSolution = problemProvider.readProblem();
+        inputSolutionLoadingTimeMillisSpent = System.currentTimeMillis() - startTimeMillis;
+        return inputSolution;
     }
 
     public void writeSolution(SubSingleBenchmarkResult subSingleBenchmarkResult, Solution_ solution) {

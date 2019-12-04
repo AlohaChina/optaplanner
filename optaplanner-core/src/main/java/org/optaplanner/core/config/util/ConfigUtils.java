@@ -346,9 +346,9 @@ public class ConfigUtils {
 
     @SafeVarargs
     public static Class<? extends Annotation> extractAnnotationClass(Member member,
-            Class<? extends Annotation>... annotations) {
+            Class<? extends Annotation>... annotationClasses) {
         Class<? extends Annotation> annotationClass = null;
-        for (Class<? extends Annotation> detectedAnnotationClass : annotations) {
+        for (Class<? extends Annotation> detectedAnnotationClass : annotationClasses) {
             if (((AnnotatedElement) member).isAnnotationPresent(detectedAnnotationClass)) {
                 if (annotationClass != null) {
                     throw new IllegalStateException("The class (" + member.getDeclaringClass()
@@ -357,7 +357,7 @@ public class ConfigUtils {
                             + detectedAnnotationClass.getSimpleName() + " annotation.");
                 }
                 annotationClass = detectedAnnotationClass;
-                // Do not break early: check other annotations too
+                // Do not break early: check other annotationClasses too
             }
         }
         return annotationClass;
@@ -415,7 +415,7 @@ public class ConfigUtils {
         }
         Member member = memberList.get(0);
         MemberAccessor memberAccessor = MemberAccessorFactory.buildMemberAccessor(member, FIELD_OR_READ_METHOD, PlanningId.class);
-        if (!Comparable.class.isAssignableFrom(memberAccessor.getType())) {
+        if (!memberAccessor.getType().isPrimitive() && !Comparable.class.isAssignableFrom(memberAccessor.getType())) {
             throw new IllegalArgumentException("The class (" + clazz
                     + ") has a member (" + member + ") with a " + PlanningId.class.getSimpleName()
                     + " annotation that returns a type (" + memberAccessor.getType()

@@ -20,24 +20,17 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.function.Function;
 
-import org.drools.core.common.AgendaItem;
 import org.kie.api.definition.rule.Rule;
 import org.kie.api.runtime.KieSession;
 import org.kie.api.runtime.rule.FactHandle;
-import org.kie.api.runtime.rule.Match;
-import org.kie.internal.event.rule.RuleEventListener;
 import org.kie.internal.event.rule.RuleEventManager;
-import org.optaplanner.core.api.domain.constraintweight.ConstraintWeight;
 import org.optaplanner.core.api.domain.solution.PlanningSolution;
-import org.optaplanner.core.api.score.AbstractBendableScore;
 import org.optaplanner.core.api.score.Score;
 import org.optaplanner.core.api.score.constraint.ConstraintMatchTotal;
 import org.optaplanner.core.api.score.constraint.Indictment;
-import org.optaplanner.core.api.score.holder.AbstractScoreHolder.ConstraintActivationUnMatchListener;
 import org.optaplanner.core.api.score.holder.ScoreHolder;
 import org.optaplanner.core.impl.domain.entity.descriptor.EntityDescriptor;
 import org.optaplanner.core.impl.domain.variable.descriptor.VariableDescriptor;
-import org.optaplanner.core.impl.score.definition.AbstractBendableScoreDefinition;
 import org.optaplanner.core.impl.score.director.AbstractScoreDirector;
 import org.optaplanner.core.impl.score.director.ScoreDirector;
 
@@ -53,7 +46,7 @@ public class DroolsScoreDirector<Solution_>
     public static final String GLOBAL_SCORE_HOLDER_KEY = "scoreHolder";
 
     protected KieSession kieSession;
-    protected ScoreHolder workingScoreHolder;
+    protected ScoreHolder scoreHolder;
 
     public DroolsScoreDirector(DroolsScoreDirectorFactory<Solution_> scoreDirectorFactory,
             boolean lookUpEnabled, boolean constraintMatchEnabledPreference) {
@@ -79,8 +72,8 @@ public class DroolsScoreDirector<Solution_>
             kieSession.dispose();
         }
         kieSession = scoreDirectorFactory.newKieSession();
-        ((RuleEventManager) kieSession).addEventListener(new OptaplannerRuleEventListener());
-        resetWorkingScoreHolder();
+        ((RuleEventManager) kieSession).addEventListener(new OptaPlannerRuleEventListener());
+        resetScoreHolder();
         // TODO Adjust when uninitialized entities from getWorkingFacts get added automatically too (and call afterEntityAdded)
         Collection<Object> workingFacts = getWorkingFacts();
         for (Object fact : workingFacts) {
@@ -88,77 +81,15 @@ public class DroolsScoreDirector<Solution_>
         }
     }
 
-    private void resetWorkingScoreHolder() {
-        workingScoreHolder = getScoreDefinition().buildScoreHolder(constraintMatchEnabledPreference);
+    private void resetScoreHolder() {
+        scoreHolder = getScoreDefinition().buildScoreHolder(constraintMatchEnabledPreference);
         scoreDirectorFactory.getRuleToConstraintWeightExtractorMap().forEach(
-                (Rule rule, Function<Solution_, Score> extractor) -> {
-            Score constraintWeight = extractor.apply(workingSolution);
-            if (constraintWeight.getInitScore() != 0) {
-                Class<?> constraintConfigurationClass = getSolutionDescriptor().getConstraintConfigurationDescriptor()
-                        .getConstraintConfigurationClass();
-                throw new IllegalArgumentException("The constraintWeight (" + constraintWeight
-                        + ") for constraintPackage (" + rule.getPackageName()
-                        + ") and constraintName (" + rule.getName()
-                        + ") of constraintConfigurationClass (" + constraintConfigurationClass
-                        + ") must have an initScore (" + constraintWeight.getInitScore() + ") equal to 0.\n"
-                        + "Maybe validate your " + constraintConfigurationClass.getSimpleName() + " data input.");
-            }
-            if (!getScoreDefinition().isPositiveOrZero(constraintWeight)) {
-                Class<?> constraintConfigurationClass = getSolutionDescriptor().getConstraintConfigurationDescriptor()
-                        .getConstraintConfigurationClass();
-                throw new IllegalArgumentException("The @" + ConstraintWeight.class.getSimpleName()
-                        + " annotation for constraintPackage (" + rule.getPackageName()
-                        + ") and constraintName (" + rule.getName()
-                        + ") of constraintConfigurationClass (" + constraintConfigurationClass
-                        + ") must have a positive or zero constraintWeight (" + constraintWeight + ").\n"
-                        + "Maybe validate your " + constraintConfigurationClass.getSimpleName() + " data input.");
-            }
-            if (constraintWeight instanceof AbstractBendableScore) {
-                AbstractBendableScore bendableConstraintWeight = (AbstractBendableScore) constraintWeight;
-                AbstractBendableScoreDefinition scoreDefinition = (AbstractBendableScoreDefinition)
-                        getSolutionDescriptor().getScoreDefinition();
-                if (bendableConstraintWeight.getHardLevelsSize() != scoreDefinition.getHardLevelsSize()
-                        || bendableConstraintWeight.getSoftLevelsSize() != scoreDefinition.getSoftLevelsSize()) {
-                    Class<?> constraintConfigurationClass = getSolutionDescriptor().getConstraintConfigurationDescriptor()
-                            .getConstraintConfigurationClass();
-                    throw new IllegalArgumentException("The bendable constraintWeight (" + constraintWeight
-                            + ") for constraintPackage (" + rule.getPackageName()
-                            + ") and constraintName (" + rule.getName()
-                            + ") of constraintConfigurationClass (" + constraintConfigurationClass
-                            + ") has a hardLevelsSize (" + bendableConstraintWeight.getHardLevelsSize()
-                            + ") or a softLevelsSize (" + bendableConstraintWeight.getSoftLevelsSize()
-                            + ") that doesn't match the score definition's hardLevelsSize ("
-                            + scoreDefinition.getHardLevelsSize()
-                            + ") or softLevelsSize (" + scoreDefinition.getSoftLevelsSize() + ").\n"
-                            + "Maybe validate your " + constraintConfigurationClass.getSimpleName() + " data input.");
-                }
-            }
-            workingScoreHolder.configureConstraintWeight(rule, constraintWeight);
+                (Rule rule, Function<Solution_, Score<?>> extractor) -> {
+            Score<?> constraintWeight = extractor.apply(workingSolution);
+            getSolutionDescriptor().validateConstraintWeight(rule.getPackageName(), rule.getName(), constraintWeight);
+            scoreHolder.configureConstraintWeight(rule, constraintWeight);
         });
-        kieSession.setGlobal(GLOBAL_SCORE_HOLDER_KEY, workingScoreHolder);
-    }
-
-    private static final class OptaplannerRuleEventListener implements RuleEventListener {
-
-        @Override
-        public void onUpdateMatch(Match match) {
-            undoPreviousMatch((AgendaItem) match);
-        }
-
-        @Override
-        public void onDeleteMatch(Match match) {
-            undoPreviousMatch((AgendaItem) match);
-        }
-
-        public void undoPreviousMatch(AgendaItem agendaItem) {
-            Object callback = agendaItem.getCallback();
-            // Some rules don't have a callback because their RHS doesn't do addConstraintMatch()
-            if (callback instanceof ConstraintActivationUnMatchListener) {
-                ((ConstraintActivationUnMatchListener) callback).run();
-                agendaItem.setCallback(null);
-            }
-        }
-
+        kieSession.setGlobal(GLOBAL_SCORE_HOLDER_KEY, scoreHolder);
     }
 
     public Collection<Object> getWorkingFacts() {
@@ -169,14 +100,14 @@ public class DroolsScoreDirector<Solution_>
     public Score calculateScore() {
         variableListenerSupport.assertNotificationQueuesAreEmpty();
         kieSession.fireAllRules();
-        Score score = workingScoreHolder.extractScore(workingInitScore);
+        Score score = scoreHolder.extractScore(workingInitScore);
         setCalculatedScore(score);
         return score;
     }
 
     @Override
     public boolean isConstraintMatchEnabled() {
-        return workingScoreHolder.isConstraintMatchEnabled();
+        return scoreHolder.isConstraintMatchEnabled();
     }
 
     @Override
@@ -187,7 +118,18 @@ public class DroolsScoreDirector<Solution_>
         }
         // Notice that we don't trigger the variable listeners
         kieSession.fireAllRules();
-        return workingScoreHolder.getConstraintMatchTotals();
+        return scoreHolder.getConstraintMatchTotals();
+    }
+
+    @Override
+    public Map<String, ConstraintMatchTotal> getConstraintMatchTotalMap() {
+        if (workingSolution == null) {
+            throw new IllegalStateException(
+                    "The method setWorkingSolution() must be called before the method getConstraintMatchTotalMap().");
+        }
+        // Notice that we don't trigger the variable listeners
+        kieSession.fireAllRules();
+        return scoreHolder.getConstraintMatchTotalMap();
     }
 
     @Override
@@ -196,8 +138,9 @@ public class DroolsScoreDirector<Solution_>
             throw new IllegalStateException(
                     "The method setWorkingSolution() must be called before the method getIndictmentMap().");
         }
+        // Notice that we don't trigger the variable listeners
         kieSession.fireAllRules();
-        return workingScoreHolder.getIndictmentMap();
+        return scoreHolder.getIndictmentMap();
     }
 
     @Override
@@ -269,7 +212,6 @@ public class DroolsScoreDirector<Solution_>
         kieSession.delete(factHandle);
         super.afterEntityRemoved(entityDescriptor, entity);
     }
-
 
     // ************************************************************************
     // Problem fact add/change/remove methods

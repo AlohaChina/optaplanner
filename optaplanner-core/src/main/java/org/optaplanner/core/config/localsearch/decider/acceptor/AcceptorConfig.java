@@ -28,6 +28,7 @@ import org.optaplanner.core.config.solver.EnvironmentMode;
 import org.optaplanner.core.config.util.ConfigUtils;
 import org.optaplanner.core.impl.localsearch.decider.acceptor.Acceptor;
 import org.optaplanner.core.impl.localsearch.decider.acceptor.CompositeAcceptor;
+import org.optaplanner.core.impl.localsearch.decider.acceptor.greatdeluge.GreatDelugeAcceptor;
 import org.optaplanner.core.impl.localsearch.decider.acceptor.hillclimbing.HillClimbingAcceptor;
 import org.optaplanner.core.impl.localsearch.decider.acceptor.lateacceptance.LateAcceptanceAcceptor;
 import org.optaplanner.core.impl.localsearch.decider.acceptor.simulatedannealing.SimulatedAnnealingAcceptor;
@@ -70,6 +71,10 @@ public class AcceptorConfig extends AbstractConfig<AcceptorConfig> {
     protected String simulatedAnnealingStartingTemperature = null;
 
     protected Integer lateAcceptanceSize = null;
+
+//    protected String greatDelugeInitialWaterLevel = null;
+    protected String greatDelugeWaterLevelIncrementScore = null;
+    protected Double greatDelugeWaterLevelIncrementRatio = null;
 
     protected Integer stepCountingHillClimbingSize = null;
     protected StepCountingHillClimbingType stepCountingHillClimbingType = null;
@@ -220,6 +225,30 @@ public class AcceptorConfig extends AbstractConfig<AcceptorConfig> {
         this.lateAcceptanceSize = lateAcceptanceSize;
     }
 
+//    public String getGreatDelugeInitialWaterLevel() {
+//        return greatDelugeInitialWaterLevel;
+//    }
+//
+//    public void setGreatDelugeInitialWaterLevel(String greatDelugeInitialWaterLevel) {
+//        this.greatDelugeInitialWaterLevel = greatDelugeInitialWaterLevel;
+//    }
+
+    public String getGreatDelugeWaterLevelIncrementScore() {
+        return greatDelugeWaterLevelIncrementScore;
+    }
+
+    public void setGreatDelugeWaterLevelIncrementScore(String greatDelugeWaterLevelIncrementScore) {
+        this.greatDelugeWaterLevelIncrementScore = greatDelugeWaterLevelIncrementScore;
+    }
+
+    public Double getGreatDelugeWaterLevelIncrementRatio() {
+        return greatDelugeWaterLevelIncrementRatio;
+    }
+
+    public void setGreatDelugeWaterLevelIncrementRatio(Double greatDelugeWaterLevelIncrementRatio) {
+        this.greatDelugeWaterLevelIncrementRatio = greatDelugeWaterLevelIncrementRatio;
+    }
+
     public Integer getStepCountingHillClimbingSize() {
         return stepCountingHillClimbingSize;
     }
@@ -240,6 +269,7 @@ public class AcceptorConfig extends AbstractConfig<AcceptorConfig> {
     // With methods
     // ************************************************************************
 
+    @Deprecated
     public AcceptorConfig withAcceptorClassList(List<Class<? extends Acceptor>> acceptorClassList) {
         this.acceptorClassList = acceptorClassList;
         return this;
@@ -475,14 +505,44 @@ public class AcceptorConfig extends AbstractConfig<AcceptorConfig> {
                         + ") currently requires a simulatedAnnealingStartingTemperature ("
                         + simulatedAnnealingStartingTemperature + ").");
             }
-            acceptor.setStartingTemperature(configPolicy.getScoreDefinition()
-                    .parseScore(simulatedAnnealingStartingTemperature));
+            acceptor.setStartingTemperature(
+                    configPolicy.getScoreDefinition().parseScore(simulatedAnnealingStartingTemperature));
             acceptorList.add(acceptor);
         }
         if ((acceptorTypeList != null && acceptorTypeList.contains(AcceptorType.LATE_ACCEPTANCE))
                 || lateAcceptanceSize != null) {
             LateAcceptanceAcceptor acceptor = new LateAcceptanceAcceptor();
             acceptor.setLateAcceptanceSize(defaultIfNull(lateAcceptanceSize, 400));
+            acceptorList.add(acceptor);
+        }
+        if ((acceptorTypeList!= null && acceptorTypeList.contains(AcceptorType.GREAT_DELUGE))
+//                || greatDelugeInitialWaterLevel != null
+                || greatDelugeWaterLevelIncrementScore != null
+                || greatDelugeWaterLevelIncrementRatio != null) {
+            GreatDelugeAcceptor acceptor = new GreatDelugeAcceptor();
+//            if (greatDelugeInitialWaterLevel != null) {
+//                acceptor.setInitialWaterLevel(
+//                        configPolicy.getScoreDefinition().parseScore(greatDelugeInitialWaterLevel));
+//            }
+            if (greatDelugeWaterLevelIncrementScore != null) {
+                if (greatDelugeWaterLevelIncrementRatio != null) {
+                    throw new IllegalArgumentException("The acceptor cannot have both a "
+                            + "greatDelugeWaterLevelIncrementScore (" + greatDelugeWaterLevelIncrementScore
+                            + ") and a greatDelugeWaterLevelIncrementRatio (" + greatDelugeWaterLevelIncrementRatio + ").");
+                }
+                acceptor.setWaterLevelIncrementScore(
+                        configPolicy.getScoreDefinition().parseScore(greatDelugeWaterLevelIncrementScore));
+            } else if (greatDelugeWaterLevelIncrementRatio != null) {
+                if (greatDelugeWaterLevelIncrementRatio <= 0.0) {
+                    throw new IllegalArgumentException("The greatDelugeWaterLevelIncrementRatio ("
+                            + greatDelugeWaterLevelIncrementRatio
+                            + ") must be positive because the water level should increase.");
+                }
+                acceptor.setWaterLevelIncrementRatio(greatDelugeWaterLevelIncrementRatio);
+            } else {
+                // Based on Tomas Muller's work. TODO Confirm with benchmarker across our examples/datasets
+                acceptor.setWaterLevelIncrementRatio(0.00_000_005);
+            }
             acceptorList.add(acceptor);
         }
         if ((acceptorTypeList != null && acceptorTypeList.contains(AcceptorType.STEP_COUNTING_HILL_CLIMBING))
@@ -494,6 +554,7 @@ public class AcceptorConfig extends AbstractConfig<AcceptorConfig> {
                     stepCountingHillClimbingSize_, stepCountingHillClimbingType_);
             acceptorList.add(acceptor);
         }
+
         if (acceptorList.size() == 1) {
             return acceptorList.get(0);
         } else if (acceptorList.size() > 1) {
@@ -549,10 +610,17 @@ public class AcceptorConfig extends AbstractConfig<AcceptorConfig> {
                 simulatedAnnealingStartingTemperature, inheritedConfig.getSimulatedAnnealingStartingTemperature());
         lateAcceptanceSize = ConfigUtils.inheritOverwritableProperty(lateAcceptanceSize,
                 inheritedConfig.getLateAcceptanceSize());
+//        greatDelugeInitialWaterLevel = ConfigUtils.inheritOverwritableProperty(greatDelugeInitialWaterLevel,
+//                inheritedConfig.getGreatDelugeInitialWaterLevel());
+        greatDelugeWaterLevelIncrementScore = ConfigUtils.inheritOverwritableProperty(greatDelugeWaterLevelIncrementScore,
+                inheritedConfig.getGreatDelugeWaterLevelIncrementScore());
+        greatDelugeWaterLevelIncrementRatio = ConfigUtils.inheritOverwritableProperty(greatDelugeWaterLevelIncrementRatio,
+                inheritedConfig.getGreatDelugeWaterLevelIncrementRatio());
         stepCountingHillClimbingSize = ConfigUtils.inheritOverwritableProperty(stepCountingHillClimbingSize,
                 inheritedConfig.getStepCountingHillClimbingSize());
         stepCountingHillClimbingType = ConfigUtils.inheritOverwritableProperty(stepCountingHillClimbingType,
                 inheritedConfig.getStepCountingHillClimbingType());
+
     }
 
 }

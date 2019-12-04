@@ -6,7 +6,7 @@
   <parent>
     <groupId>org.optaplanner</groupId>
     <artifactId>optaplanner</artifactId>
-    <version>7.16.0-SNAPSHOT</version>
+    <version>7.31.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>optaplanner-distribution</artifactId>
@@ -164,16 +164,6 @@
     <dependency>
       <groupId>org.optaplanner</groupId>
       <artifactId>optaplanner-examples</artifactId>
-      <classifier>sources</classifier>
-    </dependency>
-    <dependency>
-      <groupId>org.optaplanner</groupId>
-      <artifactId>optaplanner-webexamples</artifactId>
-      <type>war</type>
-    </dependency>
-    <dependency>
-      <groupId>org.optaplanner</groupId>
-      <artifactId>optaplanner-webexamples</artifactId>
       <classifier>sources</classifier>
     </dependency>
 

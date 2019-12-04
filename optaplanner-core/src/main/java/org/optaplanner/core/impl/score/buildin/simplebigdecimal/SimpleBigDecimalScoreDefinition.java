@@ -64,6 +64,11 @@ public class SimpleBigDecimalScoreDefinition extends AbstractScoreDefinition<Sim
     }
 
     @Override
+    public SimpleBigDecimalScoreInliner buildScoreInliner(boolean constraintMatchEnabled) {
+        return new SimpleBigDecimalScoreInliner(constraintMatchEnabled);
+    }
+
+    @Override
     public SimpleBigDecimalScoreHolder buildScoreHolder(boolean constraintMatchEnabled) {
         return new SimpleBigDecimalScoreHolder(constraintMatchEnabled);
     }

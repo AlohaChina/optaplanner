@@ -6,7 +6,7 @@
   <parent>
     <groupId>org.optaplanner</groupId>
     <artifactId>optaplanner-persistence</artifactId>
-    <version>7.16.0-SNAPSHOT</version>
+    <version>7.31.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>optaplanner-persistence-jpa</artifactId>
@@ -42,8 +42,8 @@
     </dependency>
     <!-- JPA -->
     <dependency>
-      <groupId>org.hibernate.javax.persistence</groupId>
-      <artifactId>hibernate-jpa-2.1-api</artifactId>
+      <groupId>javax.persistence</groupId>
+      <artifactId>javax.persistence-api</artifactId>
     </dependency>
     <!-- Hibernate -->
     <dependency>
@@ -61,7 +61,7 @@
     </dependency>
     <dependency>
       <groupId>org.jboss.spec.javax.xml.bind</groupId>
-      <artifactId>jboss-jaxb-api_2.2_spec</artifactId>
+      <artifactId>jboss-jaxb-api_2.3_spec</artifactId>
     </dependency>
 
     <!-- Test -->

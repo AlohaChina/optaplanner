@@ -30,7 +30,7 @@ public class BendableScoreHibernateTypeTest extends AbstractScoreHibernateTypeTe
 
     @Test
     public void persistAndMerge() {
-        persistAndMerge(new TestJpaEntity(null),
+        persistAndMerge(new TestJpaEntity(BendableScore.zero(3, 2)),
                 BendableScore.of(new int[]{10000, 2000, 300}, new int[]{40, 5}),
                 BendableScore.ofUninitialized(-7, new int[]{10000, 2000, 300}, new int[]{40, 5}));
     }
@@ -61,7 +61,5 @@ public class BendableScoreHibernateTypeTest extends AbstractScoreHibernateTypeTe
         public void setScore(BendableScore score) {
             this.score = score;
         }
-
     }
-
 }

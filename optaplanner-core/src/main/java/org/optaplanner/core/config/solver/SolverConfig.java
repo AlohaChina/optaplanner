@@ -16,14 +16,29 @@
 
 package org.optaplanner.core.config.solver;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ThreadFactory;
 
+import com.thoughtworks.xstream.XStream;
 import com.thoughtworks.xstream.annotations.XStreamAlias;
 import com.thoughtworks.xstream.annotations.XStreamImplicit;
+import com.thoughtworks.xstream.annotations.XStreamOmitField;
+import com.thoughtworks.xstream.converters.ConversionException;
+import org.optaplanner.core.api.domain.solution.PlanningSolution;
 import org.optaplanner.core.api.solver.Solver;
+import org.optaplanner.core.api.solver.SolverFactory;
 import org.optaplanner.core.config.AbstractConfig;
 import org.optaplanner.core.config.SolverConfigContext;
 import org.optaplanner.core.config.constructionheuristic.ConstructionHeuristicPhaseConfig;
@@ -41,6 +56,7 @@ import org.optaplanner.core.impl.phase.Phase;
 import org.optaplanner.core.impl.score.definition.ScoreDefinition;
 import org.optaplanner.core.impl.score.director.InnerScoreDirectorFactory;
 import org.optaplanner.core.impl.solver.DefaultSolver;
+import org.optaplanner.core.impl.solver.io.XStreamConfigReader;
 import org.optaplanner.core.impl.solver.random.DefaultRandomFactory;
 import org.optaplanner.core.impl.solver.random.RandomFactory;
 import org.optaplanner.core.impl.solver.recaller.BestSolutionRecaller;
@@ -52,14 +68,151 @@ import org.slf4j.LoggerFactory;
 
 import static org.apache.commons.lang3.ObjectUtils.*;
 
+/**
+ * To read it from XML, use {@link #createFromXmlResource(String)}.
+ * To build a {@link SolverFactory} with it, use {@link SolverFactory#create(SolverConfig)}.
+ */
 @XStreamAlias("solver")
 public class SolverConfig extends AbstractConfig<SolverConfig> {
+
+    /**
+     * Reads an XML solver configuration from the classpath.
+     * @param solverConfigResource never null, a classpath resource
+     * as defined by {@link ClassLoader#getResource(String)}
+     * @return never null
+     */
+    public static SolverConfig createFromXmlResource(String solverConfigResource) {
+        return createFromXmlResource(solverConfigResource, null);
+    }
+
+    /**
+     * As defined by {@link #createFromXmlResource(String)}.
+     * @param solverConfigResource never null, a classpath resource
+     * as defined by {@link ClassLoader#getResource(String)}
+     * @param classLoader sometimes null, the {@link ClassLoader} to use for loading all resources and {@link Class}es,
+     *      null to use the default {@link ClassLoader}
+     * @return never null
+     */
+    public static SolverConfig createFromXmlResource(String solverConfigResource, ClassLoader classLoader) {
+        ClassLoader actualClassLoader = classLoader != null ? classLoader : SolverConfig.class.getClassLoader();
+        try (InputStream in = actualClassLoader.getResourceAsStream(solverConfigResource)) {
+            if (in == null) {
+                String errorMessage = "The solverConfigResource (" + solverConfigResource
+                        + ") does not exist as a classpath resource in the classLoader (" + actualClassLoader + ").";
+                if (solverConfigResource.startsWith("/")) {
+                    errorMessage += "\nA classpath resource should not start with a slash (/)."
+                            + " A solverConfigResource adheres to ClassLoader.getResource(String)."
+                            + " Maybe remove the leading slash from the solverConfigResource.";
+                }
+                throw new IllegalArgumentException(errorMessage);
+            }
+            return createFromXmlInputStream(in, classLoader);
+        } catch (ConversionException e) {
+            String lineNumber = e.get("line number");
+            throw new IllegalArgumentException("Unmarshalling of solverConfigResource (" + solverConfigResource
+                    + ") fails on line number (" + lineNumber + ")."
+                    + (Objects.equals(e.get("required-type"), "java.lang.Class")
+                    ? "\n  Maybe the classname on line number (" + lineNumber + ") is surrounded by whitespace, which is invalid."
+                    : ""), e);
+        } catch (IOException e) {
+            throw new IllegalArgumentException("Reading the solverConfigResource (" + solverConfigResource + ") failed.", e);
+        }
+    }
+
+    /**
+     * Reads an XML solver configuration from the file system.
+     * <p>
+     * Warning: this leads to platform dependent code,
+     * it's recommend to use {@link #createFromXmlResource(String)} instead.
+     * @param solverConfigFile never null
+     * @return never null
+     */
+    public static SolverConfig createFromXmlFile(File solverConfigFile) {
+        return createFromXmlFile(solverConfigFile, null);
+    }
+
+    /**
+     * As defined by {@link #createFromXmlFile(File)}.
+     * @param solverConfigFile never null
+     * @param classLoader sometimes null, the {@link ClassLoader} to use for loading all resources and {@link Class}es,
+     *      null to use the default {@link ClassLoader}
+     * @return never null
+     */
+    public static SolverConfig createFromXmlFile(File solverConfigFile, ClassLoader classLoader) {
+        try (InputStream in = new FileInputStream(solverConfigFile)) {
+            return createFromXmlInputStream(in, classLoader);
+        } catch (FileNotFoundException e) {
+            throw new IllegalArgumentException("The solverConfigFile (" + solverConfigFile + ") was not found.", e);
+        } catch (IOException e) {
+            throw new IllegalArgumentException("Reading the solverConfigFile (" + solverConfigFile + ") failed.", e);
+        }
+    }
+
+    /**
+     * @param in never null, gets closed
+     * @return never null
+     */
+    public static SolverConfig createFromXmlInputStream(InputStream in) {
+        return createFromXmlInputStream(in, null);
+    }
+
+    /**
+     * As defined by {@link #createFromXmlInputStream(InputStream)}.
+     * @param in never null, gets closed
+     * @param classLoader sometimes null, the {@link ClassLoader} to use for loading all resources and {@link Class}es,
+     *      null to use the default {@link ClassLoader}
+     * @return never null
+     */
+    public static SolverConfig createFromXmlInputStream(InputStream in, ClassLoader classLoader) {
+        try (Reader reader = new InputStreamReader(in, StandardCharsets.UTF_8)) {
+            return createFromXmlReader(reader, classLoader);
+        } catch (UnsupportedEncodingException e) {
+            throw new IllegalStateException("This vm does not support the charset (" + StandardCharsets.UTF_8 + ").", e);
+        } catch (IOException e) {
+            throw new IllegalArgumentException("Reading solverConfigInputStream failed.", e);
+        }
+    }
+
+    /**
+     * @param reader never null, gets closed
+     * @return never null
+     */
+    public static SolverConfig createFromXmlReader(Reader reader) {
+        return createFromXmlReader(reader, null);
+    }
+
+    /**
+     * As defined by {@link #createFromXmlReader(Reader)}.
+     * @param reader never null, gets closed
+     * @param classLoader sometimes null, the {@link ClassLoader} to use for loading all resources and {@link Class}es,
+     *      null to use the default {@link ClassLoader}
+     * @return never null
+     */
+    public static SolverConfig createFromXmlReader(Reader reader, ClassLoader classLoader) {
+        XStream xStream = XStreamConfigReader.buildXStream(classLoader);
+        Object solverConfigObject = xStream.fromXML(reader);
+        if (!(solverConfigObject instanceof SolverConfig)) {
+            throw new IllegalArgumentException("The " + SolverConfig.class.getSimpleName()
+                    + "'s XML root element resolves to a different type ("
+                    + (solverConfigObject == null ? null : solverConfigObject.getClass().getSimpleName()));
+        }
+        SolverConfig solverConfig = (SolverConfig) solverConfigObject;
+        solverConfig.setClassLoader(classLoader);
+        return solverConfig;
+    }
+
+    // ************************************************************************
+    // Fields
+    // ************************************************************************
 
     public static final String MOVE_THREAD_COUNT_NONE = "NONE";
     public static final String MOVE_THREAD_COUNT_AUTO = "AUTO";
     protected static final long DEFAULT_RANDOM_SEED = 0L;
 
     private static final Logger logger = LoggerFactory.getLogger(SolverConfig.class);
+
+    @XStreamOmitField
+    private ClassLoader classLoader = null;
 
     // Warning: all fields are null (and not defaulted) because they can be inherited
     // and also because the input config file should match the output config file
@@ -92,14 +245,39 @@ public class SolverConfig extends AbstractConfig<SolverConfig> {
     // Constructors and simple getters/setters
     // ************************************************************************
 
+    /**
+     * Create an empty solver config.
+     */
     public SolverConfig() {
     }
 
+    /**
+     * @param classLoader sometimes null
+     */
+    public SolverConfig(ClassLoader classLoader) {
+        this.classLoader = classLoader;
+    }
+
+    /**
+     * Allows you to programmatically change the {@link SolverConfig} per concurrent request,
+     * based on a template solver config,
+     * by building a separate {@link SolverFactory} with {@link SolverFactory#create(SolverConfig)}
+     * and a separate {@link Solver} per request to avoid race conditions.
+     * @param inheritedConfig never null
+     */
     public SolverConfig(SolverConfig inheritedConfig) {
         inherit(inheritedConfig);
         if (environmentMode == EnvironmentMode.PRODUCTION) {
             environmentMode = EnvironmentMode.NON_REPRODUCIBLE;
         }
+    }
+
+    public ClassLoader getClassLoader() {
+        return classLoader;
+    }
+
+    public void setClassLoader(ClassLoader classLoader) {
+        this.classLoader = classLoader;
     }
 
     public EnvironmentMode getEnvironmentMode() {
@@ -215,6 +393,85 @@ public class SolverConfig extends AbstractConfig<SolverConfig> {
     }
 
     // ************************************************************************
+    // With methods
+    // ************************************************************************
+
+    public SolverConfig withEnvironmentMode(EnvironmentMode environmentMode) {
+        this.environmentMode = environmentMode;
+        return this;
+    }
+
+    public SolverConfig withDaemon(Boolean daemon) {
+        this.daemon = daemon;
+        return this;
+    }
+
+    public SolverConfig withRandomType(RandomType randomType) {
+        this.randomType = randomType;
+        return this;
+    }
+
+    public SolverConfig withRandomSeed(Long randomSeed) {
+        this.randomSeed = randomSeed;
+        return this;
+    }
+
+    public SolverConfig withRandomFactoryClass(Class<? extends RandomFactory> randomFactoryClass) {
+        this.randomFactoryClass = randomFactoryClass;
+        return this;
+    }
+
+    public SolverConfig withMoveThreadCount(String moveThreadCount) {
+        this.moveThreadCount = moveThreadCount;
+        return this;
+    }
+
+    public SolverConfig withMoveThreadBufferSize(Integer moveThreadBufferSize) {
+        this.moveThreadBufferSize = moveThreadBufferSize;
+        return this;
+    }
+
+    public SolverConfig withThreadFactoryClass(Class<? extends ThreadFactory> threadFactoryClass) {
+        this.threadFactoryClass = threadFactoryClass;
+        return this;
+    }
+
+    public SolverConfig withSolutionClass(Class<?> solutionClass) {
+        this.solutionClass = solutionClass;
+        return this;
+    }
+
+    public SolverConfig withEntityClassList(List<Class<?>> entityClassList) {
+        this.entityClassList = entityClassList;
+        return this;
+    }
+
+    public SolverConfig withEntityClasses(Class<?>... entityClasses) {
+        this.entityClassList = Arrays.asList(entityClasses);
+        return this;
+    }
+
+    public SolverConfig withScoreDirectorFactory(ScoreDirectorFactoryConfig scoreDirectorFactoryConfig) {
+        this.scoreDirectorFactoryConfig = scoreDirectorFactoryConfig;
+        return this;
+    }
+
+    public SolverConfig withTerminationConfig(TerminationConfig terminationConfig) {
+        this.terminationConfig = terminationConfig;
+        return this;
+    }
+
+    public SolverConfig withPhaseList(List<PhaseConfig> phaseConfigList) {
+        this.phaseConfigList = phaseConfigList;
+        return this;
+    }
+
+    public SolverConfig withPhases(PhaseConfig... phaseConfigs) {
+        this.phaseConfigList = Arrays.asList(phaseConfigs);
+        return this;
+    }
+
+    // ************************************************************************
     // Smart getters
     // ************************************************************************
 
@@ -237,8 +494,14 @@ public class SolverConfig extends AbstractConfig<SolverConfig> {
         }
     }
 
+    // TODO https://issues.jboss.org/browse/PLANNER-1688
     /**
+     * Do not use this method, it is an internal method.
+     * Use {@link SolverFactory#buildSolver()} instead.
+     * <p>
+     * Will be removed in 8.0 (by putting it in an InnerSolverConfig).
      * @param configContext never null
+     * @param <Solution_> the solution type, the class with the {@link PlanningSolution} annotation
      * @return never null
      */
     public <Solution_> Solver<Solution_> buildSolver(SolverConfigContext configContext) {
@@ -248,12 +511,7 @@ public class SolverConfig extends AbstractConfig<SolverConfig> {
 
         RandomFactory randomFactory = buildRandomFactory(environmentMode_);
         Integer moveThreadCount_ = resolveMoveThreadCount();
-        SolutionDescriptor<Solution_> solutionDescriptor = buildSolutionDescriptor(configContext);
-        ScoreDirectorFactoryConfig scoreDirectorFactoryConfig_
-                = scoreDirectorFactoryConfig == null ? new ScoreDirectorFactoryConfig()
-                : scoreDirectorFactoryConfig;
-        InnerScoreDirectorFactory<Solution_> scoreDirectorFactory = scoreDirectorFactoryConfig_.buildScoreDirectorFactory(
-                configContext, environmentMode_, solutionDescriptor);
+        InnerScoreDirectorFactory<Solution_> scoreDirectorFactory = buildScoreDirectorFactory(configContext, environmentMode_);
         boolean constraintMatchEnabledPreference = environmentMode_.isAsserted();
         DefaultSolverScope<Solution_> solverScope = new DefaultSolverScope<>();
         solverScope.setScoreDirector(scoreDirectorFactory.buildScoreDirector(true, constraintMatchEnabledPreference));
@@ -328,6 +586,35 @@ public class SolverConfig extends AbstractConfig<SolverConfig> {
         return resolvedMoveThreadCount;
     }
 
+    // TODO https://issues.jboss.org/browse/PLANNER-1688
+    /**
+     * Do not use this method, it is an internal method.
+     * Use {@link SolverFactory#getScoreDirectorFactory()} instead.
+     * <p>
+     * Will be removed in 8.0 (by putting it in an InnerSolverConfig).
+     * @param configContext never null
+     * @param environmentMode never null
+     * @param <Solution_> the solution type, the class with the {@link PlanningSolution} annotation
+     * @return never null
+     */
+    public <Solution_> InnerScoreDirectorFactory<Solution_> buildScoreDirectorFactory(SolverConfigContext configContext,
+            EnvironmentMode environmentMode) {
+        SolutionDescriptor<Solution_> solutionDescriptor = buildSolutionDescriptor(configContext);
+        ScoreDirectorFactoryConfig scoreDirectorFactoryConfig_
+                = scoreDirectorFactoryConfig == null ? new ScoreDirectorFactoryConfig()
+                : scoreDirectorFactoryConfig;
+        return scoreDirectorFactoryConfig_.buildScoreDirectorFactory(
+                configContext, classLoader, environmentMode, solutionDescriptor);
+    }
+
+    // TODO https://issues.jboss.org/browse/PLANNER-1688
+    /**
+     * Do not use this method, it is an internal method.
+     * <p>
+     * Will be removed in 8.0 (by putting it in an InnerSolverConfig).
+     * @param <Solution_> the solution type, the class with the {@link PlanningSolution} annotation
+     * @return never null
+     */
     public <Solution_> SolutionDescriptor<Solution_> buildSolutionDescriptor(SolverConfigContext configContext) {
         ScoreDefinition deprecatedScoreDefinition = scoreDirectorFactoryConfig == null ? null
                 : scoreDirectorFactoryConfig.buildDeprecatedScoreDefinition();
@@ -338,7 +625,7 @@ public class SolverConfig extends AbstractConfig<SolverConfig> {
                         + ") or an entityClass (" + entityClassList + ").\n"
                         + "  Please decide between automatic scanning or manual referencing.");
             }
-            return scanAnnotatedClassesConfig.buildSolutionDescriptor(configContext, deprecatedScoreDefinition);
+            return scanAnnotatedClassesConfig.buildSolutionDescriptor(configContext, classLoader, deprecatedScoreDefinition);
         } else {
             if (solutionClass == null) {
                 throw new IllegalArgumentException("The solver configuration must have a solutionClass (" + solutionClass
@@ -372,8 +659,14 @@ public class SolverConfig extends AbstractConfig<SolverConfig> {
         return phaseList;
     }
 
+    /**
+     * Do not use this method, it is an internal method.
+     * Use {@link #SolverConfig(SolverConfig)} instead.
+     * @param inheritedConfig never null
+     */
     @Override
     public void inherit(SolverConfig inheritedConfig) {
+        classLoader = ConfigUtils.inheritOverwritableProperty(classLoader, inheritedConfig.getClassLoader());
         environmentMode = ConfigUtils.inheritOverwritableProperty(environmentMode, inheritedConfig.getEnvironmentMode());
         daemon = ConfigUtils.inheritOverwritableProperty(daemon, inheritedConfig.getDaemon());
         randomType = ConfigUtils.inheritOverwritableProperty(randomType, inheritedConfig.getRandomType());

@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Red Hat, Inc. and/or its affiliates.
+ * Copyright 2019 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,10 @@
 package org.optaplanner.core.api.score.constraint;
 
 import java.io.Serializable;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 
 import org.optaplanner.core.api.score.Score;
 
@@ -38,11 +41,11 @@ public final class ConstraintMatch implements Serializable, Comparable<Constrain
      * @param justificationList never null, sometimes empty
      * @param score never null
      */
-    public ConstraintMatch(String constraintPackage, String constraintName,
-            List<Object> justificationList, Score score) {
+    public ConstraintMatch(String constraintPackage, String constraintName, List<Object> justificationList,
+            Score score) {
         this.constraintPackage = constraintPackage;
         this.constraintName = constraintName;
-        this.justificationList = justificationList;
+        this.justificationList = Collections.unmodifiableList(justificationList);
         this.score = score;
     }
 
@@ -81,8 +84,18 @@ public final class ConstraintMatch implements Serializable, Comparable<Constrain
         } else if (!constraintName.equals(other.constraintName)) {
             return constraintName.compareTo(other.constraintName);
         } else {
+            /*
+             * TODO Come up with a better cache.
+             *
+             * We reuse the comparator from here, since it internally caches some reflection that we don't want to be performing
+             * over and over again. However, there are possibly thousands of instances of this class, and each will get its own
+             * comparator. Therefore, the caching is only partially effective.
+             */
+            Comparator<Object> comparator = new ConstraintJustificationComparator();
             for (int i = 0; i < justificationList.size() && i < other.justificationList.size(); i++) {
-                int comparison = ((Comparable) justificationList.get(i)).compareTo(other.justificationList.get(i));
+                Object left = justificationList.get(i);
+                Object right = other.justificationList.get(i);
+                int comparison = comparator.compare(left, right);
                 if (comparison != 0) {
                     return comparison;
                 }
@@ -111,15 +124,12 @@ public final class ConstraintMatch implements Serializable, Comparable<Constrain
 
     @Override
     public int hashCode() {
-        return (((17 * 37)
-                + constraintPackage.hashCode()) * 37
-                + constraintName.hashCode()) * 37
-                + justificationList.hashCode();
+        return Objects.hash(constraintPackage, constraintName, justificationList);
     }
 
     @Override
     public String toString() {
-        return getIdentificationString() + "=" + getScore();
+        return getIdentificationString() + "=" + score;
     }
 
 }

@@ -28,7 +28,6 @@ import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -67,8 +66,55 @@ import org.optaplanner.examples.conferencescheduling.domain.TalkType;
 import org.optaplanner.examples.conferencescheduling.domain.Timeslot;
 import org.optaplanner.swing.impl.TangoColorFactory;
 
-import static java.util.stream.Collectors.*;
-import static org.optaplanner.examples.conferencescheduling.domain.ConferenceConstraintConfiguration.*;
+import static java.util.Collections.disjoint;
+import static java.util.Collections.emptyList;
+import static java.util.Collections.reverseOrder;
+import static java.util.Comparator.comparing;
+import static java.util.stream.Collectors.counting;
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.mapping;
+import static java.util.stream.Collectors.toCollection;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
+import static java.util.stream.Collectors.toSet;
+import static org.optaplanner.examples.conferencescheduling.domain.ConferenceConstraintConfiguration.AUDIENCE_LEVEL_DIVERSITY;
+import static org.optaplanner.examples.conferencescheduling.domain.ConferenceConstraintConfiguration.AUDIENCE_TYPE_DIVERSITY;
+import static org.optaplanner.examples.conferencescheduling.domain.ConferenceConstraintConfiguration.AUDIENCE_TYPE_THEME_TRACK_CONFLICT;
+import static org.optaplanner.examples.conferencescheduling.domain.ConferenceConstraintConfiguration.CONSECUTIVE_TALKS_PAUSE;
+import static org.optaplanner.examples.conferencescheduling.domain.ConferenceConstraintConfiguration.CONTENT_AUDIENCE_LEVEL_FLOW_VIOLATION;
+import static org.optaplanner.examples.conferencescheduling.domain.ConferenceConstraintConfiguration.CONTENT_CONFLICT;
+import static org.optaplanner.examples.conferencescheduling.domain.ConferenceConstraintConfiguration.CROWD_CONTROL;
+import static org.optaplanner.examples.conferencescheduling.domain.ConferenceConstraintConfiguration.LANGUAGE_DIVERSITY;
+import static org.optaplanner.examples.conferencescheduling.domain.ConferenceConstraintConfiguration.POPULAR_TALKS;
+import static org.optaplanner.examples.conferencescheduling.domain.ConferenceConstraintConfiguration.PUBLISHED_ROOM;
+import static org.optaplanner.examples.conferencescheduling.domain.ConferenceConstraintConfiguration.PUBLISHED_TIMESLOT;
+import static org.optaplanner.examples.conferencescheduling.domain.ConferenceConstraintConfiguration.ROOM_CONFLICT;
+import static org.optaplanner.examples.conferencescheduling.domain.ConferenceConstraintConfiguration.ROOM_UNAVAILABLE_TIMESLOT;
+import static org.optaplanner.examples.conferencescheduling.domain.ConferenceConstraintConfiguration.SAME_DAY_TALKS;
+import static org.optaplanner.examples.conferencescheduling.domain.ConferenceConstraintConfiguration.SECTOR_CONFLICT;
+import static org.optaplanner.examples.conferencescheduling.domain.ConferenceConstraintConfiguration.SPEAKER_CONFLICT;
+import static org.optaplanner.examples.conferencescheduling.domain.ConferenceConstraintConfiguration.SPEAKER_PREFERRED_ROOM_TAGS;
+import static org.optaplanner.examples.conferencescheduling.domain.ConferenceConstraintConfiguration.SPEAKER_PREFERRED_TIMESLOT_TAGS;
+import static org.optaplanner.examples.conferencescheduling.domain.ConferenceConstraintConfiguration.SPEAKER_PROHIBITED_ROOM_TAGS;
+import static org.optaplanner.examples.conferencescheduling.domain.ConferenceConstraintConfiguration.SPEAKER_PROHIBITED_TIMESLOT_TAGS;
+import static org.optaplanner.examples.conferencescheduling.domain.ConferenceConstraintConfiguration.SPEAKER_REQUIRED_ROOM_TAGS;
+import static org.optaplanner.examples.conferencescheduling.domain.ConferenceConstraintConfiguration.SPEAKER_REQUIRED_TIMESLOT_TAGS;
+import static org.optaplanner.examples.conferencescheduling.domain.ConferenceConstraintConfiguration.SPEAKER_UNAVAILABLE_TIMESLOT;
+import static org.optaplanner.examples.conferencescheduling.domain.ConferenceConstraintConfiguration.SPEAKER_UNDESIRED_ROOM_TAGS;
+import static org.optaplanner.examples.conferencescheduling.domain.ConferenceConstraintConfiguration.SPEAKER_UNDESIRED_TIMESLOT_TAGS;
+import static org.optaplanner.examples.conferencescheduling.domain.ConferenceConstraintConfiguration.TALK_MUTUALLY_EXCLUSIVE_TALKS_TAGS;
+import static org.optaplanner.examples.conferencescheduling.domain.ConferenceConstraintConfiguration.TALK_PREFERRED_ROOM_TAGS;
+import static org.optaplanner.examples.conferencescheduling.domain.ConferenceConstraintConfiguration.TALK_PREFERRED_TIMESLOT_TAGS;
+import static org.optaplanner.examples.conferencescheduling.domain.ConferenceConstraintConfiguration.TALK_PREREQUISITE_TALKS;
+import static org.optaplanner.examples.conferencescheduling.domain.ConferenceConstraintConfiguration.TALK_PROHIBITED_ROOM_TAGS;
+import static org.optaplanner.examples.conferencescheduling.domain.ConferenceConstraintConfiguration.TALK_PROHIBITED_TIMESLOT_TAGS;
+import static org.optaplanner.examples.conferencescheduling.domain.ConferenceConstraintConfiguration.TALK_REQUIRED_ROOM_TAGS;
+import static org.optaplanner.examples.conferencescheduling.domain.ConferenceConstraintConfiguration.TALK_REQUIRED_TIMESLOT_TAGS;
+import static org.optaplanner.examples.conferencescheduling.domain.ConferenceConstraintConfiguration.TALK_UNDESIRED_ROOM_TAGS;
+import static org.optaplanner.examples.conferencescheduling.domain.ConferenceConstraintConfiguration.TALK_UNDESIRED_TIMESLOT_TAGS;
+import static org.optaplanner.examples.conferencescheduling.domain.ConferenceConstraintConfiguration.THEME_TRACK_CONFLICT;
+import static org.optaplanner.examples.conferencescheduling.domain.ConferenceConstraintConfiguration.THEME_TRACK_ROOM_STABILITY;
 
 public class ConferenceSchedulingXlsxFileIO extends AbstractXlsxSolutionFileIO<ConferenceSolution> {
 
@@ -97,7 +143,7 @@ public class ConferenceSchedulingXlsxFileIO extends AbstractXlsxSolutionFileIO<C
     private static final String THEME_TRACK_ROOM_STABILITY_DESCRIPTION = "Penalty per common theme track of 2 talks in a different room on the same day, per minute of either talk";
     private static final String SECTOR_CONFLICT_DESCRIPTION = "Penalty per common sector of 2 talks with overlapping timeslots, per overlapping minute";
     private static final String AUDIENCE_TYPE_DIVERSITY_DESCRIPTION = "Reward per 2 talks with a different audience type and the same timeslot, per (overlapping) minute";
-    private static final String AUDIENCE_TYPE_THEME_TRACK_CONFLICT_DESCRIPTION = "Penalty per 2 talks with a common audience type, a common theme track and overlapping timeslotst, per overlapping minute";
+    private static final String AUDIENCE_TYPE_THEME_TRACK_CONFLICT_DESCRIPTION = "Penalty per 2 talks with a common audience type, a common theme track and overlapping timeslots, per overlapping minute";
     private static final String AUDIENCE_LEVEL_DIVERSITY_DESCRIPTION = "Reward per 2 talks with a different audience level and the same timeslot, per (overlapping) minute";
     private static final String CONTENT_AUDIENCE_LEVEL_FLOW_VIOLATION_DESCRIPTION = "Penalty per common content of 2 talks with a different audience level for which the easier talk isn't scheduled earlier than the other talk, per minute of either talk";
     private static final String CONTENT_CONFLICT_DESCRIPTION = "Penalty per common content of 2 talks with overlapping timeslots, per overlapping minute";
@@ -113,6 +159,9 @@ public class ConferenceSchedulingXlsxFileIO extends AbstractXlsxSolutionFileIO<C
     private static final String SPEAKER_UNDESIRED_ROOM_TAGS_DESCRIPTION = "Penalty per undesired tag in a talk's room, per minute";
     private static final String TALK_PREFERRED_ROOM_TAGS_DESCRIPTION = "Penalty per missing preferred tag in a talk's room, per minute";
     private static final String TALK_UNDESIRED_ROOM_TAGS_DESCRIPTION = "Penalty per undesired tag in a talk's room, per minute";
+
+    private static final Comparator<Timeslot> COMPARATOR = comparing(Timeslot::getStartDateTime)
+            .thenComparing(reverseOrder(comparing(Timeslot::getEndDateTime)));
 
     private boolean strict;
 
@@ -160,8 +209,7 @@ public class ConferenceSchedulingXlsxFileIO extends AbstractXlsxSolutionFileIO<C
             readSpeakerList();
             readTalkList();
             // Needed for merging in the sheet Rooms views
-            solution.getTimeslotList().sort(Comparator.comparing(Timeslot::getStartDateTime)
-                    .thenComparing(Comparator.comparing(Timeslot::getEndDateTime).reversed()));
+            solution.getTimeslotList().sort(COMPARATOR);
             return solution;
         }
 
@@ -1055,12 +1103,19 @@ public class ConferenceSchedulingXlsxFileIO extends AbstractXlsxSolutionFileIO<C
                 nextCell().setCellValue(talk.getFavoriteCount());
                 nextCell().setCellValue(talk.getCrowdControlRisk());
                 nextCell(talk.isPinnedByUser() ? pinnedStyle : defaultStyle).setCellValue(talk.isPinnedByUser());
-                XSSFCellStyle timeslotStyle = (talk.getPublishedTimeslot() == null || talk.getTimeslot() == talk.getPublishedTimeslot()) ? defaultStyle : republishedStyle;
+                XSSFCellStyle timeslotStyle;
+                XSSFCellStyle roomStyle;
+                if (talk.isPinnedByUser()) {
+                    timeslotStyle = (talk.getTimeslot() == null) ? hardPenaltyStyle : defaultStyle;
+                    roomStyle = (talk.getRoom() == null) ? hardPenaltyStyle : defaultStyle;
+                } else {
+                    timeslotStyle = (talk.getPublishedTimeslot() == null || talk.getTimeslot() == talk.getPublishedTimeslot()) ? planningVariableStyle : republishedStyle;
+                    roomStyle = (talk.getPublishedRoom() == null || talk.getRoom() == talk.getPublishedRoom()) ? planningVariableStyle : republishedStyle;
+                }
                 nextCell(timeslotStyle).setCellValue(talk.getTimeslot() == null ? "" : DAY_FORMATTER.format(talk.getTimeslot().getDate()));
                 nextCell(timeslotStyle).setCellValue(talk.getTimeslot() == null ? "" : TIME_FORMATTER.format(talk.getTimeslot().getStartDateTime()));
                 nextCell(timeslotStyle).setCellValue(talk.getTimeslot() == null ? "" : TIME_FORMATTER.format(talk.getTimeslot().getEndDateTime()));
-                nextCell((talk.getPublishedRoom() == null || talk.getRoom() == talk.getPublishedRoom()) ? defaultStyle : republishedStyle)
-                        .setCellValue(talk.getRoom() == null ? "" : talk.getRoom().getName());
+                nextCell(roomStyle).setCellValue(talk.getRoom() == null ? "" : talk.getRoom().getName());
                 nextCell().setCellValue(talk.getPublishedTimeslot() == null ? "" : DAY_FORMATTER.format(talk.getPublishedTimeslot().getDate()));
                 nextCell().setCellValue(talk.getPublishedTimeslot() == null ? "" : TIME_FORMATTER.format(talk.getPublishedTimeslot().getStartDateTime()));
                 nextCell().setCellValue(talk.getPublishedTimeslot() == null ? "" : TIME_FORMATTER.format(talk.getPublishedTimeslot().getEndDateTime()));
@@ -1112,7 +1167,7 @@ public class ConferenceSchedulingXlsxFileIO extends AbstractXlsxSolutionFileIO<C
             int sessionCount = 0;
             for (Timeslot timeslot : solution.getTimeslotList()) {
                 for (Room room : solution.getRoomList()) {
-                    if (!Collections.disjoint(timeslot.getTalkTypeSet(), room.getTalkTypeSet())
+                    if (!disjoint(timeslot.getTalkTypeSet(), room.getTalkTypeSet())
                             && !room.getUnavailableTimeslotSet().contains(timeslot)) {
                         sessionCount++;
                     }
@@ -1151,7 +1206,7 @@ public class ConferenceSchedulingXlsxFileIO extends AbstractXlsxSolutionFileIO<C
                             currentSheet.addMergedRegion(new CellRangeAddress(currentRowNumber, currentRowNumber, mergeStart, currentColumnNumber));
                         }
                         boolean unavailable = room.getUnavailableTimeslotSet().contains(timeslot)
-                                || Collections.disjoint(room.getTalkTypeSet(), timeslot.getTalkTypeSet());
+                                || disjoint(room.getTalkTypeSet(), timeslot.getTalkTypeSet());
                         nextTalkListCell(unavailable, talkList, talk -> talk.getCode() + ": " + talk.getTitle() + "\n  "
                                 + talk.getSpeakerList().stream().map(Speaker::getName).collect(joining(", ")));
                         mergePreviousTimeslot = talkList.isEmpty() ? null : timeslot;
@@ -1398,8 +1453,11 @@ public class ConferenceSchedulingXlsxFileIO extends AbstractXlsxSolutionFileIO<C
             nextRow();
             nextHeaderCell(DAY_FORMATTER.format(day));
             writeTimeslotHoursVertically(timeslotList);
-            List<Room> dayRoomList = talkList.stream().map(Talk::getRoom).distinct().collect(toList());
-            dayRoomList.sort(Comparator.comparing(Room::getName));
+            List<Room> dayRoomList = talkList.stream().map(Talk::getRoom)
+                    .filter(Objects::nonNull)
+                    .distinct()
+                    .sorted(comparing(Room::getName))
+                    .collect(toList());
             for (Room room : dayRoomList) {
                 currentColumnNumber++;
                 currentRowNumber = -1;
@@ -1429,7 +1487,7 @@ public class ConferenceSchedulingXlsxFileIO extends AbstractXlsxSolutionFileIO<C
                         currentSheet.addMergedRegion(new CellRangeAddress(mergeStart, currentRowNumber, currentColumnNumber, currentColumnNumber));
                     }
                     boolean unavailable = room.getUnavailableTimeslotSet().contains(timeslot)
-                            || Collections.disjoint(room.getTalkTypeSet(), timeslot.getTalkTypeSet());
+                            || disjoint(room.getTalkTypeSet(), timeslot.getTalkTypeSet());
                     nextTalkListCell(unavailable, talkList, talk -> StringUtils.abbreviate(talk.getTitle(), 50) + "\n"
                             + StringUtils.abbreviate(talk.getSpeakerList().stream().map(Speaker::getName).collect(joining(", ")), 30), true);
                     mergePreviousTimeslot = talkList.isEmpty() ? null : timeslot;
@@ -1489,7 +1547,7 @@ public class ConferenceSchedulingXlsxFileIO extends AbstractXlsxSolutionFileIO<C
         }
 
         protected void nextTalkListCell(List<Talk> talkList, Function<Talk, String> stringFunction,
-                                        String[] filteredConstraintNames, Predicate<List<Object>> isValidJustificationList) {
+                String[] filteredConstraintNames, Predicate<List<Object>> isValidJustificationList) {
             nextTalkListCell(false, talkList, stringFunction, filteredConstraintNames, false, isValidJustificationList);
         }
 
@@ -1502,14 +1560,15 @@ public class ConferenceSchedulingXlsxFileIO extends AbstractXlsxSolutionFileIO<C
         }
 
         protected void nextTalkListCell(boolean unavailable, List<Talk> talkList, Function<Talk, String> stringFunction,
-                                        String[] filteredConstraintNames, boolean isPrintedView, Predicate<List<Object>> isValidJustificationList) {
+                String[] filteredConstraintNames, boolean isPrintedView, Predicate<List<Object>> isValidJustificationList) {
             List<String> filteredConstraintNameList = (filteredConstraintNames == null) ? null
                     : Arrays.asList(filteredConstraintNames);
             if (talkList == null) {
-                talkList = Collections.emptyList();
+                talkList = emptyList();
             }
             HardMediumSoftScore score = talkList.stream()
-                    .map(indictmentMap::get).filter(Objects::nonNull)
+                    .map(indictmentMap::get)
+                    .filter(Objects::nonNull)
                     .flatMap(indictment -> indictment.getConstraintMatchSet().stream())
                     // Filter out filtered constraints
                     .filter(constraintMatch -> filteredConstraintNameList == null
@@ -1565,9 +1624,10 @@ public class ConferenceSchedulingXlsxFileIO extends AbstractXlsxSolutionFileIO<C
                                     .filter(constraintMatch -> constraintMatch.getConstraintName().equals(constraintName)
                                             && (isValidJustificationList == null || isValidJustificationList.test(constraintMatch.getJustificationList())))
                                     .collect(toList());
-                            Score sum = filteredConstraintMatchList.stream()
-                                    .map(ConstraintMatch::getScore)
-                                    .reduce(Score::add).orElse(HardMediumSoftScore.ZERO);
+                            HardMediumSoftScore sum = filteredConstraintMatchList.stream()
+                                    .map(constraintMatch -> (HardMediumSoftScore) constraintMatch.getScore())
+                                    .reduce(HardMediumSoftScore::add)
+                                    .orElse(HardMediumSoftScore.ZERO);
                             String justificationTalkCodes = filteredConstraintMatchList.stream()
                                     .flatMap(constraintMatch -> constraintMatch.getJustificationList().stream())
                                     .filter(justification -> justification instanceof Talk && justification != talk)

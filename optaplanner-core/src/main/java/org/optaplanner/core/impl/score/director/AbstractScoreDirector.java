@@ -36,9 +36,7 @@ import org.optaplanner.core.api.score.Score;
 import org.optaplanner.core.api.score.constraint.ConstraintMatch;
 import org.optaplanner.core.api.score.constraint.ConstraintMatchScoreComparator;
 import org.optaplanner.core.api.score.constraint.ConstraintMatchTotal;
-import org.optaplanner.core.api.score.constraint.ConstraintMatchTotalScoreComparator;
 import org.optaplanner.core.api.score.constraint.Indictment;
-import org.optaplanner.core.api.score.constraint.IndictmentScoreComparator;
 import org.optaplanner.core.config.solver.EnvironmentMode;
 import org.optaplanner.core.impl.domain.entity.descriptor.EntityDescriptor;
 import org.optaplanner.core.impl.domain.lookup.ClassAndPlanningIdComparator;
@@ -51,7 +49,7 @@ import org.optaplanner.core.impl.domain.variable.listener.support.VariableListen
 import org.optaplanner.core.impl.domain.variable.supply.SupplyManager;
 import org.optaplanner.core.impl.heuristic.move.Move;
 import org.optaplanner.core.impl.score.definition.ScoreDefinition;
-import org.optaplanner.core.impl.solver.ChildThreadType;
+import org.optaplanner.core.impl.solver.thread.ChildThreadType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -276,8 +274,12 @@ public abstract class AbstractScoreDirector<Solution_, Factory_ extends Abstract
         StringBuilder scoreExplanation = new StringBuilder((constraintMatchTotals.size() + 4 + 2 * INDICTMENT_LIMIT) * 80);
         scoreExplanation.append("Explanation of score (").append(workingScore).append("):\n");
         scoreExplanation.append("    Constraint match totals:\n");
+        Comparator<ConstraintMatchTotal> constraintMatchTotalComparator
+                = Comparator.<ConstraintMatchTotal, Score>comparing(ConstraintMatchTotal::getScore);
+        Comparator<ConstraintMatch> constraintMatchComparator
+                = Comparator.<ConstraintMatch, Score>comparing(ConstraintMatch::getScore);
         constraintMatchTotals.stream()
-                .sorted(new ConstraintMatchTotalScoreComparator())
+                .sorted(constraintMatchTotalComparator)
                 .forEach(constraintMatchTotal -> {
                     Set<ConstraintMatch> constraintMatchSet = constraintMatchTotal.getConstraintMatchSet();
                     scoreExplanation
@@ -285,7 +287,8 @@ public abstract class AbstractScoreDirector<Solution_, Factory_ extends Abstract
                             .append(": constraint (").append(constraintMatchTotal.getConstraintName())
                             .append(") has ").append(constraintMatchSet.size()).append(" matches:\n");
                     constraintMatchSet.stream()
-                            .sorted(constraintMatchScoreComparator).limit(CONSTRAINT_MATCH_LIMIT)
+                            .sorted(constraintMatchComparator)
+                            .limit(CONSTRAINT_MATCH_LIMIT)
                             .forEach(constraintMatch -> scoreExplanation
                                     .append("            ").append(constraintMatch.getScore().toShortString())
                                     .append(": justifications (").append(constraintMatch.getJustificationList())
@@ -298,8 +301,11 @@ public abstract class AbstractScoreDirector<Solution_, Factory_ extends Abstract
         Collection<Indictment> indictments = getIndictmentMap().values();
         scoreExplanation.append("    Indictments (top ").append(INDICTMENT_LIMIT)
                 .append(" of ").append(indictments.size()).append("):\n");
+        Comparator<Indictment> indictmentComparator
+                = Comparator.<Indictment, Score>comparing(Indictment::getScore);
         indictments.stream()
-                .sorted(new IndictmentScoreComparator()).limit(INDICTMENT_LIMIT)
+                .sorted(indictmentComparator)
+                .limit(INDICTMENT_LIMIT)
                 .forEach(indictment -> {
                     Set<ConstraintMatch> constraintMatchSet = indictment.getConstraintMatchSet();
                     scoreExplanation
@@ -336,7 +342,7 @@ public abstract class AbstractScoreDirector<Solution_, Factory_ extends Abstract
     public InnerScoreDirector<Solution_> createChildThreadScoreDirector(ChildThreadType childThreadType) {
         if (childThreadType == ChildThreadType.PART_THREAD) {
             AbstractScoreDirector<Solution_, Factory_> childThreadScoreDirector = (AbstractScoreDirector<Solution_, Factory_>)
-                    scoreDirectorFactory.buildScoreDirector(false, constraintMatchEnabledPreference);
+                    scoreDirectorFactory.buildScoreDirector(isLookUpEnabled(), constraintMatchEnabledPreference);
             // ScoreCalculationCountTermination takes into account previous phases
             // but the calculationCount of partitions is maxed, not summed.
             childThreadScoreDirector.calculationCount = calculationCount;
@@ -468,7 +474,7 @@ public abstract class AbstractScoreDirector<Solution_, Factory_ extends Abstract
         if (lookUpEnabled) {
             lookUpManager.addWorkingObject(problemFact);
         }
-        variableListenerSupport.resetWorkingSolution(); // TODO do not nuke it
+        variableListenerSupport.resetWorkingSolution(); // TODO do not nuke the variable listeners
     }
 
     @Override
@@ -478,7 +484,7 @@ public abstract class AbstractScoreDirector<Solution_, Factory_ extends Abstract
 
     @Override
     public void afterProblemPropertyChanged(Object problemFactOrEntity) {
-        variableListenerSupport.resetWorkingSolution(); // TODO do not nuke it
+        variableListenerSupport.resetWorkingSolution(); // TODO do not nuke the variable listeners
     }
 
     @Override
@@ -491,7 +497,7 @@ public abstract class AbstractScoreDirector<Solution_, Factory_ extends Abstract
         if (lookUpEnabled) {
             lookUpManager.removeWorkingObject(problemFact);
         }
-        variableListenerSupport.resetWorkingSolution(); // TODO do not nuke it
+        variableListenerSupport.resetWorkingSolution(); // TODO do not nuke the variable listeners
     }
 
     @Override
@@ -501,6 +507,15 @@ public abstract class AbstractScoreDirector<Solution_, Factory_ extends Abstract
                     + ") is disabled in the constructor, this method should not be called.");
         }
         return lookUpManager.lookUpWorkingObject(externalObject);
+    }
+
+    @Override
+    public <E> E lookUpWorkingObjectOrReturnNull(E externalObject) {
+        if (!lookUpEnabled) {
+            throw new IllegalStateException("When lookUpEnabled (" + lookUpEnabled
+                    + ") is disabled in the constructor, this method should not be called.");
+        }
+        return lookUpManager.lookUpWorkingObjectOrReturnNull(externalObject);
     }
 
     // ************************************************************************
@@ -674,7 +689,7 @@ public abstract class AbstractScoreDirector<Solution_, Factory_ extends Abstract
                     + "  2) Check the Move.createUndoMove(...) method of the moveClass (" + move.getClass() + ")."
                     + " The move (" + move + ") might have a corrupted undoMove (" + undoMoveString + ").\n"
                     + "  3) Check your custom " + VariableListener.class.getSimpleName() + "s (if you have any)"
-                    + " for shadow variables that are used by score constraints that could cause "
+                    + " for shadow variables that are used by score constraints that could cause"
                     + " the scoreDifference (" + scoreDifference + ").");
         }
     }
@@ -726,7 +741,7 @@ public abstract class AbstractScoreDirector<Solution_, Factory_ extends Abstract
         } else {
             analysis.append("  The ").append(workingLabel).append(" scoreDirector has ").append(excessMap.size())
                     .append(" ConstraintMatch(s) which are in excess (and should not be there):\n");
-            excessMap.values().stream().limit(CONSTRAINT_MATCH_DISPLAY_LIMIT)
+            excessMap.values().stream().sorted().limit(CONSTRAINT_MATCH_DISPLAY_LIMIT)
                     .forEach(constraintMatch -> analysis.append("    ").append(constraintMatch).append("\n"));
             if (excessMap.size() >= CONSTRAINT_MATCH_DISPLAY_LIMIT) {
                 analysis.append("    ... ").append(excessMap.size() - CONSTRAINT_MATCH_DISPLAY_LIMIT)
@@ -738,7 +753,7 @@ public abstract class AbstractScoreDirector<Solution_, Factory_ extends Abstract
         } else {
             analysis.append("  The ").append(workingLabel).append(" scoreDirector has ").append(missingMap.size())
                     .append(" ConstraintMatch(s) which are missing:\n");
-            missingMap.values().stream().limit(CONSTRAINT_MATCH_DISPLAY_LIMIT)
+            missingMap.values().stream().sorted().limit(CONSTRAINT_MATCH_DISPLAY_LIMIT)
                     .forEach(constraintMatch -> analysis.append("    ").append(constraintMatch).append("\n"));
             if (missingMap.size() >= CONSTRAINT_MATCH_DISPLAY_LIMIT) {
                 analysis.append("    ... ").append(missingMap.size() - CONSTRAINT_MATCH_DISPLAY_LIMIT)

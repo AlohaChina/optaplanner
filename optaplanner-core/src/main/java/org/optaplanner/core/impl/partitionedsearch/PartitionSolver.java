@@ -71,11 +71,7 @@ public class PartitionSolver<Solution_> extends AbstractSolver<Solution_> {
 
     @Override
     public long getTimeMillisSpent() {
-        Long endingSystemTimeMillis = solverScope.getEndingSystemTimeMillis();
-        if (endingSystemTimeMillis == null) {
-            endingSystemTimeMillis = System.currentTimeMillis();
-        }
-        return endingSystemTimeMillis - solverScope.getStartingSystemTimeMillis();
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -135,7 +131,6 @@ public class PartitionSolver<Solution_> extends AbstractSolver<Solution_> {
     @Override
     public void solvingEnded(DefaultSolverScope<Solution_> solverScope) {
         super.solvingEnded(solverScope);
-        solverScope.endingNow();
         solverScope.getScoreDirector().close();
         // TODO log?
     }

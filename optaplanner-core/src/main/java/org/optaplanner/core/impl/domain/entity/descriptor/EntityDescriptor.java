@@ -25,6 +25,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 
 import org.optaplanner.core.api.domain.entity.PlanningEntity;
 import org.optaplanner.core.api.domain.entity.PlanningPin;
@@ -71,6 +72,7 @@ public class EntityDescriptor<Solution_> {
     private final SolutionDescriptor<Solution_> solutionDescriptor;
 
     private final Class<?> entityClass;
+    private final Predicate<Object> isInitializedPredicate;
     // Only declared movable filter, excludes inherited and descending movable filters
     private SelectionFilter declaredMovableEntitySelectionFilter;
     private SelectionSorter decreasingDifficultySorter;
@@ -98,6 +100,16 @@ public class EntityDescriptor<Solution_> {
     public EntityDescriptor(SolutionDescriptor<Solution_> solutionDescriptor, Class<?> entityClass) {
         this.solutionDescriptor = solutionDescriptor;
         this.entityClass = entityClass;
+        isInitializedPredicate = this::isInitialized;
+    }
+
+    /**
+     * Using entityDescriptor::isInitialized directly breaks node sharing
+     * because it creates multiple instances of this {@link Predicate}.
+     * @return never null, always the same {@link Predicate} instance to {@link #isInitialized(Object)}
+     */
+    public Predicate<Object> getIsInitializedPredicate() {
+        return isInitializedPredicate;
     }
 
     // ************************************************************************
@@ -189,8 +201,14 @@ public class EntityDescriptor<Solution_> {
         Class<? extends Annotation> variableAnnotationClass = ConfigUtils.extractAnnotationClass(
                 member, VARIABLE_ANNOTATION_CLASSES);
         if (variableAnnotationClass != null) {
+            MemberAccessorFactory.MemberAccessorType memberAccessorType;
+            if (variableAnnotationClass.equals(CustomShadowVariable.class)) {
+                memberAccessorType = FIELD_OR_GETTER_METHOD;
+            } else {
+                memberAccessorType = FIELD_OR_GETTER_METHOD_WITH_SETTER;
+            }
             MemberAccessor memberAccessor = MemberAccessorFactory.buildMemberAccessor(
-                    member, FIELD_OR_GETTER_METHOD_WITH_SETTER, variableAnnotationClass);
+                    member, memberAccessorType, variableAnnotationClass);
             registerVariableAccessor(descriptorPolicy, variableAnnotationClass, memberAccessor);
         }
     }
@@ -464,6 +482,10 @@ public class EntityDescriptor<Solution_> {
                 + (Character.isUpperCase(variableName.charAt(0)) ? "Maybe the variableName (" + variableName + ") should start with a lowercase.\n" : "")
                 + "Maybe your planning entity's getter or field lacks a " + PlanningVariable.class.getSimpleName()
                 + " annotation or a shadow variable annotation.";
+    }
+
+    public boolean hasAnyGenuineVariables() {
+        return !effectiveGenuineVariableDescriptorMap.isEmpty();
     }
 
     public boolean hasAnyChainedGenuineVariables() {

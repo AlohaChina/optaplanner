@@ -25,6 +25,8 @@ import org.optaplanner.core.api.domain.solution.PlanningSolution;
 import org.optaplanner.core.api.score.FeasibilityScore;
 import org.optaplanner.core.api.score.Score;
 import org.optaplanner.core.api.score.constraint.ConstraintMatch;
+import org.optaplanner.core.api.score.constraint.ConstraintMatchTotal;
+import org.optaplanner.core.api.score.constraint.Indictment;
 import org.optaplanner.core.api.solver.event.BestSolutionChangedEvent;
 import org.optaplanner.core.api.solver.event.SolverEventListener;
 import org.optaplanner.core.impl.score.director.ScoreDirector;
@@ -55,7 +57,8 @@ public interface Solver<Solution_> {
      * {@link SolverEventListener#bestSolutionChanged(BestSolutionChangedEvent)} is often more appropriate).
      * <p>
      * This method is thread-safe.
-     * @return never null, but it can return the uninitialized {@link PlanningSolution} with a {@link Score} null.
+     * @return never null (unless {@link #solve(Object)} hasn't been called yet),
+     * but it can return the uninitialized {@link PlanningSolution} with a {@link Score} null.
      */
     Solution_ getBestSolution();
 
@@ -77,8 +80,8 @@ public interface Solver<Solution_> {
      * this can help diagnose the cause of that.
      * <p>
      * Do not parse this string.
-     * Instead, to provide this information in a UI or a service, use {@link #getScoreDirectorFactory()}
-     * to retrieve {@link ScoreDirector#getConstraintMatchTotals()} and {@link ScoreDirector#getIndictmentMap()}
+     * Instead, to provide this information in a UI or a service, use {@link SolverFactory#getScoreDirectorFactory()}
+     * to retrieve {@link ScoreDirector#getConstraintMatchTotalMap()} and {@link ScoreDirector#getIndictmentMap()}
      * and convert those into a domain specific API.
      * <p>
      * This method is thread-safe.
@@ -187,10 +190,14 @@ public interface Solver<Solution_> {
     void removeEventListener(SolverEventListener<Solution_> eventListener);
 
     /**
-     * Useful to reuse the {@link Score} calculation in a UI (or even to explain the {@link Score} in a UI).
-     *
+     * Useful to reuse the {@link Score} calculation (for example in a UI)
+     * and to explain the {@link Score} to the user
+     * with the {@link ConstraintMatchTotal} and {@link Indictment} API.
      * @return never null
+     * @deprecated in favor of {@link SolverFactory#getScoreDirectorFactory()}
+     * Will be removed in 8.0.
      */
+    @Deprecated
     ScoreDirectorFactory<Solution_> getScoreDirectorFactory();
 
 }

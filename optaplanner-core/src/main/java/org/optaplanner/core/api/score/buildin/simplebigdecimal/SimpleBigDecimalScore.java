@@ -31,6 +31,7 @@ import org.optaplanner.core.api.score.Score;
 public final class SimpleBigDecimalScore extends AbstractScore<SimpleBigDecimalScore> {
 
     public static final SimpleBigDecimalScore ZERO = new SimpleBigDecimalScore(0, BigDecimal.ZERO);
+    public static final SimpleBigDecimalScore ONE = new SimpleBigDecimalScore(0, BigDecimal.ONE);
 
     public static SimpleBigDecimalScore parseScore(String scoreString) {
         String[] scoreTokens = parseScoreTokens(SimpleBigDecimalScore.class, scoreString, "");
@@ -111,10 +112,10 @@ public final class SimpleBigDecimalScore extends AbstractScore<SimpleBigDecimalS
     }
 
     @Override
-    public SimpleBigDecimalScore add(SimpleBigDecimalScore augment) {
+    public SimpleBigDecimalScore add(SimpleBigDecimalScore addend) {
         return new SimpleBigDecimalScore(
-                initScore + augment.getInitScore(),
-                score.add(augment.getScore()));
+                initScore + addend.getInitScore(),
+                score.add(addend.getScore()));
     }
 
     @Override

@@ -1,5 +1,5 @@
 [[droolsScoreCalculation]]
-= Drools Score Calculation
+= Drools score calculation
 :doctype: book
 :imagesdir: ..
 :sectnums:
@@ -34,13 +34,13 @@ Every score constraint is written as one or more score rules.
 
 
 [[droolsScoreRulesConfiguration]]
-== Drools Score Rules Configuration
+== Drools score rules configuration
 
 There are several ways to define where your score rules live.
 
 
 [[droolsScoreCalculationScoreDrl]]
-=== A scoreDrl Resource on the Classpath
+=== A `scoreDrl` resource on the classpath
 
 This is the easy way.
 The score rules live in a DRL file which is provided as a classpath resource.
@@ -57,7 +57,7 @@ In a typical project (following the Maven directory structure), that DRL file wo
 
 [NOTE]
 ====
-The `<scoreDrl>` element expects a classpath resource, as defined by ``ClassLoader.getResource(String)``, it does not accept a ``File``, nor an URL, nor a webapp resource.
+The `<scoreDrl>` element expects a classpath resource, as defined by ``ClassLoader.getResource(String)``, it does not accept a ``File``, nor a URL, nor a webapp resource.
 See below to use a `File` instead.
 ====
 
@@ -77,11 +77,11 @@ Optionally, you can also set drools configuration properties:
 
 To enable property reactive by default, without a `@propertyReactive` on the domain classes,
 add `<drools.propertySpecific>ALWAYS</drools.propertySpecific>` in there.
-Otherwise Planner automatically changes the Drools default to `ALLOWED` so property reactive is not active by default.
+Otherwise OptaPlanner automatically changes the Drools default to `ALLOWED` so property reactive is not active by default.
 
 
 [[droolsScoreCalculationScoreDrlFile]]
-=== A scoreDrlFile
+=== A `scoreDrlFile` element
 
 To use `File` on the local file system, instead of a classpath resource, add the score rules DRL file in the solver configuration as a `<scoreDrlFile>` element:
 
@@ -103,7 +103,7 @@ Add multiple `<scoreDrlFile>` elements if the score rules are split across multi
 
 
 [[droolsScoreCalculationKsessionName]]
-=== A ksessionName in a Kjar from a Maven repository
+=== A `ksessionName` in a KJAR from a Maven repository
 
 This way allows you to use score rules defined by the Workbench or build a kjar and deploy it to the Execution Server.
 Both the score rules and the solver configuration are resources in a kjar.
@@ -148,13 +148,13 @@ If no `<ksessionName>` element is specified, the default ksession of the `kmodul
 
 
 [[implementingAScoreRule]]
-== Implementing a Score Rule
+== Implementing a score rule
 
 Here is an example of a score constraint implemented as a score rule in a DRL file:
 
 [source,options="nowrap"]
 ----
-rule "multipleQueensHorizontal"
+rule "Horizontal conflict"
     when
         Queen($id : id, row != null, $i : rowIndex)
         Queen(id > $id, rowIndex == $i)
@@ -168,7 +168,7 @@ The `(id > $id)` condition is needed to assure that for two queens A and B, it c
 
 image::DroolsScoreCalculation/unsolvedNQueens04.png[align="center"]
 
-In this solution the multipleQueensHorizontal score rule will fire for six queen couples: (A, B), (A, C), (A, D), (B, C), (B, D) and (C, D). Because none of the queens are on the same vertical or diagonal line, this solution will have a score of ``-6``.
+In this solution the `Horizontal conflict` score rule will fire for six queen couples: (A, B), (A, C), (A, D), (B, C), (B, D) and (C, D). Because none of the queens are on the same vertical or diagonal line, this solution will have a score of ``-6``.
 An optimal solution of four queens has a score of ``0``.
 
 [NOTE]
@@ -191,7 +191,7 @@ The ``scoreHolder``'s method uses it to do incremental score calculation correct
 
 
 [[weighingScoreRules]]
-== Weighing Score Rules
+== Weighing score rules
 
 If you've configured a <<constraintConfiguration,constraint configuration>>,
 the score level and score weight of each constraint are beautifully decoupled from the constraint implementation,
@@ -205,7 +205,7 @@ package org.optaplanner.examples.nqueens.solver;
 ...
 global SimpleScoreHolder scoreHolder;
 
-rule "multipleQueensHorizontal"
+rule "Horizontal conflict"
     when
         Queen($id : id, row != null, $i : rowIndex)
         Queen(id > $id, rowIndex == $i)
@@ -213,9 +213,9 @@ rule "multipleQueensHorizontal"
         scoreHolder.penalize(kcontext);
 end
 
-// multipleQueensVertical is obsolete because it is always 0
+// Vertical conflict is impossible due the model
 
-rule "multipleQueensAscendingDiagonal"
+rule "Ascending diagonal conflict"
     when
         Queen($id : id, row != null, $i : ascendingDiagonalIndex)
         Queen(id > $id, ascendingDiagonalIndex == $i)
@@ -223,7 +223,7 @@ rule "multipleQueensAscendingDiagonal"
         scoreHolder.penalize(kcontext);
 end
 
-rule "multipleQueensDescendingDiagonal"
+rule "Descending diagonal conflict"
     when
         Queen($id : id, row != null, $i : descendingDiagonalIndex)
         Queen(id > $id, descendingDiagonalIndex == $i)
@@ -300,4 +300,4 @@ end
 
 Notice how `addSoftConstraintMatch()` specifies that it's a soft constraint,
 and needs a negative number to penalize each match. Otherwise it would reward such matches.
-The parameter `($capacity - $studentSize)` always results into a negative number because `studentSize > $capacity`.
+The parameter `($capacity - $studentSize)` always results in a negative number because `studentSize > $capacity`.

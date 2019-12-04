@@ -1,5 +1,5 @@
 [[shadowVariable]]
-= Shadow Variable
+= Shadow variable
 :doctype: book
 :imagesdir: ..
 :sectnums:
@@ -21,7 +21,7 @@ When the customers for a vehicle change, the arrival time for each customer is a
 For more information, see the <<vehicleRoutingDomainModel,vehicle routing domain model>>.
 
 From a score calculation perspective, a shadow variable is like any other planning variable.
-From an optimization perspective, Planner effectively only optimizes the genuine variables (and mostly ignores the shadow variables): it just assures that when a genuine variable changes, any dependent shadow variables are changed accordingly.
+From an optimization perspective, OptaPlanner effectively only optimizes the genuine variables (and mostly ignores the shadow variables): it just assures that when a genuine variable changes, any dependent shadow variables are changed accordingly.
 
 [IMPORTANT]
 ====
@@ -37,7 +37,7 @@ There are several built-in shadow variables:
 
 
 [[bidirectionalVariable]]
-== Bi-directional Variable (Inverse Relation Shadow Variable)
+== Bi-directional variable (inverse relation shadow variable)
 
 Two variables are bi-directional if their instances always point to each other (unless one side points to `null` and the other side does not exist).
 So if A references B, then B references A.
@@ -77,7 +77,7 @@ public class CloudComputer {
 ----
 
 <<shadowVariableIntroduction,Register this class as a planning entity>>,
-otherwise Planner won't detect it and the shadow variable won't update.
+otherwise OptaPlanner won't detect it and the shadow variable won't update.
 The `sourceVariableName` property is the name of the genuine planning variable on the return type of the getter
 (so the name of the genuine planning variable on the _other_ side).
 
@@ -85,7 +85,7 @@ The `sourceVariableName` property is the name of the genuine planning variable o
 ====
 The shadow property, which is ``Collection`` (usually `List`, `Set` or `SortedSet`), can never be ``null``.
 If no genuine variable references that shadow entity, then it is an empty collection.
-Furthermore it must be a mutable `Collection` because once Planner starts initializing or changing genuine planning variables,
+Furthermore it must be a mutable `Collection` because once OptaPlanner starts initializing or changing genuine planning variables,
 it will add and remove elements to the ``Collection``s of those shadow variables accordingly.
 ====
 
@@ -123,18 +123,18 @@ public class Standstill {
 ----
 
 <<shadowVariableIntroduction,Register this class as a planning entity>>,
-otherwise Planner won't detect it and the shadow variable won't update.
+otherwise OptaPlanner won't detect it and the shadow variable won't update.
 
 [WARNING]
 ====
 The input planning problem of a `Solver` must not violate bi-directional relationships.
 If A points to B, then B must point to A.
-Planner will not violate that principle during planning, but the input must not violate it either.
+OptaPlanner will not violate that principle during planning, but the input must not violate it either.
 ====
 
 
 [[anchorShadowVariable]]
-== Anchor Shadow Variable
+== Anchor shadow variable
 
 An anchor shadow variable is the anchor of <<chainedPlanningVariable,a chained variable>>.
 
@@ -159,7 +159,7 @@ The `sourceVariableName` property is the name of the chained variable on the sam
 [[customVariableListener]]
 == Custom `VariableListener`
 
-To update a shadow variable, Planner uses a ``VariableListener``.
+To update a shadow variable, OptaPlanner uses a ``VariableListener``.
 To define a custom shadow variable, write a custom ``VariableListener``:
 implement the interface and annotate it on the shadow variable that needs to change.
 
@@ -177,17 +177,15 @@ implement the interface and annotate it on the shadow variable that needs to cha
     }
 ----
 
-<<shadowVariableIntroduction,Register this class as a planning entity>> if it hasn't already.
-The `variableName` is the (genuine or shadow) variable that triggers changes to this shadow variable.
+<<shadowVariableIntroduction,Register this class as a planning entity>> if it isn't already.
+Otherwise OptaPlanner won't detect it and the shadow variable won't update.
 
-[NOTE]
-====
+The source's `variableName` is the (genuine or shadow) variable that triggers changes to this shadow variable.
 If the source variable's class is different than the shadow variable's class,
 also specify the `entityClass` in the ``@PlanningVariableReference`` annotation
-and make sure the shadow variable's class is <<shadowVariableIntroduction,registered as a planning entity>>,
-otherwise Planner won't detect it and the shadow variable won't update.
-====
+and make sure the shadow variable's class is <<shadowVariableIntroduction,registered as a planning entity>>.
 
+Implement the `VariableListener` interface.
 For example, the `VehicleUpdatingVariableListener` assures that every `Customer` in a chain has the same ``Vehicle``, namely the chain's anchor.
 
 [source,java,options="nowrap"]
@@ -227,7 +225,7 @@ It must never change a genuine planning variable or a problem fact.
 
 [WARNING]
 ====
-Any change of a shadow variable must be told to the ``ScoreDirector``.
+Any change of a shadow variable must be told to the ``ScoreDirector`` with `before*()` and `after*()` methods.
 ====
 
 If one `VariableListener` changes two shadow variables (because having two separate ``VariableListener``s would be inefficient), then annotate only the first shadow variable with the `variableListenerClass` and let the other shadow variable(s) reference the first shadow variable:
@@ -251,6 +249,20 @@ If one `VariableListener` changes two shadow variables (because having two separ
     }
 ----
 
+A shadow variable's value (just like a genuine variable's value)
+isn't <<cloningASolution,planning cloned>> by the default solution cloner,
+unless it can easily prove that it must be planning cloned (for example the property type is a planning entity class).
+Specifically shadow variables of type `List`, `Set`, `Collection` or `Map` usually need to be planning cloned
+to avoid corrupting the best solution when the working solution changes.
+To planning clone a shadow variable, add `@DeepPlanningClone` annotation:
+
+[source,java,options="nowrap"]
+----
+    @DeepPlanningClone
+    @CustomShadowVariable(...)
+    private Map<LocalDateTime, Integer> usedManHoursPerDayMap;
+----
+
 
 [[variableListenerTriggeringOrder]]
 == VariableListener triggering order
@@ -266,15 +278,15 @@ image::ShadowVariable/shadowVariableOrder.png[align="center"]
 In the example above, D could have also been ordered after E (or F) because there is no direct or indirect dependency between D and E (or F).
 ====
 
-Planner guarantees that:
+OptaPlanner guarantees that:
 
 * The first ``VariableListener``'s `after*()` methods trigger _after_ the last genuine variable has changed. Therefore the genuine variables (A and B in the example above) are guaranteed to be in a consistent state across all its instances (with values A1, A2 and B1 in the example above) because the entire `Move` has been applied.
-* The second ``VariableListener``'s `after*()` methods trigger _after_ the last first shadow variable has changed. Therefore the first shadow variable (C in the example above) are guaranteed to be in consistent state across all its instances (with values C1 and C2 in the example above). And of course the genuine variables too.
+* The second ``VariableListener``'s `after*()` methods trigger _after_ the last first shadow variable has changed. Therefore the first shadow variable (C in the example above) are guaranteed to be in a consistent state across all its instances (with values C1 and C2 in the example above). And of course the genuine variables too.
 * And so forth.
 
-Planner does not guarantee the order in which the `after*()` methods are called for the _same_``VariableListener`` with different parameters (such as A1 and A2 in the example above), although they are likely to be in the order in which they were affected.
+OptaPlanner does not guarantee the order in which the `after*()` methods are called for the _same_``VariableListener`` with different parameters (such as A1 and A2 in the example above), although they are likely to be in the order in which they were affected.
 
-By default, Planner does not guarantee that the events are unique.
+By default, OptaPlanner does not guarantee that the events are unique.
 For example, if a shadow variable on an entity is changed twice in the same move (for example by two different genuine variables), then that will cause the same event twice on the ``VariableListener``s that are listening to that original shadow variable.
 To avoid dealing with that complexity, overwrite the method `requiresUniqueEntityEvents()` to receive unique events at the cost of a small performance penalty:
 
@@ -290,4 +302,3 @@ public class StartTimeUpdatingVariableListener implements VariableListener<Task>
     ...
 }
 ----
-

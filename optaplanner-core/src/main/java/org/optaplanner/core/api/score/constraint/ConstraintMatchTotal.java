@@ -23,14 +23,25 @@ import java.util.Set;
 
 import org.optaplanner.core.api.domain.constraintweight.ConstraintConfiguration;
 import org.optaplanner.core.api.domain.constraintweight.ConstraintWeight;
+import org.optaplanner.core.api.domain.solution.PlanningSolution;
 import org.optaplanner.core.api.domain.variable.PlanningVariable;
 import org.optaplanner.core.api.score.Score;
 import org.optaplanner.core.impl.score.director.ScoreDirector;
 
 /**
- * Retrievable from {@link ScoreDirector#getConstraintMatchTotals()}.
+ * Explains the {@link Score} of a {@link PlanningSolution}, from the opposite side than {@link Indictment}.
+ * Retrievable from {@link ScoreDirector#getConstraintMatchTotalMap()}.
  */
 public final class ConstraintMatchTotal implements Serializable, Comparable<ConstraintMatchTotal> {
+
+    /**
+     * @param constraintPackage never null
+     * @param constraintName never null
+     * @return never null
+     */
+    public static String composeConstraintId(String constraintPackage, String constraintName) {
+        return constraintPackage + "/" + constraintName;
+    }
 
     private final String constraintPackage;
     private final String constraintName;
@@ -148,8 +159,12 @@ public final class ConstraintMatchTotal implements Serializable, Comparable<Cons
     // Infrastructure methods
     // ************************************************************************
 
+    /**
+     * To create a constraintId, use {@link #composeConstraintId(String, String)}.
+     * @return never null
+     */
     public String getConstraintId() {
-        return constraintPackage + "/" + constraintName;
+        return composeConstraintId(constraintPackage, constraintName);
     }
 
     @Override
@@ -185,7 +200,7 @@ public final class ConstraintMatchTotal implements Serializable, Comparable<Cons
 
     @Override
     public String toString() {
-        return getConstraintId() + "=" + getScore();
+        return getConstraintId() + "=" + score;
     }
 
 }

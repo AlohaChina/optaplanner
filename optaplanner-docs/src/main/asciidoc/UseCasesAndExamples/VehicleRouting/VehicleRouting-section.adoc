@@ -1,10 +1,10 @@
 [[vehicleRouting]]
-= Vehicle Routing
+= Vehicle routing
 :imagesdir: ../..
 
 
 [[vehicleRoutingProblemDescription]]
-== Problem Description
+== Problem description
 
 Using a fleet of vehicles, pick up the objects of each customer and bring them to the depot.
 Each vehicle can service multiple customers, but it has a limited capacity.
@@ -30,13 +30,13 @@ The capacitated vehicle routing problem (CVRP) and its timewindowed variant (CVR
 
 
 [[vehicleRoutingValueProposition]]
-== Value Proposition
+== Value proposition
 
 image::UseCasesAndExamples/VehicleRouting/vehicleRoutingValueProposition.png[align="center"]
 
 
 [[vehicleRoutingProblemSize]]
-== Problem Size
+== Problem size
 
 CVRP instances (without time windows):
 
@@ -156,7 +156,7 @@ Homberger_1000_RC210_1 has 1 depots, 250 vehicles and 1000 customers with a sear
 
 
 [[vehicleRoutingDomainModel]]
-== Domain Model
+== Domain model
 
 image::UseCasesAndExamples/VehicleRouting/vehicleRoutingClassDiagram.png[align="center"]
 
@@ -165,7 +165,7 @@ This allows it to express its constraints more naturally, because properties suc
 
 
 [[roadDistancesInsteadOfAirDistances]]
-=== Road Distances Instead of Air Distances
+=== Road distances instead of air distances
 
 In the real world, vehicles cannot follow a straight line from location to location: they have to use roads and highways.
 From a business point of view, this matters a lot:
@@ -177,7 +177,7 @@ There are several technologies available to precalculate road costs, such as htt
 
 image::UseCasesAndExamples/VehicleRouting/integrationWithRealMaps.png[align="center"]
 
-There are also several technologies to render it, such as http://leafletjs.com[Leaflet] and https://developers.google.com/maps/[Google Maps for developers]: the `optaplanner-webexamples-*.war` has an example which demonstrates such rendering:
+There are also several technologies to render it, such as http://leafletjs.com[Leaflet] and https://developers.google.com/maps/[Google Maps for developers]. The https://github.com/kiegroup/optaweb-vehicle-routing[OptaWeb Vehicle Routing project] has an example which demonstrates such rendering:
 
 image::UseCasesAndExamples/VehicleRouting/vehicleRoutingLeafletAndGoogleMaps.png[align="center"]
 
@@ -185,9 +185,9 @@ It is even possible to render the actual road routes with GraphHopper or Google 
 
 image::UseCasesAndExamples/VehicleRouting/vehicleRoutingGoogleMapsDirections.png[align="center"]
 
-Take special care that the road costs between two points use the same optimization criteria as the one used in Planner.
+Take special care that the road costs between two points use the same optimization criteria as the one used in OptaPlanner.
 For example, GraphHopper etc will by default return the fastest route, not the shortest route.
-Don't use the km (or miles) distances of the fastest GPS routes to optimize the shortest trip in Planner: this leads to a suboptimal solution as shown below:
+Don't use the km (or miles) distances of the fastest GPS routes to optimize the shortest trip in OptaPlanner: this leads to a suboptimal solution as shown below:
 
 image::UseCasesAndExamples/VehicleRouting/roadDistanceTriangleInequality.png[align="center"]
 

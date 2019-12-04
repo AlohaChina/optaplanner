@@ -27,6 +27,10 @@ import org.optaplanner.core.impl.score.ScoreUtils;
 
 public class StatisticUtils {
 
+    private StatisticUtils() {
+        // This class is not instantiable
+    }
+
     /**
      * Calculates standard deviation of {@link BenchmarkResult#getAverageScore()}s from {@code averageScore}.
      * @param averageScore not null
@@ -35,7 +39,7 @@ public class StatisticUtils {
     public static double[] determineStandardDeviationDoubles(
             List<? extends BenchmarkResult> benchmarkResultList, Score averageScore, int successCount) {
         if (successCount <= 0) {
-            return null;
+            return new double[0];
         }
         if (averageScore == null) {
             throw new IllegalArgumentException("Average score (" + averageScore + ") cannot be null.");
@@ -55,6 +59,11 @@ public class StatisticUtils {
                 }
             }
         }
+
+        if (differenceSquaredTotalDoubles == null) { // no successful benchmarks
+            return new double[0];
+        }
+
         double[] standardDeviationDoubles = new double[differenceSquaredTotalDoubles.length];
         for (int i = 0; i < differenceSquaredTotalDoubles.length; i++) {
             standardDeviationDoubles[i] = Math.pow(differenceSquaredTotalDoubles[i] / successCount, 0.5);

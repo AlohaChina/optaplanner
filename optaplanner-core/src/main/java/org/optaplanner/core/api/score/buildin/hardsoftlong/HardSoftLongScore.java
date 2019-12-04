@@ -32,6 +32,8 @@ public final class HardSoftLongScore extends AbstractScore<HardSoftLongScore>
         implements FeasibilityScore<HardSoftLongScore> {
 
     public static final HardSoftLongScore ZERO = new HardSoftLongScore(0, 0L, 0L);
+    public static final HardSoftLongScore ONE_HARD = new HardSoftLongScore(0, 1L, 0L);
+    public static final HardSoftLongScore ONE_SOFT = new HardSoftLongScore(0, 0L, 1L);
     private static final String HARD_LABEL = "hard";
     private static final String SOFT_LABEL = "soft";
 
@@ -143,11 +145,11 @@ public final class HardSoftLongScore extends AbstractScore<HardSoftLongScore>
     }
 
     @Override
-    public HardSoftLongScore add(HardSoftLongScore augment) {
+    public HardSoftLongScore add(HardSoftLongScore addend) {
         return new HardSoftLongScore(
-                initScore + augment.getInitScore(),
-                hardScore + augment.getHardScore(),
-                softScore + augment.getSoftScore());
+                initScore + addend.getInitScore(),
+                hardScore + addend.getHardScore(),
+                softScore + addend.getSoftScore());
     }
 
     @Override

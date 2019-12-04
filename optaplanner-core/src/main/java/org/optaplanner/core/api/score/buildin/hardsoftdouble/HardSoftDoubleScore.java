@@ -37,6 +37,8 @@ public final class HardSoftDoubleScore extends AbstractScore<HardSoftDoubleScore
         implements FeasibilityScore<HardSoftDoubleScore> {
 
     public static final HardSoftDoubleScore ZERO = new HardSoftDoubleScore(0, 0.0, 0.0);
+    public static final HardSoftDoubleScore ONE_HARD = new HardSoftDoubleScore(0, 1.0, 0.0);
+    public static final HardSoftDoubleScore ONE_SOFT = new HardSoftDoubleScore(0, 0.0, 1.0);
     private static final String HARD_LABEL = "hard";
     private static final String SOFT_LABEL = "soft";
 
@@ -148,11 +150,11 @@ public final class HardSoftDoubleScore extends AbstractScore<HardSoftDoubleScore
     }
 
     @Override
-    public HardSoftDoubleScore add(HardSoftDoubleScore augment) {
+    public HardSoftDoubleScore add(HardSoftDoubleScore addend) {
         return new HardSoftDoubleScore(
-                initScore + augment.getInitScore(),
-                hardScore + augment.getHardScore(),
-                softScore + augment.getSoftScore());
+                initScore + addend.getInitScore(),
+                hardScore + addend.getHardScore(),
+                softScore + addend.getSoftScore());
     }
 
     @Override

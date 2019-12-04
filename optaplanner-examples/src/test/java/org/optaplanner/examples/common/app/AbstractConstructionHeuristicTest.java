@@ -63,13 +63,12 @@ public abstract class AbstractConstructionHeuristicTest<Solution_> extends Abstr
 
     @Override
     protected SolverFactory<Solution_> buildSolverFactory() {
-        SolverFactory<Solution_> solverFactory = SolverFactory.createFromXmlResource(commonApp.getSolverConfig());
-        SolverConfig solverConfig = solverFactory.getSolverConfig();
+        SolverConfig solverConfig = SolverConfig.createFromXmlResource(commonApp.getSolverConfigResource());
         solverConfig.setTerminationConfig(new TerminationConfig());
         ConstructionHeuristicPhaseConfig constructionHeuristicPhaseConfig = new ConstructionHeuristicPhaseConfig();
         constructionHeuristicPhaseConfig.setConstructionHeuristicType(constructionHeuristicType);
         solverConfig.setPhaseConfigList(Arrays.asList(constructionHeuristicPhaseConfig));
-        return solverFactory;
+        return SolverFactory.create(solverConfig);
     }
 
 }

@@ -1,10 +1,10 @@
 [[projectJobScheduling]]
-= Project Job Scheduling
+= Project job scheduling
 :imagesdir: ../..
 
 
 [[projectJobSchedulingProblemDescription]]
-== Problem Description
+== Problem description
 
 Schedule all jobs in time and execution mode to minimize project delays.
 Each job is part of a project.
@@ -18,7 +18,7 @@ Hard constraints:
 * Job precedence: a job can only start when all its predecessor jobs are finished.
 * Resource capacity: do not use more resources than available.
 ** Resources are local (shared between jobs of the same project) or global (shared between all jobs)
-** Resource are renewable (capacity available per day) or nonrenewable (capacity available for all days)
+** Resources are renewable (capacity available per day) or nonrenewable (capacity available for all days)
 
 Medium constraints:
 
@@ -32,7 +32,7 @@ The problem is defined by http://gent.cs.kuleuven.be/mista2013challenge/[the MIS
 
 
 [[projectJobSchedulingProblemSize]]
-== Problem Size
+== Problem size
 
 [source,options="nowrap"]
 ----
@@ -57,4 +57,3 @@ Schedule B-8  has 20 projects, 440 jobs, 1240 execution modes, 42 resources and 
 Schedule B-9  has 20 projects, 640 jobs, 1840 execution modes, 61 resources and 5940 resource requirements.
 Schedule B-10 has 20 projects, 460 jobs, 1300 execution modes, 42 resources and 4260 resource requirements.
 ----
-

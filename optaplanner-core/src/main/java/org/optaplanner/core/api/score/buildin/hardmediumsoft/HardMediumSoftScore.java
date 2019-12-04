@@ -34,6 +34,9 @@ public final class HardMediumSoftScore extends AbstractScore<HardMediumSoftScore
         implements FeasibilityScore<HardMediumSoftScore> {
 
     public static final HardMediumSoftScore ZERO = new HardMediumSoftScore(0, 0, 0, 0);
+    public static final HardMediumSoftScore ONE_HARD = new HardMediumSoftScore(0, 1, 0, 0);
+    public static final HardMediumSoftScore ONE_MEDIUM = new HardMediumSoftScore(0, 0, 1, 0);
+    public static final HardMediumSoftScore ONE_SOFT = new HardMediumSoftScore(0, 0, 0, 1);
     private static final String HARD_LABEL = "hard";
     private static final String MEDIUM_LABEL = "medium";
     private static final String SOFT_LABEL = "soft";
@@ -171,12 +174,12 @@ public final class HardMediumSoftScore extends AbstractScore<HardMediumSoftScore
     }
 
     @Override
-    public HardMediumSoftScore add(HardMediumSoftScore augment) {
+    public HardMediumSoftScore add(HardMediumSoftScore addend) {
         return new HardMediumSoftScore(
-                initScore + augment.getInitScore(),
-                hardScore + augment.getHardScore(),
-                mediumScore + augment.getMediumScore(),
-                softScore + augment.getSoftScore());
+                initScore + addend.getInitScore(),
+                hardScore + addend.getHardScore(),
+                mediumScore + addend.getMediumScore(),
+                softScore + addend.getSoftScore());
     }
 
     @Override
