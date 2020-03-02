@@ -388,7 +388,7 @@ public class ValueSelectorConfig extends SelectorConfig<ValueSelectorConfig> {
         if (minimumCacheType == SelectionCacheType.SOLVER) {
             // TODO Solver cached entities are not compatible with DroolsScoreCalculator and IncrementalScoreDirector
             // because between phases the entities get cloned and the KieSession/Maps contains those clones afterwards
-            // https://issues.jboss.org/browse/PLANNER-54
+            // https://issues.redhat.com/browse/PLANNER-54
             throw new IllegalArgumentException("The minimumCacheType (" + minimumCacheType
                     + ") is not yet supported. Please use " + SelectionCacheType.PHASE + " instead.");
         }
@@ -661,8 +661,7 @@ public class ValueSelectorConfig extends SelectorConfig<ValueSelectorConfig> {
     }
 
     @Override
-    public void inherit(ValueSelectorConfig inheritedConfig) {
-        super.inherit(inheritedConfig);
+    public ValueSelectorConfig inherit(ValueSelectorConfig inheritedConfig) {
         id = ConfigUtils.inheritOverwritableProperty(id, inheritedConfig.getId());
         mimicSelectorRef = ConfigUtils.inheritOverwritableProperty(mimicSelectorRef,
                 inheritedConfig.getMimicSelectorRef());
@@ -686,6 +685,12 @@ public class ValueSelectorConfig extends SelectorConfig<ValueSelectorConfig> {
                 probabilityWeightFactoryClass, inheritedConfig.getProbabilityWeightFactoryClass());
         selectedCountLimit = ConfigUtils.inheritOverwritableProperty(
                 selectedCountLimit, inheritedConfig.getSelectedCountLimit());
+        return this;
+    }
+
+    @Override
+    public ValueSelectorConfig copyConfig() {
+        return new ValueSelectorConfig().inherit(this);
     }
 
     @Override

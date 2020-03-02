@@ -6,9 +6,7 @@
   <parent>
     <groupId>org.kie</groupId>
     <artifactId>kie-parent</artifactId>
-    <version>7.31.0-SNAPSHOT</version>
-    <!-- relativePath causes out-of-date problems on hudson slaves -->
-    <!--<relativePath>../droolsjbpm-build-bootstrap/pom.xml</relativePath>-->
+    <version>7.33.0.Final</version>
   </parent>
 
   <groupId>org.optaplanner</groupId>
@@ -55,7 +53,7 @@
   </scm>
   <issueManagement>
     <system>jira</system>
-    <url>https://issues.jboss.org/browse/PLANNER</url>
+    <url>https://issues.redhat.com/browse/PLANNER</url>
   </issueManagement>
 
   <modules>

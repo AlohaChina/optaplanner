@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Red Hat, Inc. and/or its affiliates.
+ * Copyright 2020 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -84,7 +84,8 @@ public final class DroolsScoringQuadConstraintStream<Solution_, A, B, C, D>
 
     @Override
     public List<RuleItemBuilder<?>> createRuleItemBuilders(Global<? extends AbstractScoreHolder<?>> scoreHolderGlobal) {
-        DroolsQuadCondition<A, B, C, D> condition = parent.getCondition();
+        DroolsQuadCondition<A, B, C, D, ?> condition =
+                ((DroolsAbstractQuadConstraintStream<Solution_, A, B, C, D>) parent).getCondition();
         if (intMatchWeigher != null) {
             return condition.completeWithScoring(scoreHolderGlobal, intMatchWeigher);
         } else if (longMatchWeigher != null) {
@@ -99,8 +100,14 @@ public final class DroolsScoringQuadConstraintStream<Solution_, A, B, C, D>
     }
 
     @Override
-    public DroolsQuadCondition<A, B, C, D> getCondition() {
+    public DroolsQuadCondition<A, B, C, D, ?> getCondition() {
         throw new UnsupportedOperationException("Scoring stream does not have its own QuadCondition.");
+    }
+
+    @Override
+    public Class[] getExpectedJustificationTypes() {
+        return ((DroolsAbstractQuadConstraintStream<Solution_, A, B, C, D>) parent).getCondition()
+                .getExpectedJustificationTypes();
     }
 
     @Override

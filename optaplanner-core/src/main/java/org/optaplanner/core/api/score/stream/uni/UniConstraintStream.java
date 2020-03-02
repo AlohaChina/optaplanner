@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Red Hat, Inc. and/or its affiliates.
+ * Copyright 2020 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,21 +17,28 @@
 package org.optaplanner.core.api.score.stream.uni;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.ToIntFunction;
 import java.util.function.ToLongFunction;
+import java.util.stream.Stream;
 
+import org.apache.commons.lang3.ObjectUtils;
 import org.optaplanner.core.api.domain.constraintweight.ConstraintWeight;
 import org.optaplanner.core.api.score.Score;
 import org.optaplanner.core.api.score.constraint.ConstraintMatchTotal;
 import org.optaplanner.core.api.score.stream.Constraint;
 import org.optaplanner.core.api.score.stream.ConstraintStream;
+import org.optaplanner.core.api.score.stream.Joiners;
 import org.optaplanner.core.api.score.stream.bi.BiConstraintStream;
 import org.optaplanner.core.api.score.stream.bi.BiJoiner;
+import org.optaplanner.core.api.score.stream.quad.QuadConstraintStream;
+import org.optaplanner.core.api.score.stream.tri.TriConstraintStream;
 import org.optaplanner.core.impl.score.stream.bi.AbstractBiJoiner;
+import org.optaplanner.core.impl.score.stream.bi.FilteringBiJoiner;
 import org.optaplanner.core.impl.score.stream.bi.NoneBiJoiner;
 
 /**
@@ -66,7 +73,7 @@ public interface UniConstraintStream<A> extends ConstraintStream {
      * so it creates and checks every combination of A and B.
      * @param otherStream never null
      * @param <B> the type of the second matched fact
-     * @return a stream that matches every combination of A and B
+     * @return never null, a stream that matches every combination of A and B
      */
     default <B> BiConstraintStream<A, B> join(UniConstraintStream<B> otherStream) {
         return join(otherStream, new NoneBiJoiner<>());
@@ -83,7 +90,7 @@ public interface UniConstraintStream<A> extends ConstraintStream {
      * @param otherStream never null
      * @param joiner never null
      * @param <B> the type of the second matched fact
-     * @return a stream that matches every combination of A and B for which the {@link BiJoiner} is true
+     * @return never null, a stream that matches every combination of A and B for which the {@link BiJoiner} is true
      */
     <B> BiConstraintStream<A, B> join(UniConstraintStream<B> otherStream, BiJoiner<A, B> joiner);
 
@@ -98,7 +105,7 @@ public interface UniConstraintStream<A> extends ConstraintStream {
      * This method is syntactic sugar for {@link #join(UniConstraintStream)}.
      * @param otherClass never null
      * @param <B> the type of the second matched fact
-     * @return a stream that matches every combination of A and B
+     * @return never null, a stream that matches every combination of A and B
      */
     default <B> BiConstraintStream<A, B> join(Class<B> otherClass) {
         return join(otherClass, new NoneBiJoiner<>());
@@ -119,55 +126,62 @@ public interface UniConstraintStream<A> extends ConstraintStream {
      * @param otherClass never null
      * @param joiner never null
      * @param <B> the type of the second matched fact
-     * @return a stream that matches every combination of A and B for which the {@link BiJoiner} is true
+     * @return never null, a stream that matches every combination of A and B for which the {@link BiJoiner} is true
      */
     default <B> BiConstraintStream<A, B> join(Class<B> otherClass, BiJoiner<A, B> joiner) {
         return join(getConstraintFactory().from(otherClass), joiner);
     }
 
     /**
-     * As defined by {@link #join(Class, BiJoiner)}.
+     * As defined by {@link #join(Class, BiJoiner)}. For performance reasons, indexing joiners must be placed before
+     * filtering joiners.
      * @param otherClass never null
      * @param joiner1 never null
      * @param joiner2 never null
      * @param <B> the type of the second matched fact
-     * @return a stream that matches every combination of A and B for which all the {@link BiJoiner joiners} are true
+     * @return never null, a stream that matches every combination of A and B for which all the {@link BiJoiner joiners}
+     * are true
      */
     default <B> BiConstraintStream<A, B> join(Class<B> otherClass, BiJoiner<A, B> joiner1, BiJoiner<A, B> joiner2) {
-        return join(otherClass, AbstractBiJoiner.merge(joiner1, joiner2));
+        return join(otherClass, new BiJoiner[] {joiner1, joiner2});
     }
 
     /**
-     * As defined by {@link #join(Class, BiJoiner)}.
+     * As defined by {@link #join(Class, BiJoiner)}. For performance reasons, indexing joiners must be placed before
+     * filtering joiners.
      * @param otherClass never null
      * @param joiner1 never null
      * @param joiner2 never null
      * @param joiner3 never null
      * @param <B> the type of the second matched fact
-     * @return a stream that matches every combination of A and B for which all the {@link BiJoiner joiners} are true
+     * @return never null, a stream that matches every combination of A and B for which all the {@link BiJoiner joiners}
+     * are true
      */
     default <B> BiConstraintStream<A, B> join(Class<B> otherClass, BiJoiner<A, B> joiner1, BiJoiner<A, B> joiner2,
             BiJoiner<A, B> joiner3) {
-        return join(otherClass, AbstractBiJoiner.merge(joiner1, joiner2, joiner3));
+        return join(otherClass, new BiJoiner[] {joiner1, joiner2, joiner3});
     }
 
     /**
-     * As defined by {@link #join(Class, BiJoiner)}.
+     * As defined by {@link #join(Class, BiJoiner)}. For performance reasons, indexing joiners must be placed before
+     * filtering joiners.
      * @param otherClass never null
      * @param joiner1 never null
      * @param joiner2 never null
      * @param joiner3 never null
      * @param joiner4 never null
      * @param <B> the type of the second matched fact
-     * @return a stream that matches every combination of A and B for which all the {@link BiJoiner joiners} are true
+     * @return never null, a stream that matches every combination of A and B for which all the {@link BiJoiner joiners}
+     * are true
      */
     default <B> BiConstraintStream<A, B> join(Class<B> otherClass, BiJoiner<A, B> joiner1, BiJoiner<A, B> joiner2,
             BiJoiner<A, B> joiner3, BiJoiner<A, B> joiner4) {
-        return join(otherClass, AbstractBiJoiner.merge(joiner1, joiner2, joiner3, joiner4));
+        return join(otherClass, new BiJoiner[] {joiner1, joiner2, joiner3, joiner4});
     }
 
     /**
-     * As defined by {@link #join(Class, BiJoiner)}.
+     * As defined by {@link #join(Class, BiJoiner)}. If multiple {@link BiJoiner}s are provided, for performance
+     * reasons, the indexing joiners must be placed before filtering joiners.
      * <p>
      * This method causes <i>Unchecked generics array creation for varargs parameter</i> warnings,
      * but we can't fix it with a {@link SafeVarargs} annotation because it's an interface method.
@@ -175,10 +189,374 @@ public interface UniConstraintStream<A> extends ConstraintStream {
      * @param otherClass never null
      * @param joiners never null
      * @param <B> the type of the second matched fact
-     * @return a stream that matches every combination of A and B for which all the {@link BiJoiner joiners} are true
+     * @return never null, a stream that matches every combination of A and B for which all the {@link BiJoiner joiners}
+     * are true
      */
     default <B> BiConstraintStream<A, B> join(Class<B> otherClass, BiJoiner<A, B>... joiners) {
-        return join(otherClass, AbstractBiJoiner.merge(joiners));
+        int joinerCount = joiners.length;
+        int indexOfFirstFilter = -1;
+        // Make sure all indexing joiners, if any, come before filtering joiners. This is necessary for performance.
+        for (int i = 0; i < joinerCount; i++) {
+            BiJoiner<A, B> joiner = joiners[i];
+            if (indexOfFirstFilter >= 0) {
+                if (!(joiner instanceof FilteringBiJoiner)) {
+                    throw new IllegalStateException("Indexing joiner (" + joiner + ") must not follow " +
+                            "a filtering joiner (" + joiners[indexOfFirstFilter] + ").\n" +
+                            "Maybe reorder the joiners such that filtering() joiners are later in the parameter list.");
+                }
+            } else {
+                if (joiner instanceof FilteringBiJoiner) { // From now on, we only allow filtering joiners.
+                    indexOfFirstFilter = i;
+                }
+            }
+        }
+        if (indexOfFirstFilter < 0) { // Only found indexing joiners.
+            return join(otherClass, AbstractBiJoiner.merge(joiners));
+        }
+        // Assemble the join stream that may be followed by filter stream.
+        BiConstraintStream<A, B> joined = indexOfFirstFilter == 0 ?
+                join(otherClass) :
+                join(otherClass, Arrays.copyOf(joiners, indexOfFirstFilter));
+        int filterCount = joinerCount - indexOfFirstFilter;
+        if (filterCount == 0) { // No filters, return the original join stream.
+            return joined;
+        }
+        // We merge all filters into one, so that we don't pay the penalty for lack of indexing more than once.
+        FilteringBiJoiner<A, B> filteringJoiner = (FilteringBiJoiner<A, B>) joiners[indexOfFirstFilter];
+        BiPredicate<A, B> resultingFilter = filteringJoiner.getFilter();
+        for (int i = indexOfFirstFilter + 1; i < joinerCount; i++) {
+            FilteringBiJoiner<A, B> anoterFilteringJoiner = (FilteringBiJoiner<A, B>) joiners[i];
+            resultingFilter = resultingFilter.and(anoterFilteringJoiner.getFilter());
+        }
+        return joined.filter(resultingFilter);
+    }
+
+    // ************************************************************************
+    // If (not) exists
+    // ************************************************************************
+
+    /**
+     * Create a new {@link UniConstraintStream} for every A where B exists for which the {@link BiJoiner} is true
+     * (for the properties it extracts from both facts).
+     * <p>
+     * This method has overloaded methods with multiple {@link BiJoiner} parameters.
+     * @param otherClass never null
+     * @param joiner never null
+     * @param <B> the type of the second matched fact
+     * @return never null, a stream that matches every A where B exists for which the {@link BiJoiner} is true
+     */
+    default <B> UniConstraintStream<A> ifExists(Class<B> otherClass, BiJoiner<A, B> joiner) {
+        return ifExists(otherClass, new BiJoiner[] { joiner });
+    }
+
+    /**
+     * As defined by {@link #ifExists(Class, BiJoiner)}. For performance reasons, indexing joiners must be placed before
+     * filtering joiners.
+     * @param otherClass never null
+     * @param joiner1 never null
+     * @param joiner2 never null
+     * @param <B> the type of the second matched fact
+     * @return never null, a stream that matches every A where B exists for which all the {@link BiJoiner}s are true
+     */
+    default <B> UniConstraintStream<A> ifExists(Class<B> otherClass, BiJoiner<A, B> joiner1, BiJoiner<A, B> joiner2) {
+        return ifExists(otherClass, new BiJoiner[] {joiner1, joiner2});
+    }
+
+    /**
+     * As defined by {@link #ifExists(Class, BiJoiner)}. For performance reasons, indexing joiners must be placed before
+     * filtering joiners.
+     * @param otherClass never null
+     * @param joiner1 never null
+     * @param joiner2 never null
+     * @param joiner3 never null
+     * @param <B> the type of the second matched fact
+     * @return never null, a stream that matches every A where B exists for which all the {@link BiJoiner}s are true
+     */
+    default <B> UniConstraintStream<A> ifExists(Class<B> otherClass, BiJoiner<A, B> joiner1, BiJoiner<A, B> joiner2,
+            BiJoiner<A, B> joiner3) {
+        return ifExists(otherClass, new BiJoiner[] {joiner1, joiner2, joiner3});
+    }
+
+    /**
+     * As defined by {@link #ifExists(Class, BiJoiner)}. For performance reasons, indexing joiners must be placed before
+     * filtering joiners.
+     * @param otherClass never null
+     * @param joiner1 never null
+     * @param joiner2 never null
+     * @param joiner3 never null
+     * @param joiner4 never null
+     * @param <B> the type of the second matched fact
+     * @return never null, a stream that matches every A where B exists for which all the {@link BiJoiner}s are true
+     */
+    default <B> UniConstraintStream<A> ifExists(Class<B> otherClass, BiJoiner<A, B> joiner1, BiJoiner<A, B> joiner2,
+            BiJoiner<A, B> joiner3, BiJoiner<A, B> joiner4) {
+        return ifExists(otherClass, new BiJoiner[] {joiner1, joiner2, joiner3, joiner4});
+    }
+
+    /**
+     * As defined by {@link #ifExists(Class, BiJoiner)}. For performance reasons, indexing joiners must be placed before
+     * filtering joiners.
+     * <p>
+     * This method causes <i>Unchecked generics array creation for varargs parameter</i> warnings,
+     * but we can't fix it with a {@link SafeVarargs} annotation because it's an interface method.
+     * Therefore, there are overloaded methods with up to 4 {@link BiJoiner} parameters.
+     * @param otherClass never null
+     * @param joiners never null
+     * @param <B> the type of the second matched fact
+     * @return never null, a stream that matches every A where B exists for which all the {@link BiJoiner}s are true
+     */
+    <B> UniConstraintStream<A> ifExists(Class<B> otherClass, BiJoiner<A, B>... joiners);
+
+    /**
+     * Create a new {@link UniConstraintStream} for every A, if another A exists that does not {@link #equals(Object)}
+     * the first.
+     * @param otherClass never null
+     * @return never null, a stream that matches every A where a different A exists
+     */
+    default UniConstraintStream<A> ifExistsOther(Class<A> otherClass) {
+        return ifExists(otherClass, Joiners.filtering(ObjectUtils::notEqual));
+    }
+
+    /**
+     * Create a new {@link UniConstraintStream} for every A, if another A exists that does not {@link #equals(Object)}
+     * the first, and for which the {@link BiJoiner} is true (for the properties it extracts from both facts).
+     * <p>
+     * This method has overloaded methods with multiple {@link BiJoiner} parameters.
+     * @param otherClass never null
+     * @param joiner never null
+     * @return never null, a stream that matches every A where a different A exists for which the {@link BiJoiner} is
+     * true
+     */
+    default UniConstraintStream<A> ifExistsOther(Class<A> otherClass, BiJoiner<A, A> joiner) {
+        return ifExistsOther(otherClass, new BiJoiner[] { joiner });
+    }
+
+    /**
+     * As defined by {@link #ifExistsOther(Class, BiJoiner)}. For performance reasons, indexing joiners must be placed
+     * before filtering joiners.
+     * @param otherClass never null
+     * @param joiner1 never null
+     * @param joiner2 never null
+     * @return never null, a stream that matches every A where a different A exists for which all the {@link BiJoiner}s
+     * are true
+     */
+    default UniConstraintStream<A> ifExistsOther(Class<A> otherClass, BiJoiner<A, A> joiner1, BiJoiner<A, A> joiner2) {
+        return ifExistsOther(otherClass, new BiJoiner[] {joiner1, joiner2});
+    }
+
+    /**
+     * As defined by {@link #ifExistsOther(Class, BiJoiner)}. For performance reasons, indexing joiners must be placed
+     * before filtering joiners.
+     * @param otherClass never null
+     * @param joiner1 never null
+     * @param joiner2 never null
+     * @param joiner3 never null
+     * @return never null, a stream that matches every A where a different A exists for which all the {@link BiJoiner}s
+     * are true
+     */
+    default UniConstraintStream<A> ifExistsOther(Class<A> otherClass, BiJoiner<A, A> joiner1, BiJoiner<A, A> joiner2,
+            BiJoiner<A, A> joiner3) {
+        return ifExistsOther(otherClass, new BiJoiner[] {joiner1, joiner2, joiner3});
+    }
+
+    /**
+     * As defined by {@link #ifExistsOther(Class, BiJoiner)}. For performance reasons, indexing joiners must be placed
+     * before filtering joiners.
+     * @param otherClass never null
+     * @param joiner1 never null
+     * @param joiner2 never null
+     * @param joiner3 never null
+     * @param joiner4 never null
+     * @return never null, a stream that matches every A where a different A exists for which all the {@link BiJoiner}s
+     * are true
+     */
+    default UniConstraintStream<A> ifExistsOther(Class<A> otherClass, BiJoiner<A, A> joiner1, BiJoiner<A, A> joiner2,
+            BiJoiner<A, A> joiner3, BiJoiner<A, A> joiner4) {
+        return ifExistsOther(otherClass, new BiJoiner[] {joiner1, joiner2, joiner3, joiner4});
+    }
+
+    /**
+     * As defined by {@link #ifExistsOther(Class, BiJoiner)}. If multiple {@link BiJoiner}s are provided,
+     * for performance reasons, the indexing joiners must be placed before filtering joiners.
+     * <p>
+     * This method causes <i>Unchecked generics array creation for varargs parameter</i> warnings,
+     * but we can't fix it with a {@link SafeVarargs} annotation because it's an interface method.
+     * Therefore, there are overloaded methods with up to 4 {@link BiJoiner} parameters.
+     * @param otherClass never null
+     * @param joiners never null
+     * @return never null, a stream that matches every A where a different A exists for which all the {@link BiJoiner}s
+     * are true
+     */
+    default UniConstraintStream<A> ifExistsOther(Class<A> otherClass, BiJoiner<A, A>... joiners) {
+        BiJoiner<A, A> otherness = Joiners.filtering(ObjectUtils::notEqual);
+        BiJoiner[] allJoiners = Stream.concat(Arrays.stream(joiners), Stream.of(otherness))
+                .toArray(BiJoiner[]::new);
+        return ifExists(otherClass, allJoiners);
+    }
+
+    /**
+     * Create a new {@link UniConstraintStream} for every A where B does not exist for which the {@link BiJoiner} is
+     * true (for the properties it extracts from both facts).
+     * <p>
+     * This method has overloaded methods with multiple {@link BiJoiner} parameters.
+     * @param otherClass never null
+     * @param joiner never null
+     * @param <B> the type of the second matched fact
+     * @return never null, a stream that matches every A where B does not exist for which the {@link BiJoiner} is true
+     */
+    default <B> UniConstraintStream<A> ifNotExists(Class<B> otherClass, BiJoiner<A, B> joiner) {
+        return ifNotExists(otherClass, new BiJoiner[] { joiner });
+    }
+
+    /**
+     * As defined by {@link #ifNotExists(Class, BiJoiner)}. For performance reasons, indexing joiners must be placed
+     * before filtering joiners.
+     * @param otherClass never null
+     * @param joiner1 never null
+     * @param joiner2 never null
+     * @param <B> the type of the second matched fact
+     * @return never null, a stream that matches every A where B does not exist for which all the {@link BiJoiner}s are
+     * true
+     */
+    default <B> UniConstraintStream<A> ifNotExists(Class<B> otherClass, BiJoiner<A, B> joiner1,
+            BiJoiner<A, B> joiner2) {
+        return ifNotExists(otherClass, new BiJoiner[] {joiner1, joiner2});
+    }
+
+    /**
+     * As defined by {@link #ifNotExists(Class, BiJoiner)}. For performance reasons, indexing joiners must be placed
+     * before filtering joiners.
+     * @param otherClass never null
+     * @param joiner1 never null
+     * @param joiner2 never null
+     * @param joiner3 never null
+     * @param <B> the type of the second matched fact
+     * @return never null, a stream that matches every A where B does not exist for which all the {@link BiJoiner}s are
+     * true
+     */
+    default <B> UniConstraintStream<A> ifNotExists(Class<B> otherClass, BiJoiner<A, B> joiner1, BiJoiner<A, B> joiner2,
+            BiJoiner<A, B> joiner3) {
+        return ifNotExists(otherClass, new BiJoiner[] {joiner1, joiner2, joiner3});
+    }
+
+    /**
+     * As defined by {@link #ifNotExists(Class, BiJoiner)}. For performance reasons, indexing joiners must be placed
+     * before filtering joiners.
+     * @param otherClass never null
+     * @param joiner1 never null
+     * @param joiner2 never null
+     * @param joiner3 never null
+     * @param joiner4 never null
+     * @param <B> the type of the second matched fact
+     * @return never null, a stream that matches every A where B does not exist for which all the {@link BiJoiner}s are
+     * true
+     */
+    default <B> UniConstraintStream<A> ifNotExists(Class<B> otherClass, BiJoiner<A, B> joiner1, BiJoiner<A, B> joiner2,
+            BiJoiner<A, B> joiner3, BiJoiner<A, B> joiner4) {
+        return ifNotExists(otherClass, new BiJoiner[] {joiner1, joiner2, joiner3, joiner4});
+    }
+
+    /**
+     * As defined by {@link #ifNotExists(Class, BiJoiner)}. For performance reasons, indexing joiners must be placed
+     * before filtering joiners.
+     * <p>
+     * This method causes <i>Unchecked generics array creation for varargs parameter</i> warnings,
+     * but we can't fix it with a {@link SafeVarargs} annotation because it's an interface method.
+     * Therefore, there are overloaded methods with up to 4 {@link BiJoiner} parameters.
+     * @param otherClass never null
+     * @param joiners never null
+     * @param <B> the type of the second matched fact
+     * @return never null, a stream that matches every A where B does not exist for which all the {@link BiJoiner}s are
+     * true
+     */
+    <B> UniConstraintStream<A> ifNotExists(Class<B> otherClass, BiJoiner<A, B>... joiners);
+
+    /**
+     * Create a new {@link UniConstraintStream} for every A, if no other A exists that does not {@link #equals(Object)}
+     * the first.
+     * @param otherClass never null
+     * @return never null, a stream that matches every A where a different A does not exist
+     */
+    default UniConstraintStream<A> ifNotExistsOther(Class<A> otherClass) {
+        return ifNotExists(otherClass, Joiners.filtering(ObjectUtils::notEqual));
+    }
+
+    /**
+     * Create a new {@link UniConstraintStream} for every A, if no other A exists that does not {@link #equals(Object)}
+     * the first, and for which the {@link BiJoiner} is true (for the properties it extracts from both facts).
+     * <p>
+     * This method has overloaded methods with multiple {@link BiJoiner} parameters.
+     * @param otherClass never null
+     * @param joiner never null
+     * @return never null, a stream that matches every A where a different A does not exist for which the
+     * {@link BiJoiner} is true
+     */
+    default UniConstraintStream<A> ifNotExistsOther(Class<A> otherClass, BiJoiner<A, A> joiner) {
+        return ifNotExistsOther(otherClass, new BiJoiner[] { joiner });
+    }
+
+    /**
+     * As defined by {@link #ifNotExistsOther(Class, BiJoiner)}. For performance reasons, indexing joiners must be
+     * placed before filtering joiners.
+     * @param otherClass never null
+     * @param joiner1 never null
+     * @param joiner2 never null
+     * @return never null, a stream that matches every A where a different A does not exist for which all the
+     * {@link BiJoiner}s are true
+     */
+    default UniConstraintStream<A> ifNotExistsOther(Class<A> otherClass, BiJoiner<A, A> joiner1,
+            BiJoiner<A, A> joiner2) {
+        return ifNotExistsOther(otherClass, new BiJoiner[] {joiner1, joiner2});
+    }
+
+    /**
+     * As defined by {@link #ifNotExistsOther(Class, BiJoiner)}. For performance reasons, indexing joiners must be
+     * placed before filtering joiners.
+     * @param otherClass never null
+     * @param joiner1 never null
+     * @param joiner2 never null
+     * @param joiner3 never null
+     * @return never null, a stream that matches every A where a different A does not exist for which all the
+     * {@link BiJoiner}s are true
+     */
+    default UniConstraintStream<A> ifNotExistsOther(Class<A> otherClass, BiJoiner<A, A> joiner1, BiJoiner<A, A> joiner2,
+            BiJoiner<A, A> joiner3) {
+        return ifNotExistsOther(otherClass, new BiJoiner[] {joiner1, joiner2, joiner3});
+    }
+
+    /**
+     * As defined by {@link #ifNotExistsOther(Class, BiJoiner)}. For performance reasons, indexing joiners must be
+     * placed before filtering joiners.
+     * @param otherClass never null
+     * @param joiner1 never null
+     * @param joiner2 never null
+     * @param joiner3 never null
+     * @param joiner4 never null
+     * @return never null, a stream that matches every A where a different A does not exist for which all the
+     * {@link BiJoiner}s are true
+     */
+    default UniConstraintStream<A> ifNotExistsOther(Class<A> otherClass, BiJoiner<A, A> joiner1, BiJoiner<A, A> joiner2,
+            BiJoiner<A, A> joiner3, BiJoiner<A, A> joiner4) {
+        return ifNotExistsOther(otherClass, new BiJoiner[] {joiner1, joiner2, joiner3, joiner4});
+    }
+
+    /**
+     * As defined by {@link #ifNotExistsOther(Class, BiJoiner)}. If multiple {@link BiJoiner}s are provided, for
+     * performance reasons, the indexing joiners must be placed before filtering joiners.
+     * <p>
+     * This method causes <i>Unchecked generics array creation for varargs parameter</i> warnings,
+     * but we can't fix it with a {@link SafeVarargs} annotation because it's an interface method.
+     * Therefore, there are overloaded methods with up to 4 {@link BiJoiner} parameters.
+     * @param otherClass never null
+     * @param joiners never null
+     * @return never null, a stream that matches every A where a different A does not exist for which all the
+     * {@link BiJoiner}s are true
+     */
+    default UniConstraintStream<A> ifNotExistsOther(Class<A> otherClass, BiJoiner<A, A>... joiners) {
+        BiJoiner<A, A> otherness = Joiners.filtering(ObjectUtils::notEqual);
+        BiJoiner[] allJoiners = Stream.concat(Arrays.stream(joiners), Stream.of(otherness))
+                .toArray(BiJoiner[]::new);
+        return ifNotExists(otherClass, allJoiners);
     }
 
     // ************************************************************************
@@ -186,8 +564,8 @@ public interface UniConstraintStream<A> extends ConstraintStream {
     // ************************************************************************
 
     /**
-     * Runs all tuples of the stream through a given @{@link UniConstraintCollector} and converts them into a new
-     * {@link UniConstraintStream} which only has a single tuple, the result of applying {@link UniConstraintCollector}.
+     * Convert the {@link UniConstraintStream} to a different {@link UniConstraintStream}, containing only a single
+     * tuple, the result of applying {@link UniConstraintCollector}.
      * @param collector never null, the collector to perform the grouping operation with
      * @param <ResultContainer_> the mutable accumulation type (often hidden as an implementation detail)
      * @param <Result_> the type of a fact in the destination {@link UniConstraintStream}'s tuple
@@ -197,9 +575,9 @@ public interface UniConstraintStream<A> extends ConstraintStream {
             UniConstraintCollector<A, ResultContainer_, Result_> collector);
 
     /**
-     * Convert the {@link UniConstraintStream} to a different {@link UniConstraintStream}, containing of the set of
-     * tuples resulting from applying the group key mapping function on all tuples of the original stream.
-     * Neither tuple of the new stream will {@link Objects#equals(Object, Object)} any other.
+     * Convert the {@link UniConstraintStream} to a different {@link UniConstraintStream}, containing the set of tuples
+     * resulting from applying the group key mapping function on all tuples of the original stream.
+     * Neither tuple of the new stream {@link Objects#equals(Object, Object)} any other.
      * @param groupKeyMapping never null, mapping function to convert each element in the stream to a different element
      * @param <GroupKey_> the type of a fact in the destination {@link UniConstraintStream}'s tuple
      * @return never null
@@ -207,16 +585,13 @@ public interface UniConstraintStream<A> extends ConstraintStream {
     <GroupKey_> UniConstraintStream<GroupKey_> groupBy(Function<A, GroupKey_> groupKeyMapping);
 
     /**
-     * Convert the {@link UniConstraintStream} to a {@link BiConstraintStream}, consisting of tuples which have:
-     *
-     * <ul>
-     *     <li>As the first fact, the value resulting from applying the group key mapping function on the fact from the
-     *     original tuple.
-     *     Neither such facts of the new stream will {@link Objects#equals(Object, Object)} any other.</li>
-     *     <li>As the second fact, the value of applying a given {@link UniConstraintCollector} on all the facts of the
-     *     original tuple with a matching group key.</li>
-     * </ul>
-     * @param groupKeyMapping never null, function to convert a fact in original tuple to a different fact
+     * Convert the {@link UniConstraintStream} to a {@link BiConstraintStream}, consisting of unique tuples with two
+     * facts.
+     * <p>
+     * The first fact is the return value of the first group key mapping function, applied on the incoming tuple.
+     * The second fact is the return value of a given {@link UniConstraintCollector} applied on all incoming tuples with
+     * the same first fact.
+     * @param groupKeyMapping never null, function to convert the fact in the original tuple to a different fact
      * @param <GroupKey_> the type of the first fact in the destination {@link BiConstraintStream}'s tuple
      * @param <ResultContainer_> the mutable accumulation type (often hidden as an implementation detail)
      * @param <Result_> the type of the second fact in the destination {@link BiConstraintStream}'s tuple
@@ -226,37 +601,29 @@ public interface UniConstraintStream<A> extends ConstraintStream {
             Function<A, GroupKey_> groupKeyMapping,
             UniConstraintCollector<A, ResultContainer_, Result_> collector);
 
-    /*
     /**
-     * Convert the {@link UniConstraintStream} to a {@link BiConstraintStream}, consisting of tuples which have:
-     *
-     * <ul>
-     *     <li>As the first fact, the value resulting from applying the "A" group key mapping function to the fact from
-     *     the original tuple.</li>
-     *     <li>As the second fact, the value resulting from applying the "B" group key mapping function to the fact from
-     *     the original tuple, which already passed through the "A" group key mapping.</li>
-     * </ul>
-     *
-     * All bi tuples of the new stream will be unique.
-     * @param groupKeyAMapping never null, function to convert first fact in the original tuple to a different fact
-     * @param groupKeyBMapping never null, function to convert second fact in the original tuple to a different fact
+     * Convert the {@link UniConstraintStream} to a {@link BiConstraintStream}, consisting of unique tuples with two
+     * facts.
+     * <p>
+     * The first fact is the return value of the first group key mapping function, applied on the incoming tuple.
+     * The second fact is the return value of the second group key mapping function, applied on all incoming tuples with
+     * the same first fact.
+     * @param groupKeyAMapping never null, function to convert the original tuple into a first fact
+     * @param groupKeyBMapping never null, function to convert the original tuple into a second fact
      * @param <GroupKeyA_> the type of the first fact in the destination {@link BiConstraintStream}'s tuple
      * @param <GroupKeyB_> the type of the second fact in the destination {@link BiConstraintStream}'s tuple
      * @return never null
      */
-    // TODO implement this
-    //<GroupKeyA_, GroupKeyB_> BiConstraintStream<GroupKeyA_, GroupKeyB_> groupBy(
-    //        Function<A, GroupKeyA_> groupKeyAMapping,
-    //        Function<A, GroupKeyB_> groupKeyBMapping);
+    <GroupKeyA_, GroupKeyB_> BiConstraintStream<GroupKeyA_, GroupKeyB_> groupBy(
+            Function<A, GroupKeyA_> groupKeyAMapping, Function<A, GroupKeyB_> groupKeyBMapping);
 
-    /*
     /**
      * Combines the semantics of {@link #groupBy(Function, Function)} and {@link #groupBy(UniConstraintCollector)}.
      * That is, the first and second facts in the tuple follow the {@link #groupBy(Function, Function)} semantics, and
      * the third fact is the result of applying {@link UniConstraintCollector#finisher()} on all the tuples of the
-     * original {@link UniConstraintStream} that fall in the group.
-     * @param groupKeyAMapping never null, function to convert first fact in the original tuple to a different fact
-     * @param groupKeyBMapping never null, function to convert second fact in the original tuple to a different fact
+     * original {@link UniConstraintStream} that belong to the group.
+     * @param groupKeyAMapping never null, function to convert the original tuple into a first fact
+     * @param groupKeyBMapping never null, function to convert the original tuple into a second fact
      * @param collector never null, the collector to perform the grouping operation with
      * @param <GroupKeyA_> the type of the first fact in the destination {@link TriConstraintStream}'s tuple
      * @param <GroupKeyB_> the type of the second fact in the destination {@link TriConstraintStream}'s tuple
@@ -264,11 +631,34 @@ public interface UniConstraintStream<A> extends ConstraintStream {
      * @param <Result_> the type of the third fact in the destination {@link TriConstraintStream}'s tuple
      * @return never null
      */
-    // TODO implement this
-    //<GroupKeyA_, GroupKeyB_, ResultContainer_, Result_> TriConstraintStream<GroupKeyA_, GroupKeyB_, Result_> groupBy(
-    //        Function<A, GroupKeyA_> groupKeyAMapping,
-    //        Function<A, GroupKeyB_> groupKeyBMapping,
-    //        UniConstraintCollector<A, ResultContainer_, Result_> collector);
+    <GroupKeyA_, GroupKeyB_, ResultContainer_, Result_> TriConstraintStream<GroupKeyA_, GroupKeyB_, Result_> groupBy(
+            Function<A, GroupKeyA_> groupKeyAMapping, Function<A, GroupKeyB_> groupKeyBMapping,
+            UniConstraintCollector<A, ResultContainer_, Result_> collector);
+
+    /**
+     * Combines the semantics of {@link #groupBy(Function, Function)} and {@link #groupBy(UniConstraintCollector)}.
+     * That is, the first and second facts in the tuple follow the {@link #groupBy(Function, Function)} semantics.
+     * The third fact is the result of applying the first {@link UniConstraintCollector#finisher()} on all the tuples
+     * of the original {@link UniConstraintStream} that belong to the group.
+     * The fourth fact is the result of applying the second {@link UniConstraintCollector#finisher()} on all the tuples
+     * of the original {@link UniConstraintStream} that belong to the group
+     * @param groupKeyAMapping never null, function to convert the original tuple into a first fact
+     * @param groupKeyBMapping never null, function to convert the original tuple into a second fact
+     * @param collectorC never null, the collector to perform the first grouping operation with
+     * @param collectorD never null, the collector to perform the first grouping operation with
+     * @param <GroupKeyA_> the type of the first fact in the destination {@link QuadConstraintStream}'s tuple
+     * @param <GroupKeyB_> the type of the second fact in the destination {@link QuadConstraintStream}'s tuple
+     * @param <ResultContainerC_> the mutable accumulation type (often hidden as an implementation detail)
+     * @param <ResultC_> the type of the third fact in the destination {@link QuadConstraintStream}'s tuple
+     * @param <ResultContainerD_> the mutable accumulation type (often hidden as an implementation detail)
+     * @param <ResultD_> the type of the fourth fact in the destination {@link QuadConstraintStream}'s tuple
+     * @return never null
+     */
+    <GroupKeyA_, GroupKeyB_, ResultContainerC_, ResultC_, ResultContainerD_, ResultD_>
+    QuadConstraintStream<GroupKeyA_, GroupKeyB_, ResultC_, ResultD_> groupBy(
+            Function<A, GroupKeyA_> groupKeyAMapping, Function<A, GroupKeyB_> groupKeyBMapping,
+            UniConstraintCollector<A, ResultContainerC_, ResultC_> collectorC,
+            UniConstraintCollector<A, ResultContainerD_, ResultD_> collectorD);
 
     // ************************************************************************
     // Penalize/reward

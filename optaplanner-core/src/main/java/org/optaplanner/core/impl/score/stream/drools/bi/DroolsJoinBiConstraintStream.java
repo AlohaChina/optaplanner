@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Red Hat, Inc. and/or its affiliates.
+ * Copyright 2020 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ public class DroolsJoinBiConstraintStream<Solution_, A, B> extends DroolsAbstrac
 
     private final DroolsAbstractUniConstraintStream<Solution_, A> leftParentStream;
     private final DroolsAbstractUniConstraintStream<Solution_, B> rightParentStream;
-    private final DroolsBiCondition<A, B> condition;
+    private final DroolsBiCondition<A, B, ?> condition;
 
     public DroolsJoinBiConstraintStream(DroolsConstraintFactory<Solution_> constraintFactory,
             DroolsAbstractUniConstraintStream<Solution_, A> parent,
@@ -37,7 +37,7 @@ public class DroolsJoinBiConstraintStream<Solution_, A, B> extends DroolsAbstrac
     }
 
     @Override
-    public DroolsBiCondition<A, B> getCondition() {
+    public DroolsBiCondition<A, B, ?> getCondition() {
         return condition;
     }
 
@@ -52,6 +52,11 @@ public class DroolsJoinBiConstraintStream<Solution_, A, B> extends DroolsAbstrac
     @Override
     protected DroolsAbstractConstraintStream<Solution_> getParent() {
         return null; // There is no one single parent for a join stream.
+    }
+
+    @Override
+    public boolean isGroupByAllowed() {
+        return leftParentStream.isGroupByAllowed() && rightParentStream.isGroupByAllowed();
     }
 
     @Override

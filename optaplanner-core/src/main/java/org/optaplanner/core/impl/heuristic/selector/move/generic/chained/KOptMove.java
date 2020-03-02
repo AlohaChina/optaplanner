@@ -17,12 +17,12 @@
 package org.optaplanner.core.impl.heuristic.selector.move.generic.chained;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.optaplanner.core.api.domain.solution.PlanningSolution;
 import org.optaplanner.core.impl.domain.variable.anchor.AnchorVariableSupply;
 import org.optaplanner.core.impl.domain.variable.descriptor.GenuineVariableDescriptor;
@@ -36,7 +36,7 @@ import org.optaplanner.core.impl.score.director.ScoreDirector;
 public class KOptMove<Solution_> extends AbstractMove<Solution_> {
 
     protected final GenuineVariableDescriptor<Solution_> variableDescriptor;
-    // TODO remove me to enable multithreaded solving, but first fix https://issues.jboss.org/browse/PLANNER-1250
+    // TODO remove me to enable multithreaded solving, but first fix https://issues.redhat.com/browse/PLANNER-1250
     protected final SingletonInverseVariableSupply inverseVariableSupply;
     protected final AnchorVariableSupply anchorVariableSupply;
 
@@ -137,7 +137,7 @@ public class KOptMove<Solution_> extends AbstractMove<Solution_> {
 
     @Override
     public KOptMove<Solution_> rebase(ScoreDirector<Solution_> destinationScoreDirector) {
-        throw new UnsupportedOperationException("https://issues.jboss.org/browse/PLANNER-1250"); // TODO test also disabled
+        throw new UnsupportedOperationException("https://issues.redhat.com/browse/PLANNER-1250"); // TODO test also disabled
 //        return new KOptMove<>(variableDescriptor, inverseVariableSupply, anchorVariableSupply,
 //                destinationScoreDirector.lookUpWorkingObject(entity),
 //                rebaseArray(values, destinationScoreDirector));
@@ -175,23 +175,18 @@ public class KOptMove<Solution_> extends AbstractMove<Solution_> {
     public boolean equals(Object o) {
         if (this == o) {
             return true;
-        } else if (o instanceof KOptMove) {
-            KOptMove<?> other = (KOptMove) o;
-            return new EqualsBuilder()
-                    .append(entity, other.entity)
-                    .append(values, other.values)
-                    .isEquals();
-        } else {
+        }
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
+        final KOptMove<?> kOptMove = (KOptMove<?>) o;
+        return Objects.equals(entity, kOptMove.entity) &&
+                Arrays.equals(values, kOptMove.values);
     }
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder()
-                .append(entity)
-                .append(values)
-                .toHashCode();
+        return Objects.hash(entity, Arrays.hashCode(values));
     }
 
     @Override

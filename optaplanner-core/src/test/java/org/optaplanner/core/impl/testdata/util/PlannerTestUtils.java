@@ -22,6 +22,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import com.thoughtworks.xstream.XStream;
 import com.thoughtworks.xstream.security.AnyTypePermission;
@@ -42,6 +44,9 @@ import org.optaplanner.core.impl.score.director.InnerScoreDirector;
 import org.optaplanner.core.impl.score.director.easy.EasyScoreCalculator;
 import org.optaplanner.core.impl.score.director.easy.EasyScoreDirectorFactory;
 import org.optaplanner.core.impl.score.trend.InitializingScoreTrend;
+import org.optaplanner.core.impl.testdata.domain.TestdataEntity;
+import org.optaplanner.core.impl.testdata.domain.TestdataSolution;
+import org.optaplanner.core.impl.testdata.domain.TestdataValue;
 
 import static org.mockito.Mockito.*;
 
@@ -92,6 +97,25 @@ public class PlannerTestUtils {
     public static <Solution_> Solution_ solve(SolverConfig solverConfig, Solution_ problem) {
         SolverFactory<Solution_> solverFactory = SolverFactory.create(solverConfig);
         return solverFactory.buildSolver().solve(problem);
+    }
+
+    // ************************************************************************
+    // Testdata methods
+    // ************************************************************************
+
+    public static TestdataSolution generateTestdataSolution(String code) {
+        return generateTestdataSolution(code, 2);
+    }
+
+    public static TestdataSolution generateTestdataSolution(String code, int entityAndValueCount) {
+        TestdataSolution solution = new TestdataSolution(code);
+        solution.setValueList(IntStream.range(1, entityAndValueCount + 1)
+                .mapToObj(i -> new TestdataValue("v" + i))
+                .collect(Collectors.toList()));
+        solution.setEntityList(IntStream.range(1, entityAndValueCount + 1)
+                .mapToObj(i -> new TestdataEntity("e" + i))
+                .collect(Collectors.toList()));
+        return solution;
     }
 
     // ************************************************************************

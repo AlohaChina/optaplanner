@@ -338,7 +338,7 @@ public class EntitySelectorConfig extends SelectorConfig<EntitySelectorConfig> {
         if (minimumCacheType == SelectionCacheType.SOLVER) {
             // TODO Solver cached entities are not compatible with DroolsScoreCalculator and IncrementalScoreDirector
             // because between phases the entities get cloned and the KieSession/Maps contains those clones afterwards
-            // https://issues.jboss.org/browse/PLANNER-54
+            // https://issues.redhat.com/browse/PLANNER-54
             throw new IllegalArgumentException("The minimumCacheType (" + minimumCacheType
                     + ") is not yet supported. Please use " + SelectionCacheType.PHASE + " instead.");
         }
@@ -542,8 +542,7 @@ public class EntitySelectorConfig extends SelectorConfig<EntitySelectorConfig> {
     }
 
     @Override
-    public void inherit(EntitySelectorConfig inheritedConfig) {
-        super.inherit(inheritedConfig);
+    public EntitySelectorConfig inherit(EntitySelectorConfig inheritedConfig) {
         id = ConfigUtils.inheritOverwritableProperty(id, inheritedConfig.getId());
         mimicSelectorRef = ConfigUtils.inheritOverwritableProperty(mimicSelectorRef,
                 inheritedConfig.getMimicSelectorRef());
@@ -568,6 +567,12 @@ public class EntitySelectorConfig extends SelectorConfig<EntitySelectorConfig> {
                 probabilityWeightFactoryClass, inheritedConfig.getProbabilityWeightFactoryClass());
         selectedCountLimit = ConfigUtils.inheritOverwritableProperty(
                 selectedCountLimit, inheritedConfig.getSelectedCountLimit());
+        return this;
+    }
+
+    @Override
+    public EntitySelectorConfig copyConfig() {
+        return new EntitySelectorConfig().inherit(this);
     }
 
     @Override

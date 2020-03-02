@@ -21,8 +21,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
 
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.optaplanner.core.api.domain.solution.PlanningSolution;
 import org.optaplanner.core.api.domain.valuerange.ValueRange;
 import org.optaplanner.core.impl.domain.valuerange.descriptor.ValueRangeDescriptor;
@@ -88,7 +86,7 @@ public class TailChainSwapMove<Solution_> extends AbstractMove<Solution_> {
         }
     }
 
-    // TODO Workaround until https://issues.jboss.org/browse/PLANNER-1250 is fixed
+    // TODO Workaround until https://issues.redhat.com/browse/PLANNER-1250 is fixed
     protected TailChainSwapMove(GenuineVariableDescriptor<Solution_> variableDescriptor,
             Object leftEntity, Object leftValue, Object leftAnchor,
             Object rightEntity, Object rightValue, Object rightAnchor) {
@@ -107,7 +105,7 @@ public class TailChainSwapMove<Solution_> extends AbstractMove<Solution_> {
         this.entityAfterAnchor = null;
     }
 
-    // TODO Workaround until https://issues.jboss.org/browse/PLANNER-1250 is fixed
+    // TODO Workaround until https://issues.redhat.com/browse/PLANNER-1250 is fixed
     protected TailChainSwapMove(GenuineVariableDescriptor<Solution_> variableDescriptor,
             Object leftEntity, Object leftValue, Object leftAnchor,
             Object rightEntity, Object rightValue, Object rightAnchor,
@@ -127,7 +125,7 @@ public class TailChainSwapMove<Solution_> extends AbstractMove<Solution_> {
         this.entityAfterAnchor = null;
     }
 
-    // TODO Workaround until https://issues.jboss.org/browse/PLANNER-1250 is fixed
+    // TODO Workaround until https://issues.redhat.com/browse/PLANNER-1250 is fixed
     protected TailChainSwapMove(GenuineVariableDescriptor<Solution_> variableDescriptor,
             Object leftEntity, Object leftValue, Object leftAnchor,
             Object rightEntity, Object rightValue, Object rightAnchor,
@@ -213,7 +211,7 @@ public class TailChainSwapMove<Solution_> extends AbstractMove<Solution_> {
         } else {
             if (rightEntity == null) {
                 // TODO Currently unsupported because we fail to create a valid undoMove... even though doMove supports it
-                // https://issues.jboss.org/browse/PLANNER-1250
+                // https://issues.redhat.com/browse/PLANNER-1250
                 throw new IllegalStateException("Impossible state, because isMoveDoable() should not return true.");
             }
             if (!reverseAnchorSide) {
@@ -335,23 +333,18 @@ public class TailChainSwapMove<Solution_> extends AbstractMove<Solution_> {
     public boolean equals(Object o) {
         if (this == o) {
             return true;
-        } else if (o instanceof TailChainSwapMove) {
-            TailChainSwapMove<?> other = (TailChainSwapMove) o;
-            return new EqualsBuilder()
-                    .append(leftEntity, other.leftEntity)
-                    .append(rightValue, other.rightValue)
-                    .isEquals();
-        } else {
+        }
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
+        final TailChainSwapMove<?> other = (TailChainSwapMove<?>) o;
+        return Objects.equals(leftEntity, other.leftEntity) &&
+                Objects.equals(rightValue, other.rightValue);
     }
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder()
-                .append(leftEntity)
-                .append(rightValue)
-                .toHashCode();
+        return Objects.hash(leftEntity, rightValue);
     }
 
     @Override

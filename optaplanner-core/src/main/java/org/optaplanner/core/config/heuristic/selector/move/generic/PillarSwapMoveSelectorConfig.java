@@ -38,7 +38,7 @@ public class PillarSwapMoveSelectorConfig extends AbstractPillarMoveSelectorConf
     @XStreamAlias("secondaryPillarSelector")
     private PillarSelectorConfig secondaryPillarSelectorConfig = null;
 
-    // TODO Wrap in <variableNameIncludes> https://issues.jboss.org/browse/PLANNER-838
+    // TODO Wrap in <variableNameIncludes> https://issues.redhat.com/browse/PLANNER-838
     @XStreamImplicit(itemFieldName = "variableNameInclude")
 //    @XStreamAlias("variableNameIncludes")
 //    @XStreamConverter(value = NamedCollectionConverter.class,
@@ -83,11 +83,17 @@ public class PillarSwapMoveSelectorConfig extends AbstractPillarMoveSelectorConf
     }
 
     @Override
-    public void inherit(PillarSwapMoveSelectorConfig inheritedConfig) {
+    public PillarSwapMoveSelectorConfig inherit(PillarSwapMoveSelectorConfig inheritedConfig) {
         super.inherit(inheritedConfig);
         secondaryPillarSelectorConfig = ConfigUtils.inheritConfig(secondaryPillarSelectorConfig, inheritedConfig.getSecondaryPillarSelectorConfig());
         variableNameIncludeList = ConfigUtils.inheritMergeableListProperty(
                 variableNameIncludeList, inheritedConfig.getVariableNameIncludeList());
+        return this;
+    }
+
+    @Override
+    public PillarSwapMoveSelectorConfig copyConfig() {
+        return new PillarSwapMoveSelectorConfig().inherit(this);
     }
 
     @Override
