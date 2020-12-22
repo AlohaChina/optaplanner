@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Red Hat, Inc. and/or its affiliates.
+ * Copyright 2020 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,11 @@ package org.optaplanner.core.impl.score.stream.bavet.bi;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.BiPredicate;
 
 import org.optaplanner.core.impl.score.stream.bavet.BavetConstraintSession;
+import org.optaplanner.core.impl.score.stream.bavet.common.BavetAbstractTuple;
 import org.optaplanner.core.impl.score.stream.bavet.common.BavetTupleState;
 
 public final class BavetFilterBiNode<A, B> extends BavetAbstractBiNode<A, B> {
@@ -30,9 +32,9 @@ public final class BavetFilterBiNode<A, B> extends BavetAbstractBiNode<A, B> {
 
     private final List<BavetAbstractBiNode<A, B>> childNodeList = new ArrayList<>();
 
-    public BavetFilterBiNode(BavetConstraintSession session, int nodeOrder,
+    public BavetFilterBiNode(BavetConstraintSession session, int nodeIndex,
             BavetAbstractBiNode<A, B> parentNode, BiPredicate<A, B> predicate) {
-        super(session, nodeOrder);
+        super(session, nodeIndex);
         this.parentNode = parentNode;
         this.predicate = predicate;
     }
@@ -42,15 +44,18 @@ public final class BavetFilterBiNode<A, B> extends BavetAbstractBiNode<A, B> {
         childNodeList.add(childNode);
     }
 
+    @Override
+    public List<BavetAbstractBiNode<A, B>> getChildNodeList() {
+        return childNodeList;
+    }
+
     // ************************************************************************
     // Equality for node sharing
     // ************************************************************************
 
     @Override
     public int hashCode() {
-        // Similar to Object.hash() without autoboxing
-        return 31 * System.identityHashCode(parentNode)
-                + System.identityHashCode(predicate);
+        return Objects.hash(System.identityHashCode(parentNode), System.identityHashCode(predicate));
     }
 
     @Override
@@ -76,11 +81,13 @@ public final class BavetFilterBiNode<A, B> extends BavetAbstractBiNode<A, B> {
         return new BavetFilterBiTuple<>(this, parentTuple);
     }
 
-    public void refresh(BavetFilterBiTuple<A, B> tuple) {
+    @Override
+    public void refresh(BavetAbstractTuple uncastTuple) {
+        BavetFilterBiTuple<A, B> tuple = (BavetFilterBiTuple<A, B>) uncastTuple;
         A a = tuple.getFactA();
         B b = tuple.getFactB();
-        List<BavetAbstractBiTuple<A, B>> childTupleList = tuple.getChildTupleList();
-        for (BavetAbstractBiTuple<A, B> childTuple : childTupleList) {
+        List<BavetAbstractTuple> childTupleList = tuple.getChildTupleList();
+        for (BavetAbstractTuple childTuple : childTupleList) {
             session.transitionTuple(childTuple, BavetTupleState.DYING);
         }
         childTupleList.clear();
@@ -93,12 +100,11 @@ public final class BavetFilterBiNode<A, B> extends BavetAbstractBiNode<A, B> {
                 }
             }
         }
-        tuple.refreshed();
     }
 
     @Override
     public String toString() {
-        return "Filter() with " + childNodeList.size()  + " children";
+        return "Filter() with " + childNodeList.size() + " children";
     }
 
     // ************************************************************************

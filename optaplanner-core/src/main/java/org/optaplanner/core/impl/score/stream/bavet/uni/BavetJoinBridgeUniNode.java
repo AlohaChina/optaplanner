@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Red Hat, Inc. and/or its affiliates.
+ * Copyright 2020 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,14 @@
 
 package org.optaplanner.core.impl.score.stream.bavet.uni;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.optaplanner.core.impl.score.stream.bavet.BavetConstraintSession;
 import org.optaplanner.core.impl.score.stream.bavet.bi.BavetJoinBiNode;
+import org.optaplanner.core.impl.score.stream.bavet.common.BavetAbstractTuple;
 import org.optaplanner.core.impl.score.stream.bavet.common.BavetJoinBridgeNode;
 import org.optaplanner.core.impl.score.stream.bavet.common.BavetTupleState;
 import org.optaplanner.core.impl.score.stream.bavet.common.index.BavetIndex;
@@ -35,12 +38,17 @@ public final class BavetJoinBridgeUniNode<A> extends BavetAbstractUniNode<A>
 
     private final BavetIndex<BavetJoinBridgeUniTuple<A>> index;
 
-    public BavetJoinBridgeUniNode(BavetConstraintSession session, int nodeOrder, BavetAbstractUniNode<A> parentNode,
+    public BavetJoinBridgeUniNode(BavetConstraintSession session, int nodeIndex, BavetAbstractUniNode<A> parentNode,
             Function<A, Object[]> mapping, BavetIndex<BavetJoinBridgeUniTuple<A>> index) {
-        super(session, nodeOrder);
+        super(session, nodeIndex);
         this.parentNode = parentNode;
         this.mapping = mapping;
         this.index = index;
+    }
+
+    @Override
+    public List<BavetAbstractUniNode<A>> getChildNodeList() {
+        return Collections.emptyList();
     }
 
     @Override
@@ -48,7 +56,9 @@ public final class BavetJoinBridgeUniNode<A> extends BavetAbstractUniNode<A>
         return new BavetJoinBridgeUniTuple<>(this, parentTuple);
     }
 
-    public void refresh(BavetJoinBridgeUniTuple<A> tuple) {
+    @Override
+    public void refresh(BavetAbstractTuple uncastTuple) {
+        BavetJoinBridgeUniTuple<A> tuple = (BavetJoinBridgeUniTuple<A>) uncastTuple;
         A a = tuple.getFactA();
         if (tuple.getState() != BavetTupleState.CREATING) {
             // Clean up index
@@ -59,7 +69,6 @@ public final class BavetJoinBridgeUniNode<A> extends BavetAbstractUniNode<A>
             index.put(indexProperties, tuple);
         }
         childTupleRefresher.accept(tuple);
-        tuple.refreshed();
     }
 
     @Override

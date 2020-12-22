@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Red Hat, Inc. and/or its affiliates.
+ * Copyright 2020 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,21 +19,24 @@ package org.optaplanner.core.impl.score.stream.bi;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
-import java.util.stream.IntStream;
 
 import org.optaplanner.core.impl.score.stream.common.JoinerType;
 
 public final class CompositeBiJoiner<A, B> extends AbstractBiJoiner<A, B> {
 
     private final List<SingleBiJoiner<A, B>> joinerList;
+    private final JoinerType[] joinerTypes;
     private final Function<A, ?>[] leftMappings;
     private final Function<B, ?>[] rightMappings;
 
-    public CompositeBiJoiner(List<SingleBiJoiner<A, B>> joinerList) {
+    CompositeBiJoiner(List<SingleBiJoiner<A, B>> joinerList) {
         if (joinerList.isEmpty()) {
             throw new IllegalArgumentException("The joinerList (" + joinerList + ") must not be empty.");
         }
         this.joinerList = joinerList;
+        this.joinerTypes = joinerList.stream()
+                .map(SingleBiJoiner::getJoinerType)
+                .toArray(JoinerType[]::new);
         this.leftMappings = joinerList.stream()
                 .map(SingleBiJoiner::getLeftMapping)
                 .toArray(Function[]::new);
@@ -51,38 +54,30 @@ public final class CompositeBiJoiner<A, B> extends AbstractBiJoiner<A, B> {
     // ************************************************************************
 
     @Override
-    public Function<A, Object> getLeftMapping(int joinerId) {
-        return (Function<A, Object>) leftMappings[joinerId];
+    public Function<A, Object> getLeftMapping(int index) {
+        return (Function<A, Object>) leftMappings[index];
     }
 
     @Override
     public Function<A, Object[]> getLeftCombinedMapping() {
-        final Function<A, Object>[] mappings = IntStream.range(0, joinerList.size())
-                .mapToObj(this::getLeftMapping)
-                .toArray(Function[]::new);
-        return (A a) -> Arrays.stream(mappings)
+        return (A a) -> Arrays.stream(leftMappings)
                 .map(f -> f.apply(a))
                 .toArray();
     }
 
     @Override
     public JoinerType[] getJoinerTypes() {
-        return joinerList.stream()
-                .map(SingleBiJoiner::getJoinerType)
-                .toArray(JoinerType[]::new);
+        return joinerTypes;
     }
 
     @Override
-    public Function<B, Object> getRightMapping(int joinerId) {
-        return (Function<B, Object>) rightMappings[joinerId];
+    public Function<B, Object> getRightMapping(int index) {
+        return (Function<B, Object>) rightMappings[index];
     }
 
     @Override
     public Function<B, Object[]> getRightCombinedMapping() {
-        final Function<B, Object>[] mappings = IntStream.range(0, joinerList.size())
-                .mapToObj(this::getRightMapping)
-                .toArray(Function[]::new);
-        return (B b) -> Arrays.stream(mappings)
+        return (B b) -> Arrays.stream(rightMappings)
                 .map(f -> f.apply(b))
                 .toArray();
     }

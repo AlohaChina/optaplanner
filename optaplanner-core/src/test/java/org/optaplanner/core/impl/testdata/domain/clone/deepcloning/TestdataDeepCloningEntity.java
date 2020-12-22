@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Red Hat, Inc. and/or its affiliates.
+ * Copyright 2020 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,22 +27,24 @@ import org.optaplanner.core.api.domain.variable.PlanningVariableReference;
 import org.optaplanner.core.impl.domain.entity.descriptor.EntityDescriptor;
 import org.optaplanner.core.impl.domain.solution.descriptor.SolutionDescriptor;
 import org.optaplanner.core.impl.domain.variable.descriptor.GenuineVariableDescriptor;
-import org.optaplanner.core.impl.domain.variable.listener.VariableListener;
-import org.optaplanner.core.impl.score.director.ScoreDirector;
+import org.optaplanner.core.impl.testdata.domain.DummyVariableListener;
 import org.optaplanner.core.impl.testdata.domain.TestdataObject;
 import org.optaplanner.core.impl.testdata.domain.TestdataValue;
 
 @PlanningEntity
 public class TestdataDeepCloningEntity extends TestdataObject {
 
-    public static EntityDescriptor buildEntityDescriptor() {
-        SolutionDescriptor solutionDescriptor = TestdataDeepCloningSolution.buildSolutionDescriptor();
+    public static EntityDescriptor<TestdataDeepCloningSolution> buildEntityDescriptor() {
+        SolutionDescriptor<TestdataDeepCloningSolution> solutionDescriptor =
+                TestdataDeepCloningSolution.buildSolutionDescriptor();
         return solutionDescriptor.findEntityDescriptorOrFail(TestdataDeepCloningEntity.class);
     }
 
-    public static GenuineVariableDescriptor buildVariableDescriptorForValue() {
-        SolutionDescriptor solutionDescriptor = TestdataDeepCloningSolution.buildSolutionDescriptor();
-        EntityDescriptor entityDescriptor = solutionDescriptor.findEntityDescriptorOrFail(TestdataDeepCloningEntity.class);
+    public static GenuineVariableDescriptor<TestdataDeepCloningSolution> buildVariableDescriptorForValue() {
+        SolutionDescriptor<TestdataDeepCloningSolution> solutionDescriptor =
+                TestdataDeepCloningSolution.buildSolutionDescriptor();
+        EntityDescriptor<TestdataDeepCloningSolution> entityDescriptor =
+                solutionDescriptor.findEntityDescriptorOrFail(TestdataDeepCloningEntity.class);
         return entityDescriptor.getGenuineVariableDescriptor("value");
     }
 
@@ -72,8 +74,8 @@ public class TestdataDeepCloningEntity extends TestdataObject {
     }
 
     @DeepPlanningClone
-    @CustomShadowVariable(sources = {@PlanningVariableReference(variableName = "value")},
-            variableListenerClass = DummyVariableListener.class)
+    @CustomShadowVariable(sources = {
+            @PlanningVariableReference(variableName = "value") }, variableListenerClass = DummyVariableListener.class)
     public List<String> getShadowVariableList() {
         return shadowVariableList;
     }
@@ -83,52 +85,14 @@ public class TestdataDeepCloningEntity extends TestdataObject {
     }
 
     @DeepPlanningClone
-    @CustomShadowVariable(sources = {@PlanningVariableReference(variableName = "value")},
-            variableListenerClass = DummyVariableListener.class)
+    @CustomShadowVariable(sources = {
+            @PlanningVariableReference(variableName = "value") }, variableListenerClass = DummyVariableListener.class)
     public Map<String, String> getShadowVariableMap() {
         return shadowVariableMap;
     }
 
     public void setShadowVariableMap(Map<String, String> shadowVariableMap) {
         this.shadowVariableMap = shadowVariableMap;
-    }
-
-    // ************************************************************************
-    // Complex methods
-    // ************************************************************************
-
-    public static class DummyVariableListener implements VariableListener<TestdataDeepCloningEntity> {
-
-        @Override
-        public void beforeEntityAdded(ScoreDirector scoreDirector, TestdataDeepCloningEntity testdataDeepCloningEntity) {
-            // Do nothing
-        }
-
-        @Override
-        public void afterEntityAdded(ScoreDirector scoreDirector, TestdataDeepCloningEntity testdataDeepCloningEntity) {
-            // Do nothing
-        }
-
-        @Override
-        public void beforeVariableChanged(ScoreDirector scoreDirector, TestdataDeepCloningEntity testdataDeepCloningEntity) {
-            // Do nothing
-        }
-
-        @Override
-        public void afterVariableChanged(ScoreDirector scoreDirector, TestdataDeepCloningEntity testdataDeepCloningEntity) {
-            // Do nothing
-        }
-
-        @Override
-        public void beforeEntityRemoved(ScoreDirector scoreDirector, TestdataDeepCloningEntity testdataDeepCloningEntity) {
-            // Do nothing
-        }
-
-        @Override
-        public void afterEntityRemoved(ScoreDirector scoreDirector, TestdataDeepCloningEntity testdataDeepCloningEntity) {
-            // Do nothing
-        }
-
     }
 
 }

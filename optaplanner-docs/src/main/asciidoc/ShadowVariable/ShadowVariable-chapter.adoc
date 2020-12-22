@@ -26,8 +26,7 @@ From an optimization perspective, OptaPlanner effectively only optimizes the gen
 [IMPORTANT]
 ====
 **Any class that has at least one shadow variable, is a planning entity class (even if it has no genuine planning variables).
-That class must be defined in the solver configuration** (unless classes are <<automaticScanningForAnnotations,automatically scanned>>)
-**and have a `@PlanningEntity` annotation.**
+That class must be defined in the solver configuration and have a `@PlanningEntity` annotation.**
 
 A genuine planning entity class has at least one genuine planning variable, but can have shadow variables too.
 A shadow planning entity class has no genuine planning variables and at least one shadow planning variable.
@@ -190,19 +189,19 @@ For example, the `VehicleUpdatingVariableListener` assures that every `Customer`
 
 [source,java,options="nowrap"]
 ----
-public class VehicleUpdatingVariableListener implements VariableListener<Customer> {
+public class VehicleUpdatingVariableListener implements VariableListener<VehicleRoutingSolution, Customer> {
 
-    public void afterEntityAdded(ScoreDirector scoreDirector, Customer customer) {
+    public void afterEntityAdded(ScoreDirector<VehicleRoutingSolution> scoreDirector, Customer customer) {
         updateVehicle(scoreDirector, customer);
     }
 
-    public void afterVariableChanged(ScoreDirector scoreDirector, Customer customer) {
+    public void afterVariableChanged(ScoreDirector<VehicleRoutingSolution> scoreDirector, Customer customer) {
         updateVehicle(scoreDirector, customer);
     }
 
     ...
 
-    protected void updateVehicle(ScoreDirector scoreDirector, Customer sourceCustomer) {
+    protected void updateVehicle(ScoreDirector<VehicleRoutingSolution> scoreDirector, Customer sourceCustomer) {
         Standstill previousStandstill = sourceCustomer.getPreviousStandstill();
         Vehicle vehicle = previousStandstill == null ? null : previousStandstill.getVehicle();
         Customer shadowCustomer = sourceCustomer;
@@ -292,7 +291,7 @@ To avoid dealing with that complexity, overwrite the method `requiresUniqueEntit
 
 [source,java,options="nowrap"]
 ----
-public class StartTimeUpdatingVariableListener implements VariableListener<Task> {
+public class StartTimeUpdatingVariableListener implements VariableListener<TaskAssigningSolution, Task> {
 
     @Override
     public boolean requiresUniqueEntityEvents() {

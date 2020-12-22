@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Red Hat, Inc. and/or its affiliates.
+ * Copyright 2020 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,14 +18,17 @@ package org.optaplanner.core.impl.score.stream.bavet.uni;
 
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
 import org.optaplanner.core.api.score.Score;
 import org.optaplanner.core.api.score.constraint.ConstraintMatchTotal;
+import org.optaplanner.core.impl.score.constraint.DefaultConstraintMatchTotal;
 import org.optaplanner.core.impl.score.inliner.UndoScoreImpacter;
 import org.optaplanner.core.impl.score.stream.bavet.BavetConstraintSession;
+import org.optaplanner.core.impl.score.stream.bavet.common.BavetAbstractTuple;
 import org.optaplanner.core.impl.score.stream.bavet.common.BavetScoringNode;
 
 public final class BavetScoringUniNode<A> extends BavetAbstractUniNode<A> implements BavetScoringNode {
@@ -39,10 +42,10 @@ public final class BavetScoringUniNode<A> extends BavetAbstractUniNode<A> implem
     private final boolean constraintMatchEnabled;
     private final Set<BavetScoringUniTuple<A>> tupleSet;
 
-    public BavetScoringUniNode(BavetConstraintSession session, int nodeOrder, BavetAbstractUniNode<A> parentNode,
+    public BavetScoringUniNode(BavetConstraintSession session, int nodeIndex, BavetAbstractUniNode<A> parentNode,
             String constraintPackage, String constraintName, Score<?> constraintWeight,
             BiFunction<A, Consumer<Score<?>>, UndoScoreImpacter> scoreImpacter) {
-        super(session, nodeOrder);
+        super(session, nodeIndex);
         this.parentNode = parentNode;
         this.constraintPackage = constraintPackage;
         this.constraintName = constraintName;
@@ -63,11 +66,18 @@ public final class BavetScoringUniNode<A> extends BavetAbstractUniNode<A> implem
     // ************************************************************************
 
     @Override
+    public List<BavetAbstractUniNode<A>> getChildNodeList() {
+        return Collections.emptyList();
+    }
+
+    @Override
     public BavetScoringUniTuple<A> createTuple(BavetAbstractUniTuple<A> parentTuple) {
         return new BavetScoringUniTuple<>(this, parentTuple);
     }
 
-    public void refresh(BavetScoringUniTuple<A> tuple) {
+    @Override
+    public void refresh(BavetAbstractTuple uncastTuple) {
+        BavetScoringUniTuple<A> tuple = (BavetScoringUniTuple<A>) uncastTuple;
         A a = tuple.getFactA();
         UndoScoreImpacter oldUndoScoreImpacter = tuple.getUndoScoreImpacter();
         if (oldUndoScoreImpacter != null) {
@@ -94,17 +104,15 @@ public final class BavetScoringUniNode<A> extends BavetAbstractUniNode<A> implem
         } else {
             tuple.setUndoScoreImpacter(null);
         }
-        tuple.refreshed();
     }
 
     @Override
-    public ConstraintMatchTotal buildConstraintMatchTotal(Score<?> zeroScore) {
-        ConstraintMatchTotal constraintMatchTotal = new ConstraintMatchTotal(
-                constraintPackage, constraintName,
-                constraintWeight, zeroScore);
+    public <Score_ extends Score<Score_>> ConstraintMatchTotal<Score_> buildConstraintMatchTotal(Score_ zeroScore) {
+        DefaultConstraintMatchTotal<Score_> constraintMatchTotal = new DefaultConstraintMatchTotal(constraintPackage,
+                constraintName, constraintWeight, zeroScore);
         for (BavetScoringUniTuple<A> tuple : tupleSet) {
             constraintMatchTotal.addConstraintMatch(
-                    Collections.singletonList(tuple.getFactA()), tuple.getMatchScore());
+                    Collections.singletonList(tuple.getFactA()), (Score_) tuple.getMatchScore());
         }
         return constraintMatchTotal;
     }

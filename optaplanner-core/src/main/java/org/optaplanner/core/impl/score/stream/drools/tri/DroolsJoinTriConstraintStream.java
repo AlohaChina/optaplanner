@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Red Hat, Inc. and/or its affiliates.
+ * Copyright 2020 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,24 +19,20 @@ package org.optaplanner.core.impl.score.stream.drools.tri;
 import org.optaplanner.core.api.score.stream.tri.TriJoiner;
 import org.optaplanner.core.impl.score.stream.drools.DroolsConstraintFactory;
 import org.optaplanner.core.impl.score.stream.drools.bi.DroolsAbstractBiConstraintStream;
+import org.optaplanner.core.impl.score.stream.drools.common.nodes.TriConstraintGraphNode;
 import org.optaplanner.core.impl.score.stream.drools.uni.DroolsAbstractUniConstraintStream;
-import org.optaplanner.core.impl.score.stream.tri.AbstractTriJoiner;
 
 public final class DroolsJoinTriConstraintStream<Solution_, A, B, C>
         extends DroolsAbstractTriConstraintStream<Solution_, A, B, C> {
 
-    private final DroolsAbstractBiConstraintStream<Solution_, A, B> leftParentStream;
-    private final DroolsAbstractUniConstraintStream<Solution_, C> rightParentStream;
-    private final DroolsTriCondition<A, B, C> condition;
+    private final TriConstraintGraphNode node;
 
     public DroolsJoinTriConstraintStream(DroolsConstraintFactory<Solution_> constraintFactory,
             DroolsAbstractBiConstraintStream<Solution_, A, B> parent,
             DroolsAbstractUniConstraintStream<Solution_, C> otherStream, TriJoiner<A, B, C> triJoiner) {
-        super(constraintFactory, null);
-        this.leftParentStream = parent;
-        this.rightParentStream = otherStream;
-        this.condition = parent.getCondition().andJoin(otherStream.getCondition(),
-                (AbstractTriJoiner<A, B, C>) triJoiner);
+        super(constraintFactory);
+        this.node = constraintFactory.getConstraintGraph().join(parent.getConstraintGraphNode(),
+                otherStream.getConstraintGraphNode(), triJoiner);
     }
 
     // ************************************************************************
@@ -44,25 +40,17 @@ public final class DroolsJoinTriConstraintStream<Solution_, A, B, C>
     // ************************************************************************
 
     @Override
-    public DroolsTriCondition<A, B, C> getCondition() {
-        return condition;
+    public TriConstraintGraphNode getConstraintGraphNode() {
+        return node;
     }
 
     // ************************************************************************
     // Getters/setters
     // ************************************************************************
 
-    public DroolsAbstractBiConstraintStream<Solution_, A, B> getLeftParentStream() {
-        return leftParentStream;
-    }
-
-    public DroolsAbstractUniConstraintStream<Solution_, C> getRightParentStream() {
-        return rightParentStream;
-    }
-
     @Override
     public String toString() {
-        return "TriJoin() with " + getChildStreams().size()  + " children";
+        return "TriJoin() with " + getChildStreams().size() + " children";
     }
 
 }

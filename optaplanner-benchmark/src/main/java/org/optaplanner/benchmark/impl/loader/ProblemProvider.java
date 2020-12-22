@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Red Hat, Inc. and/or its affiliates.
+ * Copyright 2020 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,19 +16,18 @@
 
 package org.optaplanner.benchmark.impl.loader;
 
-import com.thoughtworks.xstream.annotations.XStreamAlias;
-import com.thoughtworks.xstream.annotations.XStreamInclude;
-import org.optaplanner.benchmark.config.ProblemBenchmarksConfig;
+import javax.xml.bind.annotation.XmlSeeAlso;
+
 import org.optaplanner.benchmark.impl.result.SubSingleBenchmarkResult;
 import org.optaplanner.core.api.domain.solution.PlanningSolution;
 
 /**
  * Subclasses need to implement {@link Object#equals(Object) equals()} and {@link Object#hashCode() hashCode()}
- * which are used by {@link ProblemBenchmarksConfig#buildProblemBenchmarkList}.
+ * which are used by {@link org.optaplanner.benchmark.impl.ProblemBenchmarksFactory#buildProblemBenchmarkList}.
+ *
  * @param <Solution_> the solution type, the class with the {@link PlanningSolution} annotation
  */
-@XStreamAlias("problemProvider")
-@XStreamInclude({
+@XmlSeeAlso({
         InstanceProblemProvider.class,
         FileProblemProvider.class
 })

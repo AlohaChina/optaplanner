@@ -33,6 +33,7 @@ public class StatisticUtils {
 
     /**
      * Calculates standard deviation of {@link BenchmarkResult#getAverageScore()}s from {@code averageScore}.
+     *
      * @param averageScore not null
      * @return standard deviation double values
      */
@@ -71,7 +72,7 @@ public class StatisticUtils {
         return standardDeviationDoubles;
     }
 
-    // TODO Do the locale formatting in benchmarkReport.html.ftl - https://issues.jboss.org/browse/PLANNER-169
+    // TODO Do the locale formatting in benchmarkReport.html.ftl - https://issues.redhat.com/browse/PLANNER-169
     public static String getStandardDeviationString(double[] standardDeviationDoubles) {
         if (standardDeviationDoubles == null) {
             return null;

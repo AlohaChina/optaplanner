@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Red Hat, Inc. and/or its affiliates.
+ * Copyright 2020 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,36 +16,80 @@
 
 package org.optaplanner.core.impl.score.stream.drools.uni;
 
-import java.util.List;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
+import org.optaplanner.core.api.function.QuadFunction;
+import org.optaplanner.core.api.function.TriFunction;
+import org.optaplanner.core.api.score.stream.bi.BiConstraintCollector;
+import org.optaplanner.core.api.score.stream.quad.QuadConstraintCollector;
+import org.optaplanner.core.api.score.stream.tri.TriConstraintCollector;
 import org.optaplanner.core.api.score.stream.uni.UniConstraintCollector;
 import org.optaplanner.core.impl.score.stream.drools.DroolsConstraintFactory;
+import org.optaplanner.core.impl.score.stream.drools.bi.DroolsAbstractBiConstraintStream;
+import org.optaplanner.core.impl.score.stream.drools.common.nodes.UniConstraintGraphChildNode;
+import org.optaplanner.core.impl.score.stream.drools.common.nodes.UniConstraintGraphNode;
+import org.optaplanner.core.impl.score.stream.drools.quad.DroolsAbstractQuadConstraintStream;
+import org.optaplanner.core.impl.score.stream.drools.tri.DroolsAbstractTriConstraintStream;
 
-public final class DroolsGroupingUniConstraintStream<Solution_, A, NewA>
+public final class DroolsGroupingUniConstraintStream<Solution_, NewA>
         extends DroolsAbstractUniConstraintStream<Solution_, NewA> {
 
-    private final DroolsAbstractUniConstraintStream<Solution_, A> parent;
-    private final DroolsUniCondition<NewA> condition;
+    private final UniConstraintGraphChildNode node;
 
-    public DroolsGroupingUniConstraintStream(DroolsConstraintFactory<Solution_> constraintFactory,
+    public <A> DroolsGroupingUniConstraintStream(DroolsConstraintFactory<Solution_> constraintFactory,
             DroolsAbstractUniConstraintStream<Solution_, A> parent, Function<A, NewA> groupKeyMapping) {
         super(constraintFactory);
-        this.parent = parent;
-        this.condition = parent.getCondition().andGroup(groupKeyMapping);
+        this.node = constraintFactory.getConstraintGraph().groupBy(parent.getConstraintGraphNode(), groupKeyMapping);
     }
 
-    public <ResultContainer_> DroolsGroupingUniConstraintStream(DroolsConstraintFactory<Solution_> constraintFactory,
+    public <A, ResultContainer_> DroolsGroupingUniConstraintStream(DroolsConstraintFactory<Solution_> constraintFactory,
             DroolsAbstractUniConstraintStream<Solution_, A> parent,
             UniConstraintCollector<A, ResultContainer_, NewA> collector) {
         super(constraintFactory);
-        this.parent = parent;
-        this.condition = parent.getCondition().andCollect(collector);
+        this.node = constraintFactory.getConstraintGraph().groupBy(parent.getConstraintGraphNode(), collector);
     }
 
-    @Override
-    public List<DroolsFromUniConstraintStream<Solution_, Object>> getFromStreamList() {
-        return parent.getFromStreamList();
+    public <A, B> DroolsGroupingUniConstraintStream(DroolsConstraintFactory<Solution_> constraintFactory,
+            DroolsAbstractBiConstraintStream<Solution_, A, B> parent, BiFunction<A, B, NewA> groupKeyMapping) {
+        super(constraintFactory);
+        this.node = constraintFactory.getConstraintGraph().groupBy(parent.getConstraintGraphNode(), groupKeyMapping);
+    }
+
+    public <A, B, ResultContainer_> DroolsGroupingUniConstraintStream(DroolsConstraintFactory<Solution_> constraintFactory,
+            DroolsAbstractBiConstraintStream<Solution_, A, B> parent,
+            BiConstraintCollector<A, B, ResultContainer_, NewA> collector) {
+        super(constraintFactory);
+        this.node = constraintFactory.getConstraintGraph().groupBy(parent.getConstraintGraphNode(), collector);
+    }
+
+    public <A, B, C, ResultContainer_> DroolsGroupingUniConstraintStream(
+            DroolsConstraintFactory<Solution_> constraintFactory,
+            DroolsAbstractTriConstraintStream<Solution_, A, B, C> parent,
+            TriConstraintCollector<A, B, C, ResultContainer_, NewA> collector) {
+        super(constraintFactory);
+        this.node = constraintFactory.getConstraintGraph().groupBy(parent.getConstraintGraphNode(), collector);
+    }
+
+    public <A, B, C> DroolsGroupingUniConstraintStream(DroolsConstraintFactory<Solution_> constraintFactory,
+            DroolsAbstractTriConstraintStream<Solution_, A, B, C> parent, TriFunction<A, B, C, NewA> groupKeyMapping) {
+        super(constraintFactory);
+        this.node = constraintFactory.getConstraintGraph().groupBy(parent.getConstraintGraphNode(), groupKeyMapping);
+    }
+
+    public <A, B, C, D, ResultContainer_> DroolsGroupingUniConstraintStream(
+            DroolsConstraintFactory<Solution_> constraintFactory,
+            DroolsAbstractQuadConstraintStream<Solution_, A, B, C, D> parent,
+            QuadConstraintCollector<A, B, C, D, ResultContainer_, NewA> collector) {
+        super(constraintFactory);
+        this.node = constraintFactory.getConstraintGraph().groupBy(parent.getConstraintGraphNode(), collector);
+    }
+
+    public <A, B, C, D> DroolsGroupingUniConstraintStream(DroolsConstraintFactory<Solution_> constraintFactory,
+            DroolsAbstractQuadConstraintStream<Solution_, A, B, C, D> parent,
+            QuadFunction<A, B, C, D, NewA> groupKeyMapping) {
+        super(constraintFactory);
+        this.node = constraintFactory.getConstraintGraph().groupBy(parent.getConstraintGraphNode(), groupKeyMapping);
     }
 
     // ************************************************************************
@@ -53,12 +97,12 @@ public final class DroolsGroupingUniConstraintStream<Solution_, A, NewA>
     // ************************************************************************
 
     @Override
-    public DroolsUniCondition<NewA> getCondition() {
-        return condition;
+    public UniConstraintGraphNode getConstraintGraphNode() {
+        return node;
     }
 
     @Override
     public String toString() {
-        return "GroupBy()";
+        return "UniGroup() with " + getChildStreams().size() + " children.";
     }
 }

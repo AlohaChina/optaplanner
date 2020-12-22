@@ -11,12 +11,12 @@
 [[integrationOverview]]
 == Overview
 
-OptaPlanner's input and output data (the planning problem and the best solution) are plain old JavaBeans (POJO's), so integration with other Java technologies is straightforward.
+OptaPlanner's input and output data (the planning problem and the best solution) are plain old JavaBeans (POJOs), so integration with other Java technologies is straightforward.
 For example:
 
-* To read a planning problem from the database (and store the best solution in it), annotate the domain POJO's with JPA annotations.
-* To read a planning problem from an XML file (and store the best solution in it), annotate the domain POJO's with XStream or JAXB annotations.
-* To expose the Solver as a REST Service that reads the planning problem and responds with the best solution, annotate the domain POJO's with XStream, JAXB or Jackson annotations and hook the `Solver` in Camel or RESTEasy.
+* To read a planning problem from the database (and store the best solution in it), annotate the domain POJOs with JPA annotations.
+* To read a planning problem from an XML file (and store the best solution in it), annotate the domain POJOs with XStream or JAXB annotations.
+* To expose the Solver as a REST Service that reads the planning problem and responds with the best solution, annotate the domain POJOs with XStream, JAXB or Jackson annotations and hook the `Solver` in Camel or RESTEasy.
 
 image::Integration/integrationOverview.png[align="center"]
 
@@ -28,7 +28,7 @@ image::Integration/integrationOverview.png[align="center"]
 [[integrationWithJpaAndHibernate]]
 === Database: JPA and Hibernate
 
-Enrich domain POJO's (solution, entities and problem facts) with JPA annotations
+Enrich domain POJOs (solution, entities and problem facts) with JPA annotations
 to store them in a database by calling `EntityManager.persist()`.
 
 [NOTE]
@@ -189,7 +189,7 @@ Neglecting to do this can lead to persisting duplicate solutions, JPA exceptions
 [[integrationWithXStream]]
 === XML or JSON: XStream
 
-Enrich domain POJO's (solution, entities and problem facts) with XStream annotations to serialize them to/from XML or JSON.
+Enrich domain POJOs (solution, entities and problem facts) with XStream annotations to serialize them to/from XML or JSON.
 
 Add a dependency to the `optaplanner-persistence-xstream` jar to take advantage of these extra integration features:
 
@@ -214,7 +214,7 @@ public class CloudBalance {
 }
 ----
 
-For example, this will generate pretty XML:
+For example, this generates pretty XML:
 
 [source,xml,options="nowrap"]
 ----
@@ -240,7 +240,7 @@ public class Schedule {
 }
 ----
 
-For example, this will generate:
+For example, this generates:
 
 [source,xml,options="nowrap"]
 ----
@@ -257,7 +257,7 @@ must always be in sync with those in the solver.
 [[integrationWithJaxb]]
 === XML or JSON: JAXB
 
-Enrich domain POJO's (solution, entities and problem facts) with JAXB annotations to serialize them to/from XML or JSON.
+Enrich domain POJOs (solution, entities and problem facts) with JAXB annotations to serialize them to/from XML or JSON.
 
 Add a dependency to the `optaplanner-persistence-jaxb` jar to take advantage of these extra integration features:
 
@@ -266,7 +266,7 @@ Add a dependency to the `optaplanner-persistence-jaxb` jar to take advantage of 
 ==== JAXB: marshalling a `Score`
 
 When a `Score` is marshalled to XML or JSON by the default JAXB configuration, it's corrupted.
-To fix that, configure the appropriate ``ScoreJaxbXmlAdapter``:
+To fix that, configure the appropriate ``ScoreJaxbAdapter``:
 
 [source,java,options="nowrap"]
 ----
@@ -275,14 +275,14 @@ To fix that, configure the appropriate ``ScoreJaxbXmlAdapter``:
 public class CloudBalance {
 
     @PlanningScore
-    @XmlJavaTypeAdapter(HardSoftScoreJaxbXmlAdapter.class)
+    @XmlJavaTypeAdapter(HardSoftScoreJaxbAdapter.class)
     private HardSoftScore score;
 
     ...
 }
 ----
 
-For example, this will generate pretty XML:
+For example, this generates pretty XML:
 
 [source,xml,options="nowrap"]
 ----
@@ -301,14 +301,14 @@ The same applies for a bendable score:
 public class Schedule {
 
     @PlanningScore
-    @XmlJavaTypeAdapter(BendableScoreJaxbXmlAdapter.class)
+    @XmlJavaTypeAdapter(BendableScoreJaxbAdapter.class)
     private BendableScore score;
 
     ...
 }
 ----
 
-For example, with a `hardLevelsSize` of `2` and a `softLevelsSize` of ``3``, that will generate:
+For example, with a `hardLevelsSize` of `2` and a `softLevelsSize` of `3`, that will generate:
 
 [source,xml,options="nowrap"]
 ----
@@ -324,7 +324,7 @@ The `hardLevelsSize` and `softLevelsSize` implied, when reading a bendable score
 [[integrationWithJackson]]
 === JSON: Jackson
 
-Enrich domain POJO's (solution, entities and problem facts) with Jackson annotations to serialize them to/from JSON.
+Enrich domain POJOs (solution, entities and problem facts) with Jackson annotations to serialize them to/from JSON.
 
 Add a dependency to the `optaplanner-persistence-jackson` jar and register `OptaPlannerJacksonModule`:
 
@@ -339,8 +339,8 @@ objectMapper.registerModule(OptaPlannerJacksonModule.createModule());
 ==== Jackson: marshalling a `Score`
 
 When a `Score` is marshalled to/from JSON by the default Jackson configuration, it fails.
-The `OptaPlannerJacksonModule` fixes that, by using `HardSoftScoreJacksonJsonSerializer`,
-HardSoftScoreJacksonJsonDeserializer`, etc.
+The `OptaPlannerJacksonModule` fixes that, by using `HardSoftScoreJacksonSerializer`,
+`HardSoftScoreJacksonDeserializer`, etc.
 
 [source,java,options="nowrap"]
 ----
@@ -354,7 +354,7 @@ public class CloudBalance {
 }
 ----
 
-For example, this will generate this JSON:
+For example, this generates:
 
 [source,json]
 ----
@@ -367,7 +367,7 @@ For example, this will generate this JSON:
 [NOTE]
 ====
 When reading a `BendableScore`, the `hardLevelsSize` and `softLevelsSize` implied in the JSON element,
-must always be in sync with those defined in the `@PlanningScore` annotation in the solution class. For example:
+must always be in sync with those defined in the `@PlanningScore` annotation in the solution class.For example:
 
 [source,json]
 ----
@@ -393,8 +393,7 @@ public class Schedule {
 ----
 ====
 
-When a field is the `Score` supertype (instead of a specific type such as `HardSoftScore`),
-it uses `PolymorphicScoreJacksonJsonSerializer` and `PolymorphicScoreJacksonJsonDeserializer`
+When a field is the `Score` supertype (instead of a specific type such as `HardSoftScore`), it uses `PolymorphicScoreJacksonSerializer` and `PolymorphicScoreJacksonDeserializer`
 to record the score type in JSON too, otherwise it would be impossible to deserialize it:
 
 [source,java,options="nowrap"]
@@ -409,7 +408,7 @@ public class CloudBalance {
 }
 ----
 
-For example, this will generate this JSON:
+For example, this generates:
 
 [source,json]
 ----
@@ -418,6 +417,124 @@ For example, this will generate this JSON:
    ...
 }
 ----
+
+
+[[integrationWithJsonb]]
+=== JSON: JSON-B
+
+Enrich domain POJOs (solution, entities and problem facts) with JSON-B annotations to serialize them to/from JSON.
+
+Add a dependency to the `optaplanner-persistence-jsonb` jar and use `OptaPlannerJsonbConfig` to create a `Jsonb` instance:
+
+[source,java,options="nowrap"]
+----
+JsonbConfig config = OptaPlannerJsonbConfig.createConfig();
+Jsonb jsonb = JsonbBuilder.create(config);
+----
+
+
+[[jsonbMarshallingAScore]]
+==== JSON-B: marshalling a `Score`
+
+When a `Score` is marshalled to/from JSON by the default JSON-B configuration, it fails.
+The `OptaPlannerJsonbConfig` fixes that, by using adapters including `BendableScoreJsonbAdapter`, `HardSoftScoreJsonbAdapter`, etc.
+
+[source,java,options="nowrap"]
+----
+@PlanningSolution
+public class CloudBalance {
+
+    @PlanningScore
+    private HardSoftScore score;
+
+    ...
+}
+----
+
+For example, this generates:
+
+[source,json]
+----
+{"hardSoftScore":"0hard/-200soft"}
+----
+
+The same applies for a bendable score:
+
+[source,java,options="nowrap"]
+----
+@PlanningSolution
+public class CloudBalance {
+
+    @PlanningScore
+    private BendableScore score;
+
+    ...
+}
+----
+
+This generates:
+
+[source,json]
+----
+{"bendableScore":"[0/0]hard/[-200/-20/0]soft"}
+----
+
+
+[[integrationWithQuarkus]]
+== Quarkus
+
+The Quarkus extension for OptaPlanner and its guide is coming soon.
+
+
+[[integrationWithSpringBoot]]
+== Spring Boot
+
+To use OptaPlanner on Spring Boot, add the `optaplanner-spring-boot-starter` dependency
+and read the Spring guide _Constraint solving AI with OptaPlanner_.
+
+[WARNING]
+====
+DRL score calculation is currently incompatible with the dependency `spring-boot-devtools`:
+none of the DRL rules will fire, due to ClassLoader issues.
+====
+
+These properties are supported in Spring's `application.properties`:
+
+optaplanner.solver-manager.parallel-solver-count::
+The number of solvers that run in parallel.
+This directly influences CPU consumption.
+Defaults to `AUTO`.
+optaplanner.solver-config-xml::
+A classpath resource to read the solver configuration XML.
+Defaults to `solverConfig.xml`.
+If this property isn't specified, that file is optional.
+optaplanner.score-drl::
+A classpath resource to read the score DRL.
+Defaults to `constraints.drl`.
+Do not define this property when a `ConstraintProvider`, `EasyScoreCalculator` or `IncrementalScoreCalculator` class exists.
+optaplanner.solver.environment-mode::
+Enable runtime assertions to detect common bugs in your implementation during development.
+optaplanner.solver.daemon::
+Enable <<daemon,daemon mode>>.
+In daemon mode, non-early termination pauses the solver instead of stopping it, until the next problem fact change arrives.
+This is often useful for <<realTimePlanning,real-time planning>>.
+Defaults to `false`.
+optaplanner.solver.move-thread-count::
+Enable multithreaded solving for a single problem, which increases CPU consumption.
+Defaults to `NONE`.
+See <<multithreadedIncrementalSolving,multithreaded incremental solving>>.
+optaplanner.solver.termination.spent-limit::
+How long the solver can run.
+For example: `30s` is 30 seconds. `5m` is 5 minutes. `2h` is 2 hours. `1d` is 1 day.
+optaplanner.solver.termination.unimproved-spent-limit::
+How long the solver can run without finding a new best solution after finding a new best solution.
+For example: `30s` is 30 seconds. `5m` is 5 minutes. `2h` is 2 hours. `1d` is 1 day.
+optaplanner.solver.termination.best-score-limit::
+Terminates the solver when a specific or higher score has been reached.
+For example: `0hard/-1000soft` terminates when the best score changes from `0hard/-1200soft` to `0hard/-900soft`.
+Wildcards are supported to replace numbers.
+For example: `0hard/*soft` to terminate when any feasible score is reached.
+
 
 [[integrationWithSoaAndEsb]]
 == SOA and ESB
@@ -440,7 +557,7 @@ That component works in Karaf too.
 === JBoss Modules, WildFly, and JBoss EAP
 
 Because of JBoss Modules' `ClassLoader` magic, provide the `ClassLoader` of your classes <<solverConfigurationByXML,during the SolverFactory creation>>,
-so it can find the classpath resources (such as the solver config, score DRL's and domain classes) in your jars.
+so it can find the classpath resources (such as the solver config, score DRLs and domain classes) in your jars.
 
 It's also recommended <<customThreadFactory,to plug in WildFly's thread factory>>,
 especially with <<multithreadedSolving,multithreaded solving>>.
@@ -527,20 +644,6 @@ Let's create a module called __org.optaplanner__:
 ----
 
 
-[[integrationWithSpringBoot]]
-=== Spring Boot
-
-Normally OptaPlanner just works on Spring Boot, simply add the `optaplanner-core` dependency.
-If it has trouble finding classpath resources (such as the solver config, score DRL's and domain classes),
-provide the `ClassLoader` of your classes <<solverConfigurationByXML,during the SolverFactory creation>>.
-
-[WARNING]
-====
-Drools score calculation is currently incompatible with the dependency `spring-boot-devtools`:
-none of the DRL rules will fire, due to ClassLoader issues.
-====
-
-
 [[integrationWithJPMS]]
 === Java platform module system (Jigsaw)
 
@@ -590,7 +693,7 @@ The `optaplanner-core` jar includes OSGi metadata in its `MANIFEST.MF` file to f
 Furthermore, the maven artifact `kie-karaf-features` contains a `features.xml` file that supports the OSGi-feature ``optaplanner-engine``.
 
 Because of the OSGi's `ClassLoader` magic, provide the `ClassLoader` of your classes <<solverConfigurationByXML,during the SolverFactory creation>>,
-so it can find the classpath resources (such as the solver config, score DRL's and domain classes) in your jars.
+so it can find the classpath resources (such as the solver config, score DRLs and domain classes) in your jars.
 
 [NOTE]
 ====
@@ -631,23 +734,19 @@ Many human planners fail to accept this, often because they feel threatened by a
 But despite that, both can benefit if the human planner becomes the supervisor of OptaPlanner:
 
 * *The human planner defines, validates and tweaks the score function.*
-** The human planner tweaks the constraint weights of the <<constraintConfiguration, constraint configuration>> in a UI,
-as the business priorities change over time.
+** The human planner tweaks the constraint weights of the <<constraintConfiguration, constraint configuration>> in a UI, as the business priorities change over time.
 ** When the business changes, the score function often needs to change too.
 The human planner can notify the developers to add, change or remove score constraints.
 * *The human planner is always in control of OptaPlanner.*
 ** As shown in the course scheduling example, the human planner can pin down one or more planning variables to a specific planning value.
-Because they are <<immovablePlanningEntities,immovable>>, OptaPlanner does not change them: it optimizes the planning around the enforcements made by the human.
+Because they are <<pinnedPlanningEntities,pinned>>, OptaPlanner does not change them: it optimizes the planning around the enforcements made by the human.
 If the human planner pins down all planning variables, he/she sidelines OptaPlanner completely.
-** In a prototype implementation, the human planner occasionally uses pinning to intervene,
-but as the implementation matures, this should become obsolete.
-The feature should be kept available as a reassurance for the humans,
-and in the event that the business changes dramatically before the score constraints are adjusted accordingly.
+** In a prototype implementation, the human planner occasionally uses pinning to intervene, but as the implementation matures, this should become obsolete.
+The feature should be kept available as a reassurance for the humans, and in the event that the business changes dramatically before the score constraints are adjusted accordingly.
 
 For this reason, it is recommended that the human planner is actively involved in your project.
 
 image::Integration/keepTheUserInControl.png[align="center"]
-
 
 [[sizingHardwareAndSoftware]]
 == Sizing hardware and software

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Red Hat, Inc. and/or its affiliates.
+ * Copyright 2020 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,8 @@ package org.optaplanner.core.api.function;
  * Represents a function that accepts four arguments and produces a long-valued result.
  * This is the {@code long}-producing primitive specialization for {@link QuadFunction}.
  *
- * <p>This is a <a href="package-summary.html">functional interface</a>
+ * <p>
+ * This is a <a href="package-summary.html">functional interface</a>
  * whose functional method is {@link #applyAsLong(Object, Object, Object, Object)}.
  *
  * @param <A> the type of the first argument to the function
@@ -27,7 +28,7 @@ package org.optaplanner.core.api.function;
  * @param <C> the type of the third argument to the function
  * @param <D> the type of the fourth argument to the function
  *
- * @see TriFunction
+ * @see QuadFunction
  */
 @FunctionalInterface
 public interface ToLongQuadFunction<A, B, C, D> {

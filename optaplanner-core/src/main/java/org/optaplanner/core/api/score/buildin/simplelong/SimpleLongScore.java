@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Red Hat, Inc. and/or its affiliates.
+ * Copyright 2020 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package org.optaplanner.core.api.score.buildin.simplelong;
 
+import java.util.Objects;
+
 import org.optaplanner.core.api.score.AbstractScore;
 import org.optaplanner.core.api.score.Score;
 
@@ -23,6 +25,7 @@ import org.optaplanner.core.api.score.Score;
  * This {@link Score} is based on 1 level of long constraints.
  * <p>
  * This class is immutable.
+ *
  * @see Score
  */
 public final class SimpleLongScore extends AbstractScore<SimpleLongScore> {
@@ -41,23 +44,7 @@ public final class SimpleLongScore extends AbstractScore<SimpleLongScore> {
         return new SimpleLongScore(initScore, score);
     }
 
-    /**
-     * @deprecated in favor of {@link #ofUninitialized(int, long)}
-     */
-    @Deprecated
-    public static SimpleLongScore valueOfUninitialized(int initScore, long score) {
-        return new SimpleLongScore(initScore, score);
-    }
-
     public static SimpleLongScore of(long score) {
-        return new SimpleLongScore(0, score);
-    }
-
-    /**
-     * @deprecated in favor of {@link #of(long)}
-     */
-    @Deprecated
-    public static SimpleLongScore valueOf(long score) {
         return new SimpleLongScore(0, score);
     }
 
@@ -87,6 +74,7 @@ public final class SimpleLongScore extends AbstractScore<SimpleLongScore> {
      * The total of the broken negative constraints and fulfilled positive constraints.
      * Their weight is included in the total.
      * The score is usually a negative number because most use cases only have negative constraints.
+     *
      * @return higher is better, usually negative, 0 if no constraints are broken/fulfilled
      */
     public long getScore() {
@@ -98,13 +86,7 @@ public final class SimpleLongScore extends AbstractScore<SimpleLongScore> {
     // ************************************************************************
 
     @Override
-    public SimpleLongScore toInitializedScore() {
-        return initScore == 0 ? this : new SimpleLongScore(0, score);
-    }
-
-    @Override
     public SimpleLongScore withInitScore(int newInitScore) {
-        assertNoInitScore();
         return new SimpleLongScore(newInitScore, score);
     }
 
@@ -149,13 +131,17 @@ public final class SimpleLongScore extends AbstractScore<SimpleLongScore> {
     }
 
     @Override
+    public boolean isFeasible() {
+        return initScore >= 0;
+    }
+
+    @Override
     public Number[] toLevelNumbers() {
-        return new Number[]{score};
+        return new Number[] { score };
     }
 
     @Override
     public boolean equals(Object o) {
-        // A direct implementation (instead of EqualsBuilder) to avoid dependencies
         if (this == o) {
             return true;
         } else if (o instanceof SimpleLongScore) {
@@ -169,17 +155,13 @@ public final class SimpleLongScore extends AbstractScore<SimpleLongScore> {
 
     @Override
     public int hashCode() {
-        // A direct implementation (instead of HashCodeBuilder) to avoid dependencies
-        return ((17 * 37)
-                + initScore) * 37
-                + Long.valueOf(score).hashCode();
+        return Objects.hash(initScore, score);
     }
 
     @Override
     public int compareTo(SimpleLongScore other) {
-        // A direct implementation (instead of CompareToBuilder) to avoid dependencies
         if (initScore != other.getInitScore()) {
-            return initScore < other.getInitScore() ? -1 : 1;
+            return Integer.compare(initScore, other.getInitScore());
         } else {
             return Long.compare(score, other.getScore());
         }
@@ -187,17 +169,12 @@ public final class SimpleLongScore extends AbstractScore<SimpleLongScore> {
 
     @Override
     public String toShortString() {
-        return buildShortString((n) -> ((Long) n).longValue() != 0L, "");
+        return buildShortString((n) -> n.longValue() != 0L, "");
     }
 
     @Override
     public String toString() {
         return getInitPrefix() + score;
-    }
-
-    @Override
-    public boolean isCompatibleArithmeticArgument(Score otherScore) {
-        return otherScore instanceof SimpleLongScore;
     }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2010 Red Hat, Inc. and/or its affiliates.
+ * Copyright 2020 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.BorderFactory;
@@ -55,7 +56,6 @@ import org.optaplanner.examples.nurserostering.app.NurseRosteringApp;
 import org.optaplanner.examples.pas.app.PatientAdmissionScheduleApp;
 import org.optaplanner.examples.projectjobscheduling.app.ProjectJobSchedulingApp;
 import org.optaplanner.examples.rocktour.app.RockTourApp;
-import org.optaplanner.examples.scrabble.app.ScrabbleApp;
 import org.optaplanner.examples.taskassigning.app.TaskAssigningApp;
 import org.optaplanner.examples.tennis.app.TennisApp;
 import org.optaplanner.examples.travelingtournament.app.TravelingTournamentApp;
@@ -66,6 +66,7 @@ public class OptaPlannerExamplesApp extends JFrame {
 
     /**
      * Supported system properties: {@link CommonApp#DATA_DIR_SYSTEM_PROPERTY}.
+     *
      * @param args never null
      */
     public static void main(String[] args) {
@@ -133,7 +134,6 @@ public class OptaPlannerExamplesApp extends JFrame {
         panel.add(createExampleButton(new ExaminationApp()));
         panel.add(createExampleButton(new CoachShuttleGatheringApp()));
         panel.add(createExampleButton(new CheapTimeApp()));
-        panel.add(createExampleButton(new ScrabbleApp()));
 
         panel.add(createExampleButton(new MeetingSchedulingApp()));
         panel.add(createExampleButton(new TravelingTournamentApp()));
@@ -191,7 +191,8 @@ public class OptaPlannerExamplesApp extends JFrame {
         extraPanel.add(new JPanel());
         Action homepageAction = new OpenBrowserAction("www.optaplanner.org", "https://www.optaplanner.org");
         extraPanel.add(new JButton(homepageAction));
-        Action documentationAction = new OpenBrowserAction("Documentation", "https://www.optaplanner.org/learn/documentation.html");
+        Action documentationAction = new OpenBrowserAction("Documentation",
+                "https://www.optaplanner.org/learn/documentation.html");
         extraPanel.add(new JButton(documentationAction));
         return extraPanel;
     }

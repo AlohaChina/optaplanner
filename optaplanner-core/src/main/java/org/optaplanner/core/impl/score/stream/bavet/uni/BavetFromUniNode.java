@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Red Hat, Inc. and/or its affiliates.
+ * Copyright 2020 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.optaplanner.core.impl.score.stream.bavet.BavetConstraintSession;
+import org.optaplanner.core.impl.score.stream.bavet.common.BavetAbstractTuple;
 import org.optaplanner.core.impl.score.stream.bavet.common.BavetTupleState;
 
 public final class BavetFromUniNode<A> extends BavetAbstractUniNode<A> {
@@ -28,15 +29,20 @@ public final class BavetFromUniNode<A> extends BavetAbstractUniNode<A> {
 
     private List<BavetAbstractUniNode<A>> childNodeList = new ArrayList<>();
 
-    public BavetFromUniNode(BavetConstraintSession session, int nodeOrder,
+    public BavetFromUniNode(BavetConstraintSession session, int nodeIndex,
             Class<A> fromClass) {
-        super(session, nodeOrder);
+        super(session, nodeIndex);
         this.fromClass = fromClass;
     }
 
     @Override
     public void addChildNode(BavetAbstractUniNode<A> childNode) {
         childNodeList.add(childNode);
+    }
+
+    @Override
+    public List<BavetAbstractUniNode<A>> getChildNodeList() {
+        return childNodeList;
     }
 
     // ************************************************************************
@@ -74,9 +80,11 @@ public final class BavetFromUniNode<A> extends BavetAbstractUniNode<A> {
                 + ") can't have a parentTuple (" + parentTuple + ");");
     }
 
-    public void refresh(BavetFromUniTuple<A> tuple) {
-        List<BavetAbstractUniTuple<A>> childTupleList = tuple.getChildTupleList();
-        for (BavetAbstractUniTuple<A> childTuple : childTupleList) {
+    @Override
+    public void refresh(BavetAbstractTuple uncastTuple) {
+        BavetFromUniTuple<A> tuple = (BavetFromUniTuple<A>) uncastTuple;
+        List<BavetAbstractTuple> childTupleList = tuple.getChildTupleList();
+        for (BavetAbstractTuple childTuple : childTupleList) {
             // TODO the entire FromUniNode isn't really doing anything
             // so the destruction/construction is just an update op unless it's CREATING or DYING
             session.transitionTuple(childTuple, BavetTupleState.DYING);
@@ -89,12 +97,11 @@ public final class BavetFromUniNode<A> extends BavetAbstractUniNode<A> {
                 session.transitionTuple(childTuple, BavetTupleState.CREATING);
             }
         }
-        tuple.refreshed();
     }
 
     @Override
     public String toString() {
-        return "From(" + fromClass.getSimpleName() + ") with " + childNodeList.size()  + " children";
+        return "From(" + fromClass.getSimpleName() + ") with " + childNodeList.size() + " children";
     }
 
     // ************************************************************************

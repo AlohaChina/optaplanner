@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Red Hat, Inc. and/or its affiliates.
+ * Copyright 2020 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,15 +20,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import org.optaplanner.core.impl.solver.ProblemFactChange;
+import org.optaplanner.core.api.solver.ProblemFactChange;
 import org.optaplanner.examples.cloudbalancing.domain.CloudBalance;
 import org.optaplanner.examples.cloudbalancing.domain.CloudComputer;
 import org.optaplanner.examples.cloudbalancing.domain.CloudProcess;
-import org.optaplanner.examples.cloudbalancing.optional.realtime.AddComputerProblemFactChange;
-import org.optaplanner.examples.cloudbalancing.optional.realtime.AddProcessProblemFactChange;
-import org.optaplanner.examples.cloudbalancing.optional.realtime.DeleteComputerProblemFactChange;
-import org.optaplanner.examples.cloudbalancing.optional.realtime.DeleteProcessProblemFactChange;
 import org.optaplanner.examples.cloudbalancing.persistence.CloudBalancingGenerator;
+import org.optaplanner.examples.cloudbalancing.swingui.realtime.AddComputerProblemFactChange;
+import org.optaplanner.examples.cloudbalancing.swingui.realtime.AddProcessProblemFactChange;
+import org.optaplanner.examples.cloudbalancing.swingui.realtime.DeleteComputerProblemFactChange;
+import org.optaplanner.examples.cloudbalancing.swingui.realtime.DeleteProcessProblemFactChange;
 import org.optaplanner.examples.common.app.RealTimePlanningTurtleTest;
 
 public class CloudBalancingRealTimePlanningTurtleTest extends RealTimePlanningTurtleTest<CloudBalance> {

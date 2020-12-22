@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Red Hat, Inc. and/or its affiliates.
+ * Copyright 2020 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,10 +25,11 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.optaplanner.core.api.score.Score;
 import org.optaplanner.core.impl.phase.scope.AbstractPhaseScope;
 import org.optaplanner.core.impl.phase.scope.AbstractStepScope;
+import org.optaplanner.core.impl.solver.scope.SolverScope;
 import org.optaplanner.core.impl.solver.thread.ChildThreadType;
-import org.optaplanner.core.impl.solver.scope.DefaultSolverScope;
 
-public class UnimprovedTimeMillisSpentScoreDifferenceThresholdTermination extends AbstractTermination {
+public class UnimprovedTimeMillisSpentScoreDifferenceThresholdTermination<Solution_>
+        extends AbstractTermination<Solution_> {
 
     private final long unimprovedTimeMillisSpentLimit;
     private final Score unimprovedScoreDifferenceThreshold;
@@ -53,7 +54,7 @@ public class UnimprovedTimeMillisSpentScoreDifferenceThresholdTermination extend
         this.unimprovedScoreDifferenceThreshold = unimprovedScoreDifferenceThreshold;
         if (unimprovedTimeMillisSpentLimit < 0L) {
             throw new IllegalArgumentException("The unimprovedTimeMillisSpentLimit (" + unimprovedTimeMillisSpentLimit
-                                                       + ") cannot be negative.");
+                    + ") cannot be negative.");
         }
         this.clock = clock;
     }
@@ -67,38 +68,38 @@ public class UnimprovedTimeMillisSpentScoreDifferenceThresholdTermination extend
     }
 
     @Override
-    public void solvingStarted(DefaultSolverScope solverScope) {
+    public void solvingStarted(SolverScope<Solution_> solverScope) {
         bestScoreImprovementHistoryQueue = new ArrayDeque<>();
         solverSafeTimeMillis = solverScope.getBestSolutionTimeMillis() + unimprovedTimeMillisSpentLimit;
     }
 
     @Override
-    public void solvingEnded(DefaultSolverScope solverScope) {
+    public void solvingEnded(SolverScope<Solution_> solverScope) {
         bestScoreImprovementHistoryQueue = null;
         solverSafeTimeMillis = -1L;
     }
 
     @Override
-    public void phaseStarted(AbstractPhaseScope phaseScope) {
+    public void phaseStarted(AbstractPhaseScope<Solution_> phaseScope) {
         phaseSafeTimeMillis = phaseScope.getStartingSystemTimeMillis() + unimprovedTimeMillisSpentLimit;
     }
 
     @Override
-    public void phaseEnded(AbstractPhaseScope phaseScope) {
+    public void phaseEnded(AbstractPhaseScope<Solution_> phaseScope) {
         phaseSafeTimeMillis = -1L;
     }
 
     @Override
-    public void stepEnded(AbstractStepScope stepScope) {
+    public void stepEnded(AbstractStepScope<Solution_> stepScope) {
         if (stepScope.getBestScoreImproved()) {
-            DefaultSolverScope solverScope = stepScope.getPhaseScope().getSolverScope();
+            SolverScope<Solution_> solverScope = stepScope.getPhaseScope().getSolverScope();
             long bestSolutionTimeMillis = solverScope.getBestSolutionTimeMillis();
             Score bestScore = solverScope.getBestScore();
-            for (Iterator<Pair<Long, Score>> it = bestScoreImprovementHistoryQueue.iterator(); it.hasNext(); ) {
+            for (Iterator<Pair<Long, Score>> it = bestScoreImprovementHistoryQueue.iterator(); it.hasNext();) {
                 Pair<Long, Score> bestScoreImprovement = it.next();
                 Score scoreDifference = bestScore.subtract(bestScoreImprovement.getValue());
-                boolean timeLimitNotYetReached =
-                        bestScoreImprovement.getKey() + unimprovedTimeMillisSpentLimit >= bestSolutionTimeMillis;
+                boolean timeLimitNotYetReached = bestScoreImprovement.getKey()
+                        + unimprovedTimeMillisSpentLimit >= bestSolutionTimeMillis;
                 boolean scoreImprovedOverThreshold = scoreDifference.compareTo(unimprovedScoreDifferenceThreshold) >= 0;
                 if (scoreImprovedOverThreshold && timeLimitNotYetReached) {
                     it.remove();
@@ -118,12 +119,12 @@ public class UnimprovedTimeMillisSpentScoreDifferenceThresholdTermination extend
     // ************************************************************************
 
     @Override
-    public boolean isSolverTerminated(DefaultSolverScope solverScope) {
+    public boolean isSolverTerminated(SolverScope<Solution_> solverScope) {
         return isTerminated(solverSafeTimeMillis);
     }
 
     @Override
-    public boolean isPhaseTerminated(AbstractPhaseScope phaseScope) {
+    public boolean isPhaseTerminated(AbstractPhaseScope<Solution_> phaseScope) {
         return isTerminated(phaseSafeTimeMillis);
     }
 
@@ -141,12 +142,12 @@ public class UnimprovedTimeMillisSpentScoreDifferenceThresholdTermination extend
     // ************************************************************************
 
     @Override
-    public double calculateSolverTimeGradient(DefaultSolverScope solverScope) {
+    public double calculateSolverTimeGradient(SolverScope<Solution_> solverScope) {
         return calculateTimeGradient(solverSafeTimeMillis);
     }
 
     @Override
-    public double calculatePhaseTimeGradient(AbstractPhaseScope phaseScope) {
+    public double calculatePhaseTimeGradient(AbstractPhaseScope<Solution_> phaseScope) {
         return calculateTimeGradient(phaseSafeTimeMillis);
     }
 
@@ -162,10 +163,10 @@ public class UnimprovedTimeMillisSpentScoreDifferenceThresholdTermination extend
     // ************************************************************************
 
     @Override
-    public UnimprovedTimeMillisSpentScoreDifferenceThresholdTermination createChildThreadTermination(
-            DefaultSolverScope solverScope, ChildThreadType childThreadType) {
-        return new UnimprovedTimeMillisSpentScoreDifferenceThresholdTermination(
-                unimprovedTimeMillisSpentLimit, unimprovedScoreDifferenceThreshold);
+    public UnimprovedTimeMillisSpentScoreDifferenceThresholdTermination<Solution_> createChildThreadTermination(
+            SolverScope<Solution_> solverScope, ChildThreadType childThreadType) {
+        return new UnimprovedTimeMillisSpentScoreDifferenceThresholdTermination<>(unimprovedTimeMillisSpentLimit,
+                unimprovedScoreDifferenceThreshold);
     }
 
     @Override

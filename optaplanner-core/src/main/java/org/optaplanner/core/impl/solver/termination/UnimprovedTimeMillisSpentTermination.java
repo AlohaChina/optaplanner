@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Red Hat, Inc. and/or its affiliates.
+ * Copyright 2020 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,10 +19,10 @@ package org.optaplanner.core.impl.solver.termination;
 import java.time.Clock;
 
 import org.optaplanner.core.impl.phase.scope.AbstractPhaseScope;
+import org.optaplanner.core.impl.solver.scope.SolverScope;
 import org.optaplanner.core.impl.solver.thread.ChildThreadType;
-import org.optaplanner.core.impl.solver.scope.DefaultSolverScope;
 
-public class UnimprovedTimeMillisSpentTermination extends AbstractTermination {
+public class UnimprovedTimeMillisSpentTermination<Solution_> extends AbstractTermination<Solution_> {
 
     private final long unimprovedTimeMillisSpentLimit;
 
@@ -36,7 +36,7 @@ public class UnimprovedTimeMillisSpentTermination extends AbstractTermination {
         this.unimprovedTimeMillisSpentLimit = unimprovedTimeMillisSpentLimit;
         if (unimprovedTimeMillisSpentLimit < 0L) {
             throw new IllegalArgumentException("The unimprovedTimeMillisSpentLimit (" + unimprovedTimeMillisSpentLimit
-                                                       + ") cannot be negative.");
+                    + ") cannot be negative.");
         }
         this.clock = clock;
     }
@@ -50,13 +50,13 @@ public class UnimprovedTimeMillisSpentTermination extends AbstractTermination {
     // ************************************************************************
 
     @Override
-    public boolean isSolverTerminated(DefaultSolverScope solverScope) {
+    public boolean isSolverTerminated(SolverScope<Solution_> solverScope) {
         long bestSolutionTimeMillis = solverScope.getBestSolutionTimeMillis();
         return isTerminated(bestSolutionTimeMillis);
     }
 
     @Override
-    public boolean isPhaseTerminated(AbstractPhaseScope phaseScope) {
+    public boolean isPhaseTerminated(AbstractPhaseScope<Solution_> phaseScope) {
         long bestSolutionTimeMillis = phaseScope.getPhaseBestSolutionTimeMillis();
         return isTerminated(bestSolutionTimeMillis);
     }
@@ -72,13 +72,13 @@ public class UnimprovedTimeMillisSpentTermination extends AbstractTermination {
     // ************************************************************************
 
     @Override
-    public double calculateSolverTimeGradient(DefaultSolverScope solverScope) {
+    public double calculateSolverTimeGradient(SolverScope<Solution_> solverScope) {
         long bestSolutionTimeMillis = solverScope.getBestSolutionTimeMillis();
         return calculateTimeGradient(bestSolutionTimeMillis);
     }
 
     @Override
-    public double calculatePhaseTimeGradient(AbstractPhaseScope phaseScope) {
+    public double calculatePhaseTimeGradient(AbstractPhaseScope<Solution_> phaseScope) {
         long bestSolutionTimeMillis = phaseScope.getPhaseBestSolutionTimeMillis();
         return calculateTimeGradient(bestSolutionTimeMillis);
     }
@@ -95,9 +95,9 @@ public class UnimprovedTimeMillisSpentTermination extends AbstractTermination {
     // ************************************************************************
 
     @Override
-    public UnimprovedTimeMillisSpentTermination createChildThreadTermination(
-            DefaultSolverScope solverScope, ChildThreadType childThreadType) {
-        return new UnimprovedTimeMillisSpentTermination(unimprovedTimeMillisSpentLimit);
+    public UnimprovedTimeMillisSpentTermination<Solution_> createChildThreadTermination(
+            SolverScope<Solution_> solverScope, ChildThreadType childThreadType) {
+        return new UnimprovedTimeMillisSpentTermination<>(unimprovedTimeMillisSpentLimit);
     }
 
     @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Red Hat, Inc. and/or its affiliates.
+ * Copyright 2020 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,25 +16,28 @@
 
 package org.optaplanner.benchmark.config.report;
 
-import java.time.ZoneId;
 import java.util.Comparator;
 import java.util.Locale;
 
-import com.thoughtworks.xstream.annotations.XStreamAlias;
+import javax.xml.bind.annotation.XmlType;
+import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
+
 import org.optaplanner.benchmark.config.ranking.SolverRankingType;
 import org.optaplanner.benchmark.impl.ranking.SolverRankingWeightFactory;
-import org.optaplanner.benchmark.impl.ranking.TotalRankSolverRankingWeightFactory;
-import org.optaplanner.benchmark.impl.ranking.TotalScoreSolverRankingComparator;
-import org.optaplanner.benchmark.impl.ranking.WorstScoreSolverRankingComparator;
-import org.optaplanner.benchmark.impl.report.BenchmarkReport;
-import org.optaplanner.benchmark.impl.result.PlannerBenchmarkResult;
 import org.optaplanner.benchmark.impl.result.SolverBenchmarkResult;
 import org.optaplanner.core.config.AbstractConfig;
 import org.optaplanner.core.config.util.ConfigUtils;
+import org.optaplanner.core.impl.io.jaxb.adapter.JaxbLocaleAdapter;
 
-@XStreamAlias("benchmarkReport")
+@XmlType(propOrder = {
+        "locale",
+        "solverRankingType",
+        "solverRankingComparatorClass",
+        "solverRankingWeightFactoryClass"
+})
 public class BenchmarkReportConfig extends AbstractConfig<BenchmarkReportConfig> {
 
+    @XmlJavaTypeAdapter(JaxbLocaleAdapter.class)
     private Locale locale = null;
     private SolverRankingType solverRankingType = null;
     private Class<? extends Comparator<SolverBenchmarkResult>> solverRankingComparatorClass = null;
@@ -67,7 +70,8 @@ public class BenchmarkReportConfig extends AbstractConfig<BenchmarkReportConfig>
         return solverRankingComparatorClass;
     }
 
-    public void setSolverRankingComparatorClass(Class<? extends Comparator<SolverBenchmarkResult>> solverRankingComparatorClass) {
+    public void setSolverRankingComparatorClass(
+            Class<? extends Comparator<SolverBenchmarkResult>> solverRankingComparatorClass) {
         this.solverRankingComparatorClass = solverRankingComparatorClass;
     }
 
@@ -75,80 +79,17 @@ public class BenchmarkReportConfig extends AbstractConfig<BenchmarkReportConfig>
         return solverRankingWeightFactoryClass;
     }
 
-    public void setSolverRankingWeightFactoryClass(Class<? extends SolverRankingWeightFactory> solverRankingWeightFactoryClass) {
+    public void setSolverRankingWeightFactoryClass(
+            Class<? extends SolverRankingWeightFactory> solverRankingWeightFactoryClass) {
         this.solverRankingWeightFactoryClass = solverRankingWeightFactoryClass;
     }
 
-    // ************************************************************************
-    // Builder methods
-    // ************************************************************************
-
-    public BenchmarkReport buildBenchmarkReport(PlannerBenchmarkResult plannerBenchmark) {
-        BenchmarkReport benchmarkReport = new BenchmarkReport(plannerBenchmark);
-        benchmarkReport.setLocale(determineLocale());
-        benchmarkReport.setTimezoneId(ZoneId.systemDefault());
-        supplySolverRanking(benchmarkReport);
-        return benchmarkReport;
-    }
-
     public Locale determineLocale() {
-        return locale == null ? Locale.getDefault() : locale;
-    }
-
-    protected void supplySolverRanking(BenchmarkReport benchmarkReport) {
-        if (solverRankingType != null && solverRankingComparatorClass != null) {
-            throw new IllegalStateException("The PlannerBenchmark cannot have"
-                    + " a solverRankingType (" + solverRankingType
-                    + ") and a solverRankingComparatorClass (" + solverRankingComparatorClass.getName()
-                    + ") at the same time.");
-        } else if (solverRankingType != null && solverRankingWeightFactoryClass != null) {
-            throw new IllegalStateException("The PlannerBenchmark cannot have"
-                    + " a solverRankingType (" + solverRankingType
-                    + ") and a solverRankingWeightFactoryClass (" + solverRankingWeightFactoryClass.getName()
-                    + ") at the same time.");
-        } else if (solverRankingComparatorClass != null && solverRankingWeightFactoryClass != null) {
-            throw new IllegalStateException("The PlannerBenchmark cannot have"
-                    + " a solverRankingComparatorClass (" + solverRankingComparatorClass.getName()
-                    + ") and a solverRankingWeightFactoryClass (" + solverRankingWeightFactoryClass.getName()
-                    + ") at the same time.");
-        }
-        Comparator<SolverBenchmarkResult> solverRankingComparator = null;
-        SolverRankingWeightFactory solverRankingWeightFactory = null;
-        if (solverRankingType != null) {
-            switch (solverRankingType) {
-                case TOTAL_SCORE:
-                    solverRankingComparator = new TotalScoreSolverRankingComparator();
-                    break;
-                case WORST_SCORE:
-                    solverRankingComparator = new WorstScoreSolverRankingComparator();
-                    break;
-                case TOTAL_RANKING:
-                    solverRankingWeightFactory = new TotalRankSolverRankingWeightFactory();
-                    break;
-                default:
-                    throw new IllegalStateException("The solverRankingType ("
-                            + solverRankingType + ") is not implemented.");
-            }
-        }
-        if (solverRankingComparatorClass != null) {
-            solverRankingComparator = ConfigUtils.newInstance(this,
-                    "solverRankingComparatorClass", solverRankingComparatorClass);
-        }
-        if (solverRankingWeightFactoryClass != null) {
-            solverRankingWeightFactory = ConfigUtils.newInstance(this,
-                    "solverRankingWeightFactoryClass", solverRankingWeightFactoryClass);
-        }
-        if (solverRankingComparator != null) {
-            benchmarkReport.setSolverRankingComparator(solverRankingComparator);
-        } else if (solverRankingWeightFactory != null) {
-            benchmarkReport.setSolverRankingWeightFactory(solverRankingWeightFactory);
-        } else {
-            benchmarkReport.setSolverRankingComparator(new TotalScoreSolverRankingComparator());
-        }
+        return getLocale() == null ? Locale.getDefault() : getLocale();
     }
 
     @Override
-    public void inherit(BenchmarkReportConfig inheritedConfig) {
+    public BenchmarkReportConfig inherit(BenchmarkReportConfig inheritedConfig) {
         locale = ConfigUtils.inheritOverwritableProperty(locale, inheritedConfig.getLocale());
         solverRankingType = ConfigUtils.inheritOverwritableProperty(solverRankingType,
                 inheritedConfig.getSolverRankingType());
@@ -156,6 +97,12 @@ public class BenchmarkReportConfig extends AbstractConfig<BenchmarkReportConfig>
                 inheritedConfig.getSolverRankingComparatorClass());
         solverRankingWeightFactoryClass = ConfigUtils.inheritOverwritableProperty(solverRankingWeightFactoryClass,
                 inheritedConfig.getSolverRankingWeightFactoryClass());
+        return this;
+    }
+
+    @Override
+    public BenchmarkReportConfig copyConfig() {
+        return new BenchmarkReportConfig().inherit(this);
     }
 
 }

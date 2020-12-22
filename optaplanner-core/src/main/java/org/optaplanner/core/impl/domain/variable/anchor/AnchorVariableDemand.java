@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Red Hat, Inc. and/or its affiliates.
+ * Copyright 2020 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,23 +16,23 @@
 
 package org.optaplanner.core.impl.domain.variable.anchor;
 
+import java.util.Objects;
+
 import org.optaplanner.core.impl.domain.variable.descriptor.VariableDescriptor;
 import org.optaplanner.core.impl.domain.variable.inverserelation.SingletonInverseVariableDemand;
 import org.optaplanner.core.impl.domain.variable.inverserelation.SingletonInverseVariableSupply;
 import org.optaplanner.core.impl.domain.variable.supply.Demand;
 import org.optaplanner.core.impl.score.director.InnerScoreDirector;
 
-public class AnchorVariableDemand implements Demand<AnchorVariableSupply> {
+public class AnchorVariableDemand<Solution_> implements Demand<Solution_, AnchorVariableSupply> {
 
-    private static final int CLASS_NAME_HASH_CODE = AnchorVariableDemand.class.getName().hashCode() * 37;
+    protected final VariableDescriptor<Solution_> sourceVariableDescriptor;
 
-    protected final VariableDescriptor sourceVariableDescriptor;
-
-    public AnchorVariableDemand(VariableDescriptor sourceVariableDescriptor) {
+    public AnchorVariableDemand(VariableDescriptor<Solution_> sourceVariableDescriptor) {
         this.sourceVariableDescriptor = sourceVariableDescriptor;
     }
 
-    public VariableDescriptor getSourceVariableDescriptor() {
+    public VariableDescriptor<Solution_> getSourceVariableDescriptor() {
         return sourceVariableDescriptor;
     }
 
@@ -41,10 +41,10 @@ public class AnchorVariableDemand implements Demand<AnchorVariableSupply> {
     // ************************************************************************
 
     @Override
-    public AnchorVariableSupply createExternalizedSupply(InnerScoreDirector scoreDirector) {
+    public AnchorVariableSupply createExternalizedSupply(InnerScoreDirector<Solution_, ?> scoreDirector) {
         SingletonInverseVariableSupply inverseVariableSupply = scoreDirector.getSupplyManager()
-                .demand(new SingletonInverseVariableDemand(sourceVariableDescriptor));
-        return new ExternalizedAnchorVariableSupply(sourceVariableDescriptor, inverseVariableSupply);
+                .demand(new SingletonInverseVariableDemand<>(sourceVariableDescriptor));
+        return new ExternalizedAnchorVariableSupply<>(sourceVariableDescriptor, inverseVariableSupply);
     }
 
     // ************************************************************************
@@ -59,7 +59,7 @@ public class AnchorVariableDemand implements Demand<AnchorVariableSupply> {
         if (!(o instanceof AnchorVariableDemand)) {
             return false;
         }
-        AnchorVariableDemand other = (AnchorVariableDemand) o;
+        AnchorVariableDemand<Solution_> other = (AnchorVariableDemand<Solution_>) o;
         if (!sourceVariableDescriptor.equals(other.sourceVariableDescriptor)) {
             return false;
         }
@@ -68,7 +68,7 @@ public class AnchorVariableDemand implements Demand<AnchorVariableSupply> {
 
     @Override
     public int hashCode() {
-        return CLASS_NAME_HASH_CODE + sourceVariableDescriptor.hashCode();
+        return Objects.hash(AnchorVariableDemand.class.getName(), sourceVariableDescriptor);
     }
 
     @Override

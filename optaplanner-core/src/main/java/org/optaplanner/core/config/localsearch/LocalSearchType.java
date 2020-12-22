@@ -18,6 +18,9 @@ package org.optaplanner.core.config.localsearch;
 
 import java.util.Arrays;
 
+import javax.xml.bind.annotation.XmlEnum;
+
+@XmlEnum
 public enum LocalSearchType {
     HILL_CLIMBING,
     TABU_SEARCH,
@@ -31,7 +34,7 @@ public enum LocalSearchType {
      */
     public static LocalSearchType[] getBluePrintTypes() {
         return Arrays.stream(values())
-                // Workaround for https://issues.jboss.org/browse/PLANNER-1294
+                // Workaround for https://issues.redhat.com/browse/PLANNER-1294
                 .filter(localSearchType -> localSearchType != SIMULATED_ANNEALING)
                 .toArray(LocalSearchType[]::new);
     }

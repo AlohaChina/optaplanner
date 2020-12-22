@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates.
+ * Copyright 2020 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,19 +21,19 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
 
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.optaplanner.core.api.domain.solution.PlanningSolution;
 import org.optaplanner.core.api.domain.valuerange.ValueRange;
+import org.optaplanner.core.api.score.director.ScoreDirector;
 import org.optaplanner.core.impl.domain.valuerange.descriptor.ValueRangeDescriptor;
 import org.optaplanner.core.impl.domain.variable.anchor.AnchorVariableSupply;
 import org.optaplanner.core.impl.domain.variable.descriptor.GenuineVariableDescriptor;
 import org.optaplanner.core.impl.domain.variable.inverserelation.SingletonInverseVariableSupply;
 import org.optaplanner.core.impl.heuristic.move.AbstractMove;
-import org.optaplanner.core.impl.score.director.ScoreDirector;
+import org.optaplanner.core.impl.score.director.InnerScoreDirector;
 
 /**
  * Also known as a 2-opt move.
+ *
  * @param <Solution_> the solution type, the class with the {@link PlanningSolution} annotation
  */
 public class TailChainSwapMove<Solution_> extends AbstractMove<Solution_> {
@@ -88,7 +88,7 @@ public class TailChainSwapMove<Solution_> extends AbstractMove<Solution_> {
         }
     }
 
-    // TODO Workaround until https://issues.jboss.org/browse/PLANNER-1250 is fixed
+    // TODO Workaround until https://issues.redhat.com/browse/PLANNER-1250 is fixed
     protected TailChainSwapMove(GenuineVariableDescriptor<Solution_> variableDescriptor,
             Object leftEntity, Object leftValue, Object leftAnchor,
             Object rightEntity, Object rightValue, Object rightAnchor) {
@@ -107,7 +107,7 @@ public class TailChainSwapMove<Solution_> extends AbstractMove<Solution_> {
         this.entityAfterAnchor = null;
     }
 
-    // TODO Workaround until https://issues.jboss.org/browse/PLANNER-1250 is fixed
+    // TODO Workaround until https://issues.redhat.com/browse/PLANNER-1250 is fixed
     protected TailChainSwapMove(GenuineVariableDescriptor<Solution_> variableDescriptor,
             Object leftEntity, Object leftValue, Object leftAnchor,
             Object rightEntity, Object rightValue, Object rightAnchor,
@@ -127,7 +127,7 @@ public class TailChainSwapMove<Solution_> extends AbstractMove<Solution_> {
         this.entityAfterAnchor = null;
     }
 
-    // TODO Workaround until https://issues.jboss.org/browse/PLANNER-1250 is fixed
+    // TODO Workaround until https://issues.redhat.com/browse/PLANNER-1250 is fixed
     protected TailChainSwapMove(GenuineVariableDescriptor<Solution_> variableDescriptor,
             Object leftEntity, Object leftValue, Object leftAnchor,
             Object rightEntity, Object rightValue, Object rightAnchor,
@@ -213,7 +213,7 @@ public class TailChainSwapMove<Solution_> extends AbstractMove<Solution_> {
         } else {
             if (rightEntity == null) {
                 // TODO Currently unsupported because we fail to create a valid undoMove... even though doMove supports it
-                // https://issues.jboss.org/browse/PLANNER-1250
+                // https://issues.redhat.com/browse/PLANNER-1250
                 throw new IllegalStateException("Impossible state, because isMoveDoable() should not return true.");
             }
             if (!reverseAnchorSide) {
@@ -232,35 +232,36 @@ public class TailChainSwapMove<Solution_> extends AbstractMove<Solution_> {
 
     @Override
     protected void doMoveOnGenuineVariables(ScoreDirector<Solution_> scoreDirector) {
+        InnerScoreDirector<Solution_, ?> innerScoreDirector = (InnerScoreDirector<Solution_, ?>) scoreDirector;
         if (!sameAnchor) {
             // Change the left entity
-            scoreDirector.changeVariableFacade(variableDescriptor, leftEntity, rightValue);
+            innerScoreDirector.changeVariableFacade(variableDescriptor, leftEntity, rightValue);
             // Change the right entity
             if (rightEntity != null) {
-                scoreDirector.changeVariableFacade(variableDescriptor, rightEntity, leftValue);
+                innerScoreDirector.changeVariableFacade(variableDescriptor, rightEntity, leftValue);
             }
         } else {
             if (!reverseAnchorSide) {
                 // Reverses loop on the side that doesn't include the anchor, because rightValue is earlier than leftEntity
-                scoreDirector.changeVariableFacade(variableDescriptor, leftEntity, rightValue);
-                reverseChain(scoreDirector, leftValue, leftEntity, rightEntity);
+                innerScoreDirector.changeVariableFacade(variableDescriptor, leftEntity, rightValue);
+                reverseChain(innerScoreDirector, leftValue, leftEntity, rightEntity);
                 if (leftNextEntity != null) {
-                    scoreDirector.changeVariableFacade(variableDescriptor, leftNextEntity, rightEntity);
+                    innerScoreDirector.changeVariableFacade(variableDescriptor, leftNextEntity, rightEntity);
                 }
             } else {
                 // Reverses loop on the side that does include the anchor, because rightValue is later than leftEntity
                 // Change the head of the chain
-                reverseChain(scoreDirector, leftValue, leftEntity, entityAfterAnchor);
+                reverseChain(innerScoreDirector, leftValue, leftEntity, entityAfterAnchor);
                 // Change leftEntity
-                scoreDirector.changeVariableFacade(variableDescriptor, leftEntity, rightValue);
+                innerScoreDirector.changeVariableFacade(variableDescriptor, leftEntity, rightValue);
                 // Change the tail of the chain
-                reverseChain(scoreDirector, lastEntityInChain, leftAnchor, rightEntity);
-                scoreDirector.changeVariableFacade(variableDescriptor, leftNextEntity, rightEntity);
+                reverseChain(innerScoreDirector, lastEntityInChain, leftAnchor, rightEntity);
+                innerScoreDirector.changeVariableFacade(variableDescriptor, leftNextEntity, rightEntity);
             }
         }
     }
 
-    protected void reverseChain(ScoreDirector scoreDirector, Object fromValue, Object fromEntity, Object toEntity) {
+    protected void reverseChain(InnerScoreDirector scoreDirector, Object fromValue, Object fromEntity, Object toEntity) {
         Object entity = fromValue;
         Object newValue = fromEntity;
         while (newValue != toEntity) {
@@ -335,23 +336,18 @@ public class TailChainSwapMove<Solution_> extends AbstractMove<Solution_> {
     public boolean equals(Object o) {
         if (this == o) {
             return true;
-        } else if (o instanceof TailChainSwapMove) {
-            TailChainSwapMove<?> other = (TailChainSwapMove) o;
-            return new EqualsBuilder()
-                    .append(leftEntity, other.leftEntity)
-                    .append(rightValue, other.rightValue)
-                    .isEquals();
-        } else {
+        }
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
+        final TailChainSwapMove<?> other = (TailChainSwapMove<?>) o;
+        return Objects.equals(leftEntity, other.leftEntity) &&
+                Objects.equals(rightValue, other.rightValue);
     }
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder()
-                .append(leftEntity)
-                .append(rightValue)
-                .toHashCode();
+        return Objects.hash(leftEntity, rightValue);
     }
 
     @Override

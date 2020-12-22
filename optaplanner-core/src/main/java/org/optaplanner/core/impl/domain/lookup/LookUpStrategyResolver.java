@@ -19,7 +19,6 @@ package org.optaplanner.core.impl.domain.lookup;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -31,9 +30,9 @@ import java.time.OffsetTime;
 import java.time.Period;
 import java.time.Year;
 import java.time.YearMonth;
-import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -65,6 +64,7 @@ public class LookUpStrategyResolver {
         decisionCache.put(BigDecimal.class, new ImmutableLookUpStrategy());
         decisionCache.put(Character.class, new ImmutableLookUpStrategy());
         decisionCache.put(String.class, new ImmutableLookUpStrategy());
+        decisionCache.put(UUID.class, new ImmutableLookUpStrategy());
 
         decisionCache.put(Instant.class, new ImmutableLookUpStrategy());
         decisionCache.put(LocalDateTime.class, new ImmutableLookUpStrategy());
@@ -83,6 +83,7 @@ public class LookUpStrategyResolver {
 
     /**
      * This method is thread-safe.
+     *
      * @param object never null
      * @return never null
      */

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates.
+ * Copyright 2020 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package org.optaplanner.core.impl.domain.variable.inverserelation;
 
+import java.util.Objects;
+
 import org.optaplanner.core.impl.domain.variable.descriptor.VariableDescriptor;
 import org.optaplanner.core.impl.domain.variable.supply.Demand;
 import org.optaplanner.core.impl.score.director.InnerScoreDirector;
@@ -23,17 +25,15 @@ import org.optaplanner.core.impl.score.director.InnerScoreDirector;
 /**
  * To get an instance, demand a {@link CollectionInverseVariableDemand} from {@link InnerScoreDirector#getSupplyManager()}.
  */
-public class CollectionInverseVariableDemand implements Demand<CollectionInverseVariableSupply> {
+public class CollectionInverseVariableDemand<Solution_> implements Demand<Solution_, CollectionInverseVariableSupply> {
 
-    private static final int CLASS_NAME_HASH_CODE = CollectionInverseVariableDemand.class.getName().hashCode() * 37;
+    protected final VariableDescriptor<Solution_> sourceVariableDescriptor;
 
-    protected final VariableDescriptor sourceVariableDescriptor;
-
-    public CollectionInverseVariableDemand(VariableDescriptor sourceVariableDescriptor) {
+    public CollectionInverseVariableDemand(VariableDescriptor<Solution_> sourceVariableDescriptor) {
         this.sourceVariableDescriptor = sourceVariableDescriptor;
     }
 
-    public VariableDescriptor getSourceVariableDescriptor() {
+    public VariableDescriptor<Solution_> getSourceVariableDescriptor() {
         return sourceVariableDescriptor;
     }
 
@@ -42,8 +42,8 @@ public class CollectionInverseVariableDemand implements Demand<CollectionInverse
     // ************************************************************************
 
     @Override
-    public CollectionInverseVariableSupply createExternalizedSupply(InnerScoreDirector scoreDirector) {
-        return new ExternalizedCollectionInverseVariableSupply(sourceVariableDescriptor);
+    public CollectionInverseVariableSupply createExternalizedSupply(InnerScoreDirector<Solution_, ?> scoreDirector) {
+        return new ExternalizedCollectionInverseVariableSupply<>(sourceVariableDescriptor);
     }
 
     // ************************************************************************
@@ -58,7 +58,7 @@ public class CollectionInverseVariableDemand implements Demand<CollectionInverse
         if (!(o instanceof CollectionInverseVariableDemand)) {
             return false;
         }
-        CollectionInverseVariableDemand other = (CollectionInverseVariableDemand) o;
+        CollectionInverseVariableDemand<Solution_> other = (CollectionInverseVariableDemand<Solution_>) o;
         if (!sourceVariableDescriptor.equals(other.sourceVariableDescriptor)) {
             return false;
         }
@@ -67,7 +67,7 @@ public class CollectionInverseVariableDemand implements Demand<CollectionInverse
 
     @Override
     public int hashCode() {
-        return CLASS_NAME_HASH_CODE + sourceVariableDescriptor.hashCode();
+        return Objects.hash(CollectionInverseVariableDemand.class.getName(), sourceVariableDescriptor);
     }
 
     @Override

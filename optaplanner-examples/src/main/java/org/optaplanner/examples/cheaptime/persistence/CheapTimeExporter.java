@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Red Hat, Inc. and/or its affiliates.
+ * Copyright 2020 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ import org.optaplanner.examples.cheaptime.domain.CheapTimeSolution;
 import org.optaplanner.examples.cheaptime.domain.Machine;
 import org.optaplanner.examples.cheaptime.domain.PeriodPowerPrice;
 import org.optaplanner.examples.cheaptime.domain.TaskAssignment;
-import org.optaplanner.examples.cheaptime.solver.CheapTimeCostCalculator;
+import org.optaplanner.examples.cheaptime.score.CheapTimeCostCalculator;
 import org.optaplanner.examples.common.persistence.AbstractTxtSolutionExporter;
 import org.optaplanner.examples.common.persistence.SolutionConverter;
 
@@ -118,8 +118,7 @@ public class CheapTimeExporter extends AbstractTxtSolutionExporter<CheapTimeSolu
         }
 
         private Map<Machine, List<Boolean>> createMachinePeriodActiveListMap(List<Machine> machineList) {
-            Map<Machine, List<Boolean>> machinePeriodActiveListMap
-                    = new LinkedHashMap<>(machineList.size());
+            Map<Machine, List<Boolean>> machinePeriodActiveListMap = new LinkedHashMap<>(machineList.size());
             if (solution.getGlobalPeriodRangeFrom() != 0) {
                 throw new IllegalStateException("The globalPeriodRangeFrom (" + solution.getGlobalPeriodRangeFrom()
                         + ") should be 0.");

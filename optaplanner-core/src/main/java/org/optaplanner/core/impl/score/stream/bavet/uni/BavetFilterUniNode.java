@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Red Hat, Inc. and/or its affiliates.
+ * Copyright 2020 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,11 @@ package org.optaplanner.core.impl.score.stream.bavet.uni;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Predicate;
 
 import org.optaplanner.core.impl.score.stream.bavet.BavetConstraintSession;
+import org.optaplanner.core.impl.score.stream.bavet.common.BavetAbstractTuple;
 import org.optaplanner.core.impl.score.stream.bavet.common.BavetTupleState;
 
 public final class BavetFilterUniNode<A> extends BavetAbstractUniNode<A> {
@@ -30,9 +32,9 @@ public final class BavetFilterUniNode<A> extends BavetAbstractUniNode<A> {
 
     private List<BavetAbstractUniNode<A>> childNodeList = new ArrayList<>();
 
-    public BavetFilterUniNode(BavetConstraintSession session, int nodeOrder,
+    public BavetFilterUniNode(BavetConstraintSession session, int nodeIndex,
             BavetAbstractUniNode<A> parentNode, Predicate<A> predicate) {
-        super(session, nodeOrder);
+        super(session, nodeIndex);
         this.parentNode = parentNode;
         this.predicate = predicate;
     }
@@ -42,15 +44,18 @@ public final class BavetFilterUniNode<A> extends BavetAbstractUniNode<A> {
         childNodeList.add(childNode);
     }
 
+    @Override
+    public List<BavetAbstractUniNode<A>> getChildNodeList() {
+        return childNodeList;
+    }
+
     // ************************************************************************
     // Equality for node sharing
     // ************************************************************************
 
     @Override
     public int hashCode() {
-        // Similar to Object.hash() without autoboxing
-        return 31 * System.identityHashCode(parentNode)
-                + System.identityHashCode(predicate);
+        return Objects.hash(System.identityHashCode(parentNode), System.identityHashCode(predicate));
     }
 
     @Override
@@ -76,10 +81,12 @@ public final class BavetFilterUniNode<A> extends BavetAbstractUniNode<A> {
         return new BavetFilterUniTuple<>(this, parentTuple);
     }
 
-    public void refresh(BavetFilterUniTuple<A> tuple) {
+    @Override
+    public void refresh(BavetAbstractTuple uncastTuple) {
+        BavetFilterUniTuple<A> tuple = (BavetFilterUniTuple<A>) uncastTuple;
         A a = tuple.getFactA();
-        List<BavetAbstractUniTuple<A>> childTupleList = tuple.getChildTupleList();
-        for (BavetAbstractUniTuple<A> childTuple : childTupleList) {
+        List<BavetAbstractTuple> childTupleList = tuple.getChildTupleList();
+        for (BavetAbstractTuple childTuple : childTupleList) {
             session.transitionTuple(childTuple, BavetTupleState.DYING);
         }
         childTupleList.clear();
@@ -92,12 +99,11 @@ public final class BavetFilterUniNode<A> extends BavetAbstractUniNode<A> {
                 }
             }
         }
-        tuple.refreshed();
     }
 
     @Override
     public String toString() {
-        return "Filter() with " + childNodeList.size()  + " children";
+        return "Filter() with " + childNodeList.size() + " children";
     }
 
     // ************************************************************************

@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Red Hat, Inc. and/or its affiliates.
+ * Copyright 2020 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,9 @@
 package org.optaplanner.core.api.score.buildin.bendable;
 
 import java.util.Arrays;
+import java.util.Objects;
 
 import org.optaplanner.core.api.score.AbstractBendableScore;
-import org.optaplanner.core.api.score.FeasibilityScore;
 import org.optaplanner.core.api.score.Score;
 import org.optaplanner.core.impl.score.buildin.bendable.BendableScoreDefinition;
 
@@ -31,10 +31,10 @@ import org.optaplanner.core.impl.score.buildin.bendable.BendableScoreDefinition;
  * <p>
  * The {@link #getHardLevelsSize()} and {@link #getSoftLevelsSize()} must be the same as in the
  * {@link BendableScoreDefinition} used.
+ *
  * @see Score
  */
-public final class BendableScore extends AbstractBendableScore<BendableScore>
-        implements FeasibilityScore<BendableScore> {
+public final class BendableScore extends AbstractBendableScore<BendableScore> {
 
     /**
      * @param scoreString never null
@@ -56,6 +56,7 @@ public final class BendableScore extends AbstractBendableScore<BendableScore>
 
     /**
      * Creates a new {@link BendableScore}.
+     *
      * @param initScore see {@link Score#getInitScore()}
      * @param hardScores never null, never change that array afterwards: it must be immutable
      * @param softScores never null, never change that array afterwards: it must be immutable
@@ -66,15 +67,8 @@ public final class BendableScore extends AbstractBendableScore<BendableScore>
     }
 
     /**
-     * @deprecated in favor of {@link #ofUninitialized(int, int[], int[])}
-     */
-    @Deprecated
-    public static BendableScore valueOfUninitialized(int initScore, int[] hardScores, int[] softScores) {
-        return new BendableScore(initScore, hardScores, softScores);
-    }
-
-    /**
      * Creates a new {@link BendableScore}.
+     *
      * @param hardScores never null, never change that array afterwards: it must be immutable
      * @param softScores never null, never change that array afterwards: it must be immutable
      * @return never null
@@ -84,15 +78,8 @@ public final class BendableScore extends AbstractBendableScore<BendableScore>
     }
 
     /**
-     * @deprecated in favor of {@link #of(int[], int[])}
-     */
-    @Deprecated
-    public static BendableScore valueOf(int[] hardScores, int[] softScores) {
-        return new BendableScore(0, hardScores, softScores);
-    }
-
-    /**
      * Creates a new {@link BendableScore}.
+     *
      * @param hardLevelsSize at least 0
      * @param softLevelsSize at least 0
      * @return never null
@@ -103,6 +90,7 @@ public final class BendableScore extends AbstractBendableScore<BendableScore>
 
     /**
      * Creates a new {@link BendableScore}.
+     *
      * @param hardLevelsSize at least 0
      * @param softLevelsSize at least 0
      * @param hardLevel at least 0, less than hardLevelsSize
@@ -117,6 +105,7 @@ public final class BendableScore extends AbstractBendableScore<BendableScore>
 
     /**
      * Creates a new {@link BendableScore}.
+     *
      * @param hardLevelsSize at least 0
      * @param softLevelsSize at least 0
      * @param softLevel at least 0, less than softLevelsSize
@@ -180,7 +169,7 @@ public final class BendableScore extends AbstractBendableScore<BendableScore>
 
     /**
      * @param hardLevel {@code 0 <= hardLevel <} {@link #getHardLevelsSize()}.
-     * The {@code scoreLevel} is {@code hardLevel} for hard levels and {@code softLevel + hardLevelSize} for soft levels.
+     *        The {@code scoreLevel} is {@code hardLevel} for hard levels and {@code softLevel + hardLevelSize} for soft levels.
      * @return higher is better
      */
     public int getHardScore(int hardLevel) {
@@ -194,7 +183,7 @@ public final class BendableScore extends AbstractBendableScore<BendableScore>
 
     /**
      * @param softLevel {@code 0 <= softLevel <} {@link #getSoftLevelsSize()}.
-     * The {@code scoreLevel} is {@code hardLevel} for hard levels and {@code softLevel + hardLevelSize} for soft levels.
+     *        The {@code scoreLevel} is {@code hardLevel} for hard levels and {@code softLevel + hardLevelSize} for soft levels.
      * @return higher is better
      */
     public int getSoftScore(int softLevel) {
@@ -206,13 +195,7 @@ public final class BendableScore extends AbstractBendableScore<BendableScore>
     // ************************************************************************
 
     @Override
-    public BendableScore toInitializedScore() {
-        return initScore == 0 ? this : new BendableScore(0, hardScores, softScores);
-    }
-
-    @Override
     public BendableScore withInitScore(int newInitScore) {
-        assertNoInitScore();
         return new BendableScore(newInitScore, hardScores, softScores);
     }
 
@@ -328,10 +311,10 @@ public final class BendableScore extends AbstractBendableScore<BendableScore>
         int[] newHardScores = new int[hardScores.length];
         int[] newSoftScores = new int[softScores.length];
         for (int i = 0; i < newHardScores.length; i++) {
-            newHardScores[i] = - hardScores[i];
+            newHardScores[i] = -hardScores[i];
         }
         for (int i = 0; i < newSoftScores.length; i++) {
-            newSoftScores[i] = - softScores[i];
+            newSoftScores[i] = -softScores[i];
         }
         return new BendableScore(-initScore, newHardScores, newSoftScores);
     }
@@ -350,7 +333,6 @@ public final class BendableScore extends AbstractBendableScore<BendableScore>
 
     @Override
     public boolean equals(Object o) {
-        // A direct implementation (instead of EqualsBuilder) to avoid dependencies
         if (this == o) {
             return true;
         } else if (o instanceof BendableScore) {
@@ -380,28 +362,23 @@ public final class BendableScore extends AbstractBendableScore<BendableScore>
 
     @Override
     public int hashCode() {
-        // A direct implementation (instead of HashCodeBuilder) to avoid dependencies
-        int hashCode = (17 * 37) + initScore;
-        hashCode = (37 * hashCode) + Arrays.hashCode(hardScores);
-        hashCode = (37 * hashCode) + Arrays.hashCode(softScores);
-        return hashCode;
+        return Objects.hash(initScore, Arrays.hashCode(hardScores), Arrays.hashCode(softScores));
     }
 
     @Override
     public int compareTo(BendableScore other) {
-        // A direct implementation (instead of CompareToBuilder) to avoid dependencies
         validateCompatible(other);
         if (initScore != other.getInitScore()) {
-            return initScore < other.getInitScore() ? -1 : 1;
+            return Integer.compare(initScore, other.getInitScore());
         }
         for (int i = 0; i < hardScores.length; i++) {
             if (hardScores[i] != other.getHardScore(i)) {
-                return hardScores[i] < other.getHardScore(i) ? -1 : 1;
+                return Integer.compare(hardScores[i], other.getHardScore(i));
             }
         }
         for (int i = 0; i < softScores.length; i++) {
             if (softScores[i] != other.getSoftScore(i)) {
-                return softScores[i] < other.getSoftScore(i) ? -1 : 1;
+                return Integer.compare(softScores[i], other.getSoftScore(i));
             }
         }
         return 0;
@@ -453,16 +430,6 @@ public final class BendableScore extends AbstractBendableScore<BendableScore>
                     + ") is not compatible with the other score (" + other
                     + ") with softScoreSize (" + other.getSoftLevelsSize() + ").");
         }
-    }
-
-    @Override
-    public boolean isCompatibleArithmeticArgument(Score otherScore) {
-        if (!(otherScore instanceof BendableScore)) {
-            return false;
-        }
-        BendableScore otherBendableScore = (BendableScore) otherScore;
-        return hardScores.length == otherBendableScore.hardScores.length
-                && softScores.length == otherBendableScore.softScores.length;
     }
 
 }

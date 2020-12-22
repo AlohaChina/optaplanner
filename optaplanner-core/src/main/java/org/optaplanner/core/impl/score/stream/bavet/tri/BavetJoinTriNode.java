@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Red Hat, Inc. and/or its affiliates.
+ * Copyright 2020 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,8 +23,8 @@ import java.util.Set;
 import org.optaplanner.core.impl.score.stream.bavet.BavetConstraintSession;
 import org.optaplanner.core.impl.score.stream.bavet.bi.BavetJoinBridgeBiNode;
 import org.optaplanner.core.impl.score.stream.bavet.bi.BavetJoinBridgeBiTuple;
+import org.optaplanner.core.impl.score.stream.bavet.common.BavetAbstractTuple;
 import org.optaplanner.core.impl.score.stream.bavet.common.BavetJoinNode;
-import org.optaplanner.core.impl.score.stream.bavet.common.BavetJoinTuple;
 import org.optaplanner.core.impl.score.stream.bavet.common.BavetTupleState;
 import org.optaplanner.core.impl.score.stream.bavet.common.index.BavetIndex;
 import org.optaplanner.core.impl.score.stream.bavet.uni.BavetJoinBridgeUniNode;
@@ -37,9 +37,9 @@ public final class BavetJoinTriNode<A, B, C> extends BavetAbstractTriNode<A, B, 
 
     private final List<BavetAbstractTriNode<A, B, C>> childNodeList = new ArrayList<>();
 
-    public BavetJoinTriNode(BavetConstraintSession session, int nodeOrder,
+    public BavetJoinTriNode(BavetConstraintSession session, int nodeIndex,
             BavetJoinBridgeBiNode<A, B> leftParentNode, BavetJoinBridgeUniNode<C> rightParentNode) {
-        super(session, nodeOrder);
+        super(session, nodeIndex);
         this.leftParentNode = leftParentNode;
         this.rightParentNode = rightParentNode;
     }
@@ -47,6 +47,11 @@ public final class BavetJoinTriNode<A, B, C> extends BavetAbstractTriNode<A, B, 
     @Override
     public void addChildNode(BavetAbstractTriNode<A, B, C> childNode) {
         childNodeList.add(childNode);
+    }
+
+    @Override
+    public List<BavetAbstractTriNode<A, B, C>> getChildNodeList() {
+        return childNodeList;
     }
 
     // ************************************************************************
@@ -70,9 +75,11 @@ public final class BavetJoinTriNode<A, B, C> extends BavetAbstractTriNode<A, B, 
         return new BavetJoinTriTuple<>(this, abTuple, cTuple);
     }
 
-    public void refresh(BavetJoinTriTuple<A, B, C> tuple) {
-        List<BavetAbstractTriTuple<A, B, C>> childTupleList = tuple.getChildTupleList();
-        for (BavetAbstractTriTuple<A, B, C> childTuple : childTupleList) {
+    @Override
+    public void refresh(BavetAbstractTuple uncastTuple) {
+        BavetJoinTriTuple<A, B, C> tuple = (BavetJoinTriTuple<A, B, C>) uncastTuple;
+        List<BavetAbstractTuple> childTupleList = tuple.getChildTupleList();
+        for (BavetAbstractTuple childTuple : childTupleList) {
             session.transitionTuple(childTuple, BavetTupleState.DYING);
         }
         childTupleList.clear();
@@ -83,14 +90,13 @@ public final class BavetJoinTriNode<A, B, C> extends BavetAbstractTriNode<A, B, 
                 session.transitionTuple(childTuple, BavetTupleState.CREATING);
             }
         }
-        tuple.refreshed();
     }
 
     public void refreshChildTuplesLeft(BavetJoinBridgeBiTuple<A, B> leftParentTuple) {
-        Set<BavetJoinTuple> leftTupleSet = leftParentTuple.getChildTupleSet();
-        for (BavetJoinTuple tuple_ : leftTupleSet) {
+        List<BavetAbstractTuple> leftTupleSet = leftParentTuple.getChildTupleList();
+        for (BavetAbstractTuple tuple_ : leftTupleSet) {
             BavetJoinTriTuple<A, B, C> tuple = (BavetJoinTriTuple<A, B, C>) tuple_;
-            boolean removed = tuple.getCTuple().getChildTupleSet().remove(tuple);
+            boolean removed = tuple.getCTuple().getChildTupleList().remove(tuple);
             if (!removed) {
                 throw new IllegalStateException("Impossible state: the facts (" + tuple.getFactA() + ", " + tuple.getFactB()
                         + ")'s tuple cannot be removed from the other fact (" + tuple.getFactC()
@@ -105,7 +111,7 @@ public final class BavetJoinTriNode<A, B, C> extends BavetAbstractTriNode<A, B, 
                 if (!rightParentTuple.isDirty()) {
                     BavetJoinTriTuple<A, B, C> childTuple = createTuple(leftParentTuple, rightParentTuple);
                     leftTupleSet.add(childTuple);
-                    rightParentTuple.getChildTupleSet().add(childTuple);
+                    rightParentTuple.getChildTupleList().add(childTuple);
                     session.transitionTuple(childTuple, BavetTupleState.CREATING);
                 }
             }
@@ -113,10 +119,10 @@ public final class BavetJoinTriNode<A, B, C> extends BavetAbstractTriNode<A, B, 
     }
 
     public void refreshChildTuplesRight(BavetJoinBridgeUniTuple<C> rightParentTuple) {
-        Set<BavetJoinTuple> rightTupleSet = rightParentTuple.getChildTupleSet();
-        for (BavetJoinTuple uncastTuple : rightTupleSet) {
+        List<BavetAbstractTuple> rightTupleSet = rightParentTuple.getChildTupleList();
+        for (BavetAbstractTuple uncastTuple : rightTupleSet) {
             BavetJoinTriTuple<A, B, C> tuple = (BavetJoinTriTuple<A, B, C>) uncastTuple;
-            boolean removed = tuple.getAbTuple().getChildTupleSet().remove(tuple);
+            boolean removed = tuple.getAbTuple().getChildTupleList().remove(tuple);
             if (!removed) {
                 throw new IllegalStateException("Impossible state: the fact (" + tuple.getFactC()
                         + ")'s tuple cannot be removed from the other facts (" + tuple.getFactA() + ", " + tuple.getFactB()
@@ -130,7 +136,7 @@ public final class BavetJoinTriNode<A, B, C> extends BavetAbstractTriNode<A, B, 
             for (BavetJoinBridgeBiTuple<A, B> leftParentTuple : leftParentTupleList) {
                 if (!leftParentTuple.isDirty()) {
                     BavetJoinTriTuple<A, B, C> childTuple = createTuple(leftParentTuple, rightParentTuple);
-                    leftParentTuple.getChildTupleSet().add(childTuple);
+                    leftParentTuple.getChildTupleList().add(childTuple);
                     rightTupleSet.add(childTuple);
                     session.transitionTuple(childTuple, BavetTupleState.CREATING);
                 }
@@ -148,7 +154,7 @@ public final class BavetJoinTriNode<A, B, C> extends BavetAbstractTriNode<A, B, 
 
     @Override
     public String toString() {
-        return "Join() with " + childNodeList.size()  + " children";
+        return "Join() with " + childNodeList.size() + " children";
     }
 
     // ************************************************************************

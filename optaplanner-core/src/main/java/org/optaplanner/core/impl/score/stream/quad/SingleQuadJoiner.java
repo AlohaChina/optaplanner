@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Red Hat, Inc. and/or its affiliates.
+ * Copyright 2020 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,27 +50,27 @@ public final class SingleQuadJoiner<A, B, C, D> extends AbstractQuadJoiner<A, B,
     // ************************************************************************
 
     @Override
-    public TriFunction<A, B, C, Object> getLeftMapping(int joinerId) {
-        return (TriFunction<A, B, C, Object>) leftMapping;
+    public TriFunction<A, B, C, Object> getLeftMapping(int index) {
+        return (TriFunction<A, B, C, Object>) getLeftMapping();
     }
 
     @Override
     public TriFunction<A, B, C, Object[]> getLeftCombinedMapping() {
-        return (A a, B b, C c) -> new Object[]{leftMapping.apply(a, b, c)};
+        return (A a, B b, C c) -> new Object[] { getLeftMapping().apply(a, b, c) };
     }
 
     @Override
     public JoinerType[] getJoinerTypes() {
-        return new JoinerType[]{joinerType};
+        return new JoinerType[] { joinerType };
     }
 
     @Override
-    public Function<D, Object> getRightMapping(int joinerId) {
-        return (Function<D, Object>) rightMapping;
+    public Function<D, Object> getRightMapping(int index) {
+        return (Function<D, Object>) getRightMapping();
     }
 
     @Override
     public Function<D, Object[]> getRightCombinedMapping() {
-        return (D d) -> new Object[]{rightMapping.apply(d)};
+        return (D d) -> new Object[] { getRightMapping().apply(d) };
     }
 }

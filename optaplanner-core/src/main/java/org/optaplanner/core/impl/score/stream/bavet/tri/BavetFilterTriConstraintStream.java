@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Red Hat, Inc. and/or its affiliates.
+ * Copyright 2020 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,8 @@ import org.optaplanner.core.impl.score.stream.bavet.BavetConstraintFactory;
 import org.optaplanner.core.impl.score.stream.bavet.common.BavetNodeBuildPolicy;
 import org.optaplanner.core.impl.score.stream.bavet.uni.BavetFromUniConstraintStream;
 
-public final class BavetFilterTriConstraintStream<Solution_, A, B, C> extends BavetAbstractTriConstraintStream<Solution_, A, B, C> {
+public final class BavetFilterTriConstraintStream<Solution_, A, B, C>
+        extends BavetAbstractTriConstraintStream<Solution_, A, B, C> {
 
     private final BavetAbstractTriConstraintStream<Solution_, A, B, C> parent;
     private final TriPredicate<A, B, C> predicate;
@@ -51,13 +52,13 @@ public final class BavetFilterTriConstraintStream<Solution_, A, B, C> extends Ba
 
     @Override
     protected BavetFilterTriNode<A, B, C> createNode(BavetNodeBuildPolicy<Solution_> buildPolicy,
-            Score<?> constraintWeight, int nodeOrder, BavetAbstractTriNode<A, B, C> parentNode) {
-        return new BavetFilterTriNode<>(buildPolicy.getSession(), nodeOrder, parentNode, predicate);
+            Score<?> constraintWeight, BavetAbstractTriNode<A, B, C> parentNode) {
+        return new BavetFilterTriNode<>(buildPolicy.getSession(), buildPolicy.nextNodeIndex(), parentNode, predicate);
     }
 
     @Override
     public String toString() {
-        return "Filter() with " + childStreamList.size()  + " children";
+        return "Filter() with " + childStreamList.size() + " children";
     }
 
     // ************************************************************************

@@ -5,8 +5,9 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.optaplanner</groupId>
-    <artifactId>optaplanner</artifactId>
-    <version>7.31.0-SNAPSHOT</version>
+    <artifactId>optaplanner-build-parent</artifactId>
+    <version>8.1.0-SNAPSHOT</version>
+    <relativePath>../build/optaplanner-build-parent/pom.xml</relativePath>
   </parent>
 
   <artifactId>optaplanner-distribution</artifactId>
@@ -50,11 +51,6 @@
                   <artifactId>hibernate-core</artifactId>
                   <version>${version.org.hibernate}</version>
                 </additionalDependency>
-                <additionalDependency>
-                  <groupId>junit</groupId>
-                  <artifactId>junit</artifactId>
-                  <version>${version.junit}</version>
-                </additionalDependency>
               </additionalDependencies>
             </configuration>
           </execution>
@@ -75,7 +71,7 @@
           <descriptors>
             <descriptor>src/main/assembly/assembly-optaplanner.xml</descriptor>
           </descriptors>
-          <appendAssemblyId>false</appendAssemblyId> 
+          <appendAssemblyId>false</appendAssemblyId>
         </configuration>
       </plugin>
     </plugins>
@@ -135,6 +131,15 @@
     <dependency>
       <groupId>org.optaplanner</groupId>
       <artifactId>optaplanner-persistence-jackson</artifactId>
+      <classifier>sources</classifier>
+    </dependency>
+    <dependency>
+      <groupId>org.optaplanner</groupId>
+      <artifactId>optaplanner-persistence-jsonb</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.optaplanner</groupId>
+      <artifactId>optaplanner-persistence-jsonb</artifactId>
       <classifier>sources</classifier>
     </dependency>
     <dependency>

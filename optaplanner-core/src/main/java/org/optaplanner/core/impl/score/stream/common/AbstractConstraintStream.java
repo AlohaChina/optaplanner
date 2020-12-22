@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Red Hat, Inc. and/or its affiliates.
+ * Copyright 2020 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,8 @@ import org.optaplanner.core.impl.score.stream.InnerConstraintFactory;
 
 public abstract class AbstractConstraintStream<Solution_> implements ConstraintStream {
 
+    public abstract int getCardinality();
+
     // ************************************************************************
     // Penalize/reward
     // ************************************************************************
@@ -38,37 +40,42 @@ public abstract class AbstractConstraintStream<Solution_> implements ConstraintS
     protected Function<Solution_, Score<?>> buildConstraintWeightExtractor(String constraintPackage, String constraintName) {
         validateConstraintId(constraintPackage, constraintName);
         SolutionDescriptor<Solution_> solutionDescriptor = getConstraintFactory().getSolutionDescriptor();
-        ConstraintConfigurationDescriptor<Solution_> configurationDescriptor
-                = solutionDescriptor.getConstraintConfigurationDescriptor();
+        ConstraintConfigurationDescriptor<Solution_> configurationDescriptor = solutionDescriptor
+                .getConstraintConfigurationDescriptor();
         if (configurationDescriptor == null) {
             throw new IllegalStateException("The constraint (" + constraintName + ") of package (" + constraintPackage
                     + ") does not hard-code a constraint weight"
-                    +" and there is no @" + ConstraintConfigurationProvider.class.getSimpleName()
+                    + " and there is no @" + ConstraintConfigurationProvider.class.getSimpleName()
                     + " on the solution class (" + solutionDescriptor.getSolutionClass() + ").\n"
                     + "Maybe add a @" + ConstraintConfiguration.class.getSimpleName() + " class"
                     + " or use " + ConstraintStream.class.getSimpleName() + ".penalize()/reward()"
                     + " instead of penalizeConfigurable()/rewardConfigurable.");
         }
-        ConstraintWeightDescriptor<Solution_> weightDescriptor = configurationDescriptor.findConstraintWeightDescriptor(constraintPackage, constraintName);
+        ConstraintWeightDescriptor<Solution_> weightDescriptor = configurationDescriptor
+                .findConstraintWeightDescriptor(constraintPackage, constraintName);
         if (weightDescriptor == null) {
             throw new IllegalStateException("The constraint (" + constraintName + ") of package (" + constraintPackage
                     + ") does not hard-code a constraint weight"
-                    +" and there is no such @" + ConstraintWeight.class.getSimpleName()
-                    + " on the constraintConfigurationClass (" + configurationDescriptor.getConstraintConfigurationClass() + ").\n"
-                    + "Maybe there is a typo in the constraintPackage or constraintName of one of the @" + ConstraintWeight.class.getSimpleName() + " members.\n"
+                    + " and there is no such @" + ConstraintWeight.class.getSimpleName()
+                    + " on the constraintConfigurationClass (" + configurationDescriptor.getConstraintConfigurationClass()
+                    + ").\n"
+                    + "Maybe there is a typo in the constraintPackage or constraintName of one of the @"
+                    + ConstraintWeight.class.getSimpleName() + " members.\n"
                     + "Maybe add a @" + ConstraintWeight.class.getSimpleName() + " member for it.");
         }
         return weightDescriptor.createExtractor();
     }
 
-    protected Function<Solution_, Score<?>> buildConstraintWeightExtractor(String constraintPackage, String constraintName, Score<?> constraintWeight) {
+    protected Function<Solution_, Score<?>> buildConstraintWeightExtractor(String constraintPackage, String constraintName,
+            Score<?> constraintWeight) {
         validateConstraintId(constraintPackage, constraintName);
-        // Duplicates validation when the session is build, but this fail-faster when weights are hard coded
-        getConstraintFactory().getSolutionDescriptor().validateConstraintWeight(constraintPackage, constraintName, constraintWeight);
+        // Duplicates validation when the session is built, but this fails fast when weights are hard coded
+        getConstraintFactory().getSolutionDescriptor().validateConstraintWeight(constraintPackage, constraintName,
+                constraintWeight);
         return solution -> constraintWeight;
     }
 
-    protected void validateConstraintId(String constraintPackage, String constraintName) {
+    private static void validateConstraintId(String constraintPackage, String constraintName) {
         if (constraintPackage == null) {
             throw new IllegalStateException("The constraint (" + constraintName
                     + ") cannot have a null package (" + constraintPackage + ").");
@@ -87,28 +94,33 @@ public abstract class AbstractConstraintStream<Solution_> implements ConstraintS
 
     @Override
     public final Constraint penalize(String constraintPackage, String constraintName, Score<?> constraintWeight) {
-        return impactScore(constraintPackage, constraintName, constraintWeight, false);
+        return impactScore(constraintPackage, constraintName, constraintWeight, ScoreImpactType.PENALTY);
     }
 
     @Override
     public final Constraint penalizeConfigurable(String constraintPackage, String constraintName) {
-        return impactScoreConfigurable(constraintPackage, constraintName, false);
+        return impactScoreConfigurable(constraintPackage, constraintName, ScoreImpactType.PENALTY);
     }
 
     @Override
     public final Constraint reward(String constraintPackage, String constraintName, Score<?> constraintWeight) {
-        return impactScore(constraintPackage, constraintName, constraintWeight,true);
+        return impactScore(constraintPackage, constraintName, constraintWeight, ScoreImpactType.REWARD);
     }
 
     @Override
     public final Constraint rewardConfigurable(String constraintPackage, String constraintName) {
-        return impactScoreConfigurable(constraintPackage, constraintName, true);
+        return impactScoreConfigurable(constraintPackage, constraintName, ScoreImpactType.REWARD);
+    }
+
+    @Override
+    public final Constraint impact(String constraintPackage, String constraintName, Score<?> constraintWeight) {
+        return impactScore(constraintPackage, constraintName, constraintWeight, ScoreImpactType.MIXED);
     }
 
     abstract protected Constraint impactScore(String constraintPackage, String constraintName,
-            Score<?> constraintWeight, boolean positive);
+            Score<?> constraintWeight, ScoreImpactType impactType);
 
     abstract protected Constraint impactScoreConfigurable(String constraintPackage, String constraintName,
-            boolean positive);
+            ScoreImpactType impactType);
 
 }

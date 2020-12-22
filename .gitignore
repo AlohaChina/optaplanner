@@ -3,9 +3,10 @@
 
 # Eclipse, Netbeans and IntelliJ files
 /.*
+!/.github
 !.gitignore
 !.gitattributes
-!.travis.yml
+!/.mvn
 /nbproject
 /*.ipr
 /*.iws

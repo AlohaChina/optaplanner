@@ -1,16 +1,29 @@
+/*
+ * Copyright 2020 Red Hat, Inc. and/or its affiliates.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.optaplanner.benchmark.config.report;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Locale;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.optaplanner.benchmark.config.ranking.SolverRankingType;
 import org.optaplanner.benchmark.impl.ranking.TotalRankSolverRankingWeightFactory;
 import org.optaplanner.benchmark.impl.ranking.TotalScoreSolverRankingComparator;
-import org.optaplanner.benchmark.impl.result.PlannerBenchmarkResult;
-
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 
 public class BenchmarkReportConfigTest {
 
@@ -26,43 +39,9 @@ public class BenchmarkReportConfigTest {
 
         assertThat(reportConfig.getLocale()).isEqualTo(inheritedReportConfig.getLocale());
         assertThat(reportConfig.getSolverRankingType()).isEqualTo(inheritedReportConfig.getSolverRankingType());
-        assertThat(reportConfig.getSolverRankingComparatorClass()).isEqualTo(inheritedReportConfig.getSolverRankingComparatorClass());
-        assertThat(reportConfig.getSolverRankingWeightFactoryClass()).isEqualTo(inheritedReportConfig.getSolverRankingWeightFactoryClass());
-    }
-
-    @Test
-    public void buildWithSolverRankingTypeAndSolverRankingComparatorClass() {
-        BenchmarkReportConfig config = new BenchmarkReportConfig();
-        config.setSolverRankingType(SolverRankingType.TOTAL_RANKING);
-        config.setSolverRankingComparatorClass(TotalScoreSolverRankingComparator.class);
-
-        PlannerBenchmarkResult result = mock(PlannerBenchmarkResult.class);
-
-        assertThatExceptionOfType(IllegalStateException.class).isThrownBy(() -> config.buildBenchmarkReport(result))
-                .withMessageContaining("solverRankingType").withMessageContaining("solverRankingComparatorClass");
-    }
-
-    @Test
-    public void buildWithSolverRankingTypeAndSolverRankingWeightFactoryClass() {
-        BenchmarkReportConfig config = new BenchmarkReportConfig();
-        config.setSolverRankingType(SolverRankingType.TOTAL_RANKING);
-        config.setSolverRankingWeightFactoryClass(TotalRankSolverRankingWeightFactory.class);
-
-        PlannerBenchmarkResult result = mock(PlannerBenchmarkResult.class);
-
-        assertThatExceptionOfType(IllegalStateException.class).isThrownBy(() -> config.buildBenchmarkReport(result))
-                .withMessageContaining("solverRankingType").withMessageContaining("solverRankingWeightFactoryClass");
-    }
-
-    @Test
-    public void buildWithSolverRankingComparatorClassAndSolverRankingWeightFactoryClass() {
-        BenchmarkReportConfig config = new BenchmarkReportConfig();
-        config.setSolverRankingComparatorClass(TotalScoreSolverRankingComparator.class);
-        config.setSolverRankingWeightFactoryClass(TotalRankSolverRankingWeightFactory.class);
-
-        PlannerBenchmarkResult result = mock(PlannerBenchmarkResult.class);
-
-        assertThatExceptionOfType(IllegalStateException.class).isThrownBy(() -> config.buildBenchmarkReport(result))
-                .withMessageContaining("solverRankingComparatorClass").withMessageContaining("solverRankingWeightFactoryClass");
+        assertThat(reportConfig.getSolverRankingComparatorClass())
+                .isEqualTo(inheritedReportConfig.getSolverRankingComparatorClass());
+        assertThat(reportConfig.getSolverRankingWeightFactoryClass())
+                .isEqualTo(inheritedReportConfig.getSolverRankingWeightFactoryClass());
     }
 }

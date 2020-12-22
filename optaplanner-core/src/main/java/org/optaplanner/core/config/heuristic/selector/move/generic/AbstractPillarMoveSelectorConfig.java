@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 Red Hat, Inc. and/or its affiliates.
+ * Copyright 2020 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,16 +18,24 @@ package org.optaplanner.core.config.heuristic.selector.move.generic;
 
 import java.util.Comparator;
 
-import com.thoughtworks.xstream.annotations.XStreamAlias;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlType;
+
 import org.optaplanner.core.config.heuristic.selector.entity.pillar.PillarSelectorConfig;
 import org.optaplanner.core.config.heuristic.selector.move.MoveSelectorConfig;
 import org.optaplanner.core.config.util.ConfigUtils;
 
-abstract class AbstractPillarMoveSelectorConfig<T extends AbstractPillarMoveSelectorConfig<T>> extends MoveSelectorConfig<T> {
+@XmlType(propOrder = {
+        "subPillarType",
+        "subPillarSequenceComparatorClass",
+        "pillarSelectorConfig"
+})
+public abstract class AbstractPillarMoveSelectorConfig<Config_ extends AbstractPillarMoveSelectorConfig<Config_>>
+        extends MoveSelectorConfig<Config_> {
 
     protected SubPillarType subPillarType = null;
     protected Class<? extends Comparator> subPillarSequenceComparatorClass = null;
-    @XStreamAlias("pillarSelector")
+    @XmlElement(name = "pillarSelector")
     protected PillarSelectorConfig pillarSelectorConfig = null;
 
     public SubPillarType getSubPillarType() {
@@ -55,12 +63,13 @@ abstract class AbstractPillarMoveSelectorConfig<T extends AbstractPillarMoveSele
     }
 
     @Override
-    public void inherit(T inheritedConfig) {
+    public Config_ inherit(Config_ inheritedConfig) {
         super.inherit(inheritedConfig);
         subPillarType = ConfigUtils.inheritOverwritableProperty(subPillarType, inheritedConfig.getSubPillarType());
         subPillarSequenceComparatorClass = ConfigUtils.inheritOverwritableProperty(subPillarSequenceComparatorClass,
                 inheritedConfig.getSubPillarSequenceComparatorClass());
         pillarSelectorConfig = ConfigUtils.inheritConfig(pillarSelectorConfig, inheritedConfig.getPillarSelectorConfig());
+        return (Config_) this;
     }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Red Hat, Inc. and/or its affiliates.
+ * Copyright 2020 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,13 +51,13 @@ public final class BavetFilterBiConstraintStream<Solution_, A, B> extends BavetA
 
     @Override
     protected BavetFilterBiNode<A, B> createNode(BavetNodeBuildPolicy<Solution_> buildPolicy,
-            Score<?> constraintWeight, int nodeOrder, BavetAbstractBiNode<A, B> parentNode) {
-        return new BavetFilterBiNode<>(buildPolicy.getSession(), nodeOrder, parentNode, predicate);
+            Score<?> constraintWeight, BavetAbstractBiNode<A, B> parentNode) {
+        return new BavetFilterBiNode<>(buildPolicy.getSession(), buildPolicy.nextNodeIndex(), parentNode, predicate);
     }
 
     @Override
     public String toString() {
-        return "Filter() with " + childStreamList.size()  + " children";
+        return "Filter() with " + childStreamList.size() + " children";
     }
 
     // ************************************************************************
